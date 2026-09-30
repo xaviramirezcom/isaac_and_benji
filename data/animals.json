@@ -1,0 +1,206 @@
+[
+ {
+  "id": "dog",
+  "en": "Dog",
+  "es": "Perro",
+  "sound": "sounds/animals/dog.mp3",
+  "credit": {
+   "title": "Barking dog inside",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/barking-dog-inside-s0112.html"
+  }
+ },
+ {
+  "id": "cat",
+  "en": "Cat",
+  "es": "Gato",
+  "sound": "sounds/animals/cat.mp3",
+  "credit": {
+   "title": "Felis silvestris catus meows",
+   "artist": "Tobias Puderer",
+   "license": "CC BY-SA 3.0",
+   "url": "https://commons.wikimedia.org/wiki/File%3AFelis_silvestris_catus_meows.ogg"
+  }
+ },
+ {
+  "id": "cow",
+  "en": "Cow",
+  "es": "Vaca",
+  "sound": "sounds/animals/cow.mp3",
+  "credit": {
+   "title": "Cow moos",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/cow-moos-s0546.html"
+  }
+ },
+ {
+  "id": "pig",
+  "en": "Pig",
+  "es": "Cerdo",
+  "sound": "sounds/animals/pig.mp3",
+  "credit": {
+   "title": "Grumpy pig 2",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/grumpy-pig-2-s1659.html"
+  }
+ },
+ {
+  "id": "sheep",
+  "en": "Sheep",
+  "es": "Oveja",
+  "sound": "sounds/animals/sheep.mp3",
+  "credit": {
+   "title": "Sheep bleating",
+   "artist": "earthcalling",
+   "license": "Public domain",
+   "url": "https://commons.wikimedia.org/wiki/File%3ASheep_bleating.ogg"
+  }
+ },
+ {
+  "id": "horse",
+  "en": "Horse",
+  "es": "Caballo",
+  "sound": "sounds/animals/horse.mp3",
+  "credit": {
+   "title": "Neighing horse 2",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/neighing-horse-2-s0859.html"
+  }
+ },
+ {
+  "id": "duck",
+  "en": "Duck",
+  "es": "Pato",
+  "sound": "sounds/animals/duck.mp3",
+  "credit": {
+   "title": "Ducks",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/ducks-s0276.html"
+  }
+ },
+ {
+  "id": "rooster",
+  "en": "Rooster",
+  "es": "Gallo",
+  "sound": "sounds/animals/rooster.mp3",
+  "credit": {
+   "title": "Cock song 2",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/cock-song-2-s0441.html"
+  }
+ },
+ {
+  "id": "chicken",
+  "en": "Hen",
+  "es": "Gallina",
+  "sound": "sounds/animals/chicken.mp3",
+  "credit": {
+   "title": "Hen lays 1",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/hen-lays-1-s0975.html"
+  }
+ },
+ {
+  "id": "goat",
+  "en": "Goat",
+  "es": "Cabra",
+  "sound": "sounds/animals/goat.mp3",
+  "credit": {
+   "title": "Dwarf goat bleating",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/dwarf-goat-bleating-s0880.html"
+  }
+ },
+ {
+  "id": "donkey",
+  "en": "Donkey",
+  "es": "Burro",
+  "sound": "sounds/animals/donkey.mp3",
+  "credit": {
+   "title": "Donkey braying 2",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/donkey-braying-2-s1550.html"
+  }
+ },
+ {
+  "id": "frog",
+  "en": "Frog",
+  "es": "Rana",
+  "sound": "sounds/animals/frog.mp3",
+  "credit": {
+   "title": "Frogs 1",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/frogs-1-s0997.html"
+  }
+ },
+ {
+  "id": "bird",
+  "en": "Bird",
+  "es": "Pájaro",
+  "sound": "sounds/animals/bird.mp3",
+  "credit": {
+   "title": "Common nightingale 3",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/common-nightingale-3-s3088.html"
+  }
+ },
+ {
+  "id": "bee",
+  "en": "Bee",
+  "es": "Abeja",
+  "sound": "sounds/animals/bee.mp3",
+  "credit": {
+   "title": "Solitary bees or flies",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/solitary-bees-or-flies-s0101.html"
+  }
+ },
+ {
+  "id": "owl",
+  "en": "Owl",
+  "es": "Búho",
+  "sound": "sounds/animals/owl.mp3",
+  "credit": {
+   "title": "Tawny owl 1",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "license": "CC0",
+   "url": "https://bigsoundbank.com/tawny-owl-1-s1763.html"
+  }
+ },
+ {
+  "id": "lion",
+  "en": "Lion",
+  "es": "León",
+  "sound": "sounds/animals/lion.mp3",
+  "credit": {
+   "title": "Lion Mad",
+   "artist": "Bilberryerer",
+   "license": "CC BY-SA 4.0",
+   "url": "https://commons.wikimedia.org/wiki/File%3ALion_Mad.ogg"
+  }
+ },
+ {
+  "id": "tiger",
+  "en": "Tiger",
+  "es": "Tigre",
+  "sound": "sounds/animals/tiger.mp3",
+  "credit": {
+   "title": "Tiger Mad",
+   "artist": "Bilberryerer",
+   "license": "CC BY-SA 4.0",
+   "url": "https://commons.wikimedia.org/wiki/File%3ATiger_Mad.ogg"
+  }
+ }
+]

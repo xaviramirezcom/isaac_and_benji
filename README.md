@@ -4,7 +4,7 @@ A tiny web app of calm, simple games for two brothers. Works on tablet and iPhon
 
 - **Home** – pick Isaac or Benji.
 - **Isaac → World Map** – a 3D globe where every country is painted with its flag. Drag to spin, pinch (or use ＋/－) to zoom, tap a country to see its flag, name and capital. 🔊 reads it aloud, 🎲 jumps to a random country.
-- **Benji** – placeholder, games coming.
+- **Benji → Animals** – a big picture of an animal with three big taps: say the name (🗣️), play the real animal sound (🔊), next animal (➡️). Tapping the picture also plays the sound. EN/ES switch, credits under ⓘ. 17 animals.
 
 ## Run it
 
@@ -26,6 +26,9 @@ js/app.js                      hash router (#/ · #/isaac · #/benji · #/isaac/
 js/map-game.js                 the globe game
 sw.js, manifest.webmanifest    offline + installable app
 data/ flags/ vendor/ icons/    downloaded once by tools/fetch_data.py and tools/make_icons.py
+js/animals-game.js             Benji's animals game (data/animals.json, sounds/animals/, images/animals/)
+tools/build_animal_audio.py    finds real recordings (BigSoundBank CC0, Wikimedia Commons), trims them, builds audition pages
+tools/pick_animals.py          copies the clips chosen by ear into sounds/animals/ and writes data/animals.json
 ```
 
 Adding a game for Isaac: add a tile in `#view-isaac` (index.html), a route in `js/app.js`.

@@ -1,20 +1,26 @@
-// Tiny hash router: #/ (home) · #/isaac · #/benji · #/isaac/map
+// Tiny hash router: #/ (home) · #/isaac · #/benji · #/isaac/map · #/benji/animals
 const $ = (s) => document.querySelector(s);
-const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map') };
-const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map' };
+const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map'), animals: $('#view-animals') };
+const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map', 'benji/animals': 'animals' };
 
 let current = null;
 let mapModule = null;
+let animalsModule = null;
 
 async function route() {
   const name = ROUTES[location.hash.replace(/^#\/?/, '')] ?? 'home';
   if (current === 'map' && name !== 'map') mapModule?.leave();
+  if (current === 'animals' && name !== 'animals') animalsModule?.leave();
   current = name;
   for (const [key, el] of Object.entries(views)) el.hidden = key !== name;
 
   if (name === 'map') {
     mapModule ??= await import('./map-game.js');
     if (current === 'map') mapModule.enter();
+  }
+  if (name === 'animals') {
+    animalsModule ??= await import('./animals-game.js');
+    if (current === 'animals') animalsModule.enter();
   }
 }
 

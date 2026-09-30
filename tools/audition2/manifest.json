@@ -1,0 +1,128 @@
+{
+ "bee": [
+  {
+   "file": "bee-1.mp3",
+   "title": "Bumblebee 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/bumblebee-1-s1000.html",
+   "secs": 8.0
+  },
+  {
+   "file": "bee-2.mp3",
+   "title": "Bumblebee 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/bumblebee-2-s1001.html",
+   "secs": 8.0
+  },
+  {
+   "file": "bee-3.mp3",
+   "title": "Solitary bees or flies",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/solitary-bees-or-flies-s0101.html",
+   "secs": 5.6
+  }
+ ],
+ "bird": [
+  {
+   "file": "bird-1.mp3",
+   "title": "Common nightingale 3",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/common-nightingale-3-s3088.html",
+   "secs": 7.0
+  },
+  {
+   "file": "bird-2.mp3",
+   "title": "Eurasian blackcap 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/eurasian-blackcap-1-s3466.html",
+   "secs": 6.3
+  },
+  {
+   "file": "bird-3.mp3",
+   "title": "Carrion crow 4",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/carrion-crow-4-s3464.html",
+   "secs": 7.2
+  }
+ ],
+ "owl": [
+  {
+   "file": "owl-1.mp3",
+   "title": "Tawny owl 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/tawny-owl-1-s1763.html",
+   "secs": 8.0
+  },
+  {
+   "file": "owl-2.mp3",
+   "title": "Tawny owl 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/tawny-owl-2-s1764.html",
+   "secs": 7.8
+  },
+  {
+   "file": "owl-3.mp3",
+   "title": "Barn owl",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/barn-owl-s1400.html",
+   "secs": 8.0
+  }
+ ],
+ "pig": [
+  {
+   "file": "pig-1.mp3",
+   "title": "Grumpy pig 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/grumpy-pig-2-s1659.html",
+   "secs": 6.1
+  }
+ ],
+ "tiger": [
+  {
+   "file": "tiger-1.mp3",
+   "title": "Tiger Mad",
+   "license": "CC BY-SA 4.0",
+   "artist": "Bilberryerer",
+   "page": "https://commons.wikimedia.org/wiki/File%3ATiger_Mad.ogg",
+   "secs": 8.0
+  }
+ ],
+ "monkey": [
+  {
+   "file": "monkey-1.mp3",
+   "title": "Howler monkey",
+   "license": "CC BY 3.0",
+   "artist": "David O'Hara",
+   "page": "https://commons.wikimedia.org/wiki/File%3AHowler_monkey.ogg",
+   "secs": 8.0
+  },
+  {
+   "file": "monkey-2.mp3",
+   "title": "Brown woolly monkey alarm call",
+   "license": "CC BY-SA 4.0",
+   "artist": "Kai Medina (Mk170101)",
+   "page": "https://commons.wikimedia.org/wiki/File%3ABrown_woolly_monkey_alarm_call.wav",
+   "secs": 8.0
+  }
+ ],
+ "elephant": [
+  {
+   "file": "elephant-1.mp3",
+   "title": "Bee-Threat-Elicits-Alarm-Call-in-African-Elephants-pone.0010346.s003",
+   "license": "CC BY 2.5",
+   "artist": "King L, Soltis J, Douglas-Hamilton I, Savage A, Vollrath F",
+   "page": "https://commons.wikimedia.org/wiki/File%3ABee-Threat-Elicits-Alarm-Call-in-African-Elephants-pone.0010346.s003.ogg",
+   "secs": 5.2
+  }
+ ]
+}

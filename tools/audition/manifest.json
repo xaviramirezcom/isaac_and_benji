@@ -1,0 +1,330 @@
+{
+ "dog": [
+  {
+   "file": "dog-1.mp3",
+   "title": "2 dogs barking",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/2-dogs-barking-s0868.html",
+   "secs": 8.0
+  },
+  {
+   "file": "dog-2.mp3",
+   "title": "Barking dog 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/barking-dog-2-s2954.html",
+   "secs": 8.0
+  },
+  {
+   "file": "dog-3.mp3",
+   "title": "Barking dog inside",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/barking-dog-inside-s0112.html",
+   "secs": 8.0
+  },
+  {
+   "file": "dog-4.mp3",
+   "title": "Barking dog",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/barking-dog-s0916.html",
+   "secs": 8.0
+  }
+ ],
+ "cat": [
+  {
+   "file": "cat-1.mp3",
+   "title": "Cat complaining",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/cat-complaining-s0658.html",
+   "secs": 8.0
+  },
+  {
+   "file": "cat-2.mp3",
+   "title": "Meow of a pleading cat",
+   "license": "Public domain",
+   "artist": "Heismark",
+   "page": "https://commons.wikimedia.org/wiki/File%3AMeow_of_a_pleading_cat.oga",
+   "secs": 8.0
+  },
+  {
+   "file": "cat-3.mp3",
+   "title": "Felis silvestris catus meows",
+   "license": "CC BY-SA 3.0",
+   "artist": "Tobias Puderer",
+   "page": "https://commons.wikimedia.org/wiki/File%3AFelis_silvestris_catus_meows.ogg",
+   "secs": 8.0
+  },
+  {
+   "file": "cat-4.mp3",
+   "title": "Audio file of cat meowing",
+   "license": "CC BY-SA 4.0",
+   "artist": "Yair Haklai",
+   "page": "https://commons.wikimedia.org/wiki/File%3AAudio_file_of_cat_meowing.ogg",
+   "secs": 8.0
+  }
+ ],
+ "cow": [
+  {
+   "file": "cow-1.mp3",
+   "title": "Cow moos",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/cow-moos-s0546.html",
+   "secs": 8.0
+  },
+  {
+   "file": "cow-2.mp3",
+   "title": "Moo",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/moo-s0845.html",
+   "secs": 8.0
+  },
+  {
+   "file": "cow-3.mp3",
+   "title": "Barn with cows 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/barn-with-cows-1-s0991.html",
+   "secs": 8.0
+  }
+ ],
+ "sheep": [
+  {
+   "file": "sheep-1.mp3",
+   "title": "Herd of 300 sheep 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/herd-of-300-sheep-1-s2971.html",
+   "secs": 8.0
+  },
+  {
+   "file": "sheep-2.mp3",
+   "title": "Herd of 300 sheep 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/herd-of-300-sheep-2-s2972.html",
+   "secs": 8.0
+  },
+  {
+   "file": "sheep-3.mp3",
+   "title": "Flock sheep and cows",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/flock-sheep-and-cows-s3220.html",
+   "secs": 8.0
+  },
+  {
+   "file": "sheep-4.mp3",
+   "title": "Sheep bleating",
+   "license": "Public domain",
+   "artist": "earthcalling",
+   "page": "https://commons.wikimedia.org/wiki/File%3ASheep_bleating.ogg",
+   "secs": 8.0
+  }
+ ],
+ "goat": [
+  {
+   "file": "goat-1.mp3",
+   "title": "Dwarf goat bleating",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/dwarf-goat-bleating-s0880.html",
+   "secs": 8.0
+  },
+  {
+   "file": "goat-2.mp3",
+   "title": "Goat and young goat",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/goat-and-young-goat-s1377.html",
+   "secs": 8.0
+  }
+ ],
+ "horse": [
+  {
+   "file": "horse-1.mp3",
+   "title": "Neighing horse 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/neighing-horse-2-s0859.html",
+   "secs": 8.0
+  },
+  {
+   "file": "horse-2.mp3",
+   "title": "Horse neighbors",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/horse-neighbors-s0511.html",
+   "secs": 8.0
+  }
+ ],
+ "duck": [
+  {
+   "file": "duck-1.mp3",
+   "title": "Ducks",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/ducks-s0276.html",
+   "secs": 8.0
+  }
+ ],
+ "rooster": [
+  {
+   "file": "rooster-1.mp3",
+   "title": "Cock song 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/cock-song-2-s0441.html",
+   "secs": 8.0
+  },
+  {
+   "file": "rooster-2.mp3",
+   "title": "Cockerel first song",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/cockerel-first-song-s0955.html",
+   "secs": 8.0
+  },
+  {
+   "file": "rooster-3.mp3",
+   "title": "Crowing 4",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/crowing-4-s0704.html",
+   "secs": 8.0
+  },
+  {
+   "file": "rooster-4.mp3",
+   "title": "Rooster",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/rooster-s0104.html",
+   "secs": 6.0
+  }
+ ],
+ "chicken": [
+  {
+   "file": "chicken-1.mp3",
+   "title": "Hen lays 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/hen-lays-1-s0975.html",
+   "secs": 8.0
+  },
+  {
+   "file": "chicken-2.mp3",
+   "title": "Hen lays 3",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/hen-lays-3-s0977.html",
+   "secs": 8.0
+  },
+  {
+   "file": "chicken-3.mp3",
+   "title": "Hens lays",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/hens-lays-s0978.html",
+   "secs": 8.0
+  },
+  {
+   "file": "chicken-4.mp3",
+   "title": "Hen scared",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/hen-scared-s1040.html",
+   "secs": 6.0
+  }
+ ],
+ "donkey": [
+  {
+   "file": "donkey-1.mp3",
+   "title": "Donkey braying 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/donkey-braying-1-s1549.html",
+   "secs": 8.0
+  },
+  {
+   "file": "donkey-2.mp3",
+   "title": "Donkey braying 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/donkey-braying-2-s1550.html",
+   "secs": 5.7
+  },
+  {
+   "file": "donkey-3.mp3",
+   "title": "Donkey braying 3",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/donkey-braying-3-s1551.html",
+   "secs": 8.0
+  },
+  {
+   "file": "donkey-4.mp3",
+   "title": "Donkeys braying",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/donkeys-braying-s1548.html",
+   "secs": 8.0
+  }
+ ],
+ "frog": [
+  {
+   "file": "frog-1.mp3",
+   "title": "Frogs 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/frogs-1-s0997.html",
+   "secs": 8.0
+  },
+  {
+   "file": "frog-2.mp3",
+   "title": "Frogs 2",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/frogs-2-s0998.html",
+   "secs": 8.0
+  },
+  {
+   "file": "frog-3.mp3",
+   "title": "One frog",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/one-frog-s0819.html",
+   "secs": 8.0
+  },
+  {
+   "file": "frog-4.mp3",
+   "title": "Song of the common midwife toad 1",
+   "license": "CC0",
+   "artist": "Joseph Sardin (BigSoundBank)",
+   "page": "https://bigsoundbank.com/song-of-the-common-midwife-toad-1-s1053.html",
+   "secs": 8.0
+  }
+ ],
+ "lion": [
+  {
+   "file": "lion-1.mp3",
+   "title": "Lion Mad",
+   "license": "CC BY-SA 4.0",
+   "artist": "Bilberryerer",
+   "page": "https://commons.wikimedia.org/wiki/File%3ALion_Mad.ogg",
+   "secs": 8.0
+  },
+  {
+   "file": "lion-2.mp3",
+   "title": "Lion raring-sound1TamilNadu178",
+   "license": "Public domain",
+   "artist": "த*உழவன்",
+   "page": "https://commons.wikimedia.org/wiki/File%3ALion_raring-sound1TamilNadu178.ogg",
+   "secs": 8.0
+  }
+ ]
+}

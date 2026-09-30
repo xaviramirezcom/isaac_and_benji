@@ -1,2 +1,4 @@
 .DS_Store
 .claude/
+tools/audition/*.mp3
+tools/audition2/*.mp3
