@@ -276,14 +276,18 @@ function buildScene(mapCanvas) {
   camera.position.setLength(fitDist);
 }
 
+// Spotlight: dim everything except the selected country, then draw a thin crisp line around it.
 function drawHighlight(c) {
   const W = hlCtx.canvas.width, H = hlCtx.canvas.height;
   hlCtx.clearRect(0, 0, W, H);
-  if (!c) { hlTex.needsUpdate = true; return; }
-  hlCtx.lineJoin = 'round';
-  const k = W / 2048;
-  for (const [w, color, blur] of [[12, 'rgba(0,30,90,.45)', 0], [7, '#ffffff', 8], [3, '#ffd94d', 0]]) {
-    hlCtx.lineWidth = w * k; hlCtx.shadowBlur = blur * k; hlCtx.strokeStyle = color; hlCtx.shadowColor = '#fff';
+  if (c) {
+    hlCtx.fillStyle = 'rgba(6, 22, 70, .5)';
+    hlCtx.fillRect(0, 0, W, H);
+    hlCtx.globalCompositeOperation = 'destination-out';
+    hlCtx.fillStyle = '#000';
+    for (const p of c.polys) { trace(hlCtx, p.rings, W, H); hlCtx.fill('evenodd'); }
+    hlCtx.globalCompositeOperation = 'source-over';
+    hlCtx.lineJoin = 'round'; hlCtx.strokeStyle = '#fff'; hlCtx.lineWidth = W / 2048 * 2.4;
     for (const p of c.polys) { trace(hlCtx, p.rings, W, H); hlCtx.stroke(); }
   }
   hlTex.needsUpdate = true;
@@ -328,7 +332,6 @@ function frame(now) {
   // keep a finger drag roughly 1:1 with the surface, whatever the zoom
   controls.rotateSpeed = Math.tan(rad(FOV) / 2) * (camera.position.length() - 1) / Math.PI * 1.05;
   controls.update(dt);
-  if (selected) highlight.material.opacity = 0.8 + 0.2 * Math.sin(now / 220);
   renderer.render(scene, camera);
 }
 
