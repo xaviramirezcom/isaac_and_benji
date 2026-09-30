@@ -28,6 +28,7 @@ sw.js, manifest.webmanifest    offline + installable app
 data/ flags/ vendor/ icons/    downloaded once by tools/fetch_data.py and tools/make_icons.py
 js/animals-game.js             Benji's animals game (data/animals.json, sounds/animals/, images/animals/)
 tools/build_animal_audio.py    finds real recordings (BigSoundBank CC0, Wikimedia Commons), trims them, builds audition pages
+tools/fetch_animal_images.py    downloads the animal pictures (Microsoft Fluent Emoji 3D, MIT)
 tools/pick_animals.py          copies the clips chosen by ear into sounds/animals/ and writes data/animals.json
 ```
 

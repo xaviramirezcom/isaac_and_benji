@@ -1,6 +1,6 @@
 // Offline support: cache everything the app needs on first visit.
 // App code (html/js/css) is network-first so updates show up immediately; big static files are cache-first.
-const CACHE = 'isaac-benji-v4';
+const CACHE = 'isaac-benji-v6';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css', 'js/app.js', 'js/map-game.js',
   'js/animals-game.js', 'data/animals.json', 'vendor/three.module.min.js', 'vendor/OrbitControls.js', 'vendor/topojson-client.min.js',
@@ -16,7 +16,7 @@ self.addEventListener('install', (event) => {
       const codes = [...new Set(Object.values(countries).map((c) => c.cca2))];
       await cache.addAll(codes.map((c) => `flags/${c}.svg`));
       const animals = await (await fetch('data/animals.json')).json();
-      await cache.addAll(animals.flatMap((a) => [a.sound, `images/animals/${a.id}.svg`]));
+      await cache.addAll(animals.flatMap((a) => [a.sound, `images/animals/${a.id}.png`]));
     } catch (e) { /* flags will be cached as they are used */ }
     self.skipWaiting();
   })());

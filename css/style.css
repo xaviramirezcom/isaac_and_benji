@@ -143,7 +143,7 @@ button, a { touch-action: manipulation; font: inherit; }
   background: var(--animal-bg, #ffe9b8); transition: background .4s; padding-top: calc(env(safe-area-inset-top) + 16px); padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
 }
 .animals-top { position: absolute; top: calc(env(safe-area-inset-top) + 16px); right: calc(env(safe-area-inset-right) + 16px); display: flex; align-items: center; gap: 12px; z-index: 5; }
-.animals .lang { position: static; }
+.animals-top .lang { position: static; }
 .round-btn.small { width: 52px; height: 52px; font-size: 24px; }
 .stage { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: clamp(8px, 2vh, 24px); padding: 72px 16px 8px; }
 .animal-pic {
@@ -179,3 +179,22 @@ button, a { touch-action: manipulation; font: inherit; }
   .actions { padding-bottom: 4px; } .big-btn { width: 72px; height: 72px; } .action span { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .animal-pic.tap { animation: none; } }
+
+/* ---------- animals matrix ---------- */
+.grid-view { background: #fff3d6; display: flex; flex-direction: column; }
+.grid-scroll { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: calc(env(safe-area-inset-top) + 84px) 16px calc(env(safe-area-inset-bottom) + 24px); }
+.animal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(clamp(96px, 26vw, 170px), 1fr)); gap: clamp(12px, 3vw, 24px); max-width: 980px; margin: 0 auto; }
+.animal-tile {
+  background: var(--bg, #fff); border-radius: 28px; padding: 10px 6px 12px; text-decoration: none; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; gap: 4px; aspect-ratio: 1 / 1.08; justify-content: center;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .12), 0 12px 20px rgba(0, 0, 0, .1); transition: transform .1s, box-shadow .1s;
+}
+.animal-tile:active { transform: translateY(5px); box-shadow: 0 1px 0 rgba(0, 0, 0, .12); }
+.animal-tile img { width: 72%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.animal-tile span { font-weight: 800; font-size: clamp(1rem, 3.6vw, 1.35rem); }
+.stage { touch-action: pan-y; }
+.stage.from-right .animal-pic, .stage.from-right .animal-name { animation: slideR .3s ease-out; }
+.stage.from-left .animal-pic, .stage.from-left .animal-name { animation: slideL .3s ease-out; }
+@keyframes slideR { from { transform: translateX(70px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes slideL { from { transform: translateX(-70px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .stage.from-right .animal-pic, .stage.from-left .animal-pic, .stage.from-right .animal-name, .stage.from-left .animal-name { animation: none; } }

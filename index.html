@@ -43,9 +43,21 @@
       </div>
     </section>
 
-    <!-- Animals game -->
-    <section id="view-animals" class="view animals" hidden aria-label="Animals">
+    <!-- Animals: pick one from the matrix -->
+    <section id="view-grid" class="view grid-view" hidden aria-label="All animals">
       <a class="round-btn back" href="#/benji" aria-label="Back">←</a>
+      <div class="animals-top">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="on">EN</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
+      </div>
+      <div class="grid-scroll"><div class="animal-grid" id="animal-grid"></div></div>
+    </section>
+
+    <!-- Animals: one animal at a time -->
+    <section id="view-animals" class="view animals" hidden aria-label="Animal">
+      <a class="round-btn back" href="#/benji/animals" aria-label="All animals">←</a>
       <div class="animals-top">
         <div class="lang" role="group" aria-label="Language">
           <button type="button" data-lang="en" class="on">EN</button>
@@ -69,7 +81,7 @@
         <div class="credits-card">
           <button class="panel-close" id="credits-close" type="button" aria-label="Close">✕</button>
           <h3>Credits</h3>
-          <p>Pictures: Noto Emoji by Google (Apache 2.0).</p>
+          <p>Pictures: Fluent Emoji (3D) by Microsoft, MIT licence.</p>
           <ul id="credits-list"></ul>
         </div>
       </div>
