@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Isaac &amp; Benji</title>
+  <meta name="theme-color" content="#7fd1ff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Isaac & Benji">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <script src="vendor/topojson-client.min.js" defer></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <main id="app">
+
+    <!-- Who is playing? -->
+    <section id="view-home" class="view home" aria-label="Who is playing?">
+      <div class="picker">
+        <a class="kid-card isaac" href="#/isaac"><span class="avatar" aria-hidden="true">🌍</span><span class="kid-name">Isaac</span></a>
+        <a class="kid-card benji" href="#/benji"><span class="avatar" aria-hidden="true">🧸</span><span class="kid-name">Benji</span></a>
+      </div>
+    </section>
+
+    <!-- Isaac's games -->
+    <section id="view-isaac" class="view menu isaac-bg" hidden aria-label="Isaac's games">
+      <a class="round-btn back" href="#/" aria-label="Back">←</a>
+      <div class="tiles">
+        <a class="game-tile" href="#/isaac/map"><span class="emoji" aria-hidden="true">🗺️</span><span>World Map</span></a>
+      </div>
+    </section>
+
+    <!-- Benji (games coming) -->
+    <section id="view-benji" class="view menu benji-bg" hidden aria-label="Benji's games">
+      <a class="round-btn back" href="#/" aria-label="Back">←</a>
+      <div class="soon"><span class="emoji" aria-hidden="true">🧸</span><p>Benji's games are coming soon</p></div>
+    </section>
+
+    <!-- World map game -->
+    <section id="view-map" class="view map" hidden aria-label="World map">
+      <canvas id="globe" aria-label="Globe of the world"></canvas>
+
+      <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
+      <button class="round-btn dice" id="btn-random" type="button" aria-label="Random country">🎲</button>
+      <div class="zoom">
+        <button class="round-btn" id="btn-zoom-in" type="button" aria-label="Zoom in">＋</button>
+        <button class="round-btn" id="btn-zoom-out" type="button" aria-label="Zoom out">－</button>
+      </div>
+
+      <aside class="panel" id="panel" aria-live="polite" aria-hidden="true">
+        <button class="panel-close" id="panel-close" type="button" aria-label="Close">✕</button>
+        <img class="panel-flag" id="panel-flag" alt="">
+        <div class="panel-info">
+          <h2 class="panel-name" id="panel-name"></h2>
+          <div class="panel-cap">
+            <span class="cap-icon" aria-hidden="true">🏛️</span>
+            <div><small id="panel-cap-label">Capital</small><strong id="panel-cap"></strong></div>
+          </div>
+        </div>
+        <button class="speak round-btn" id="btn-speak" type="button" aria-label="Say it out loud">🔊</button>
+      </aside>
+
+      <div class="loading" id="loading">
+        <div class="spinner" aria-hidden="true">🌍</div>
+        <div class="bar"><i id="loading-bar"></i></div>
+        <p id="loading-text">Loading the world…</p>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>
