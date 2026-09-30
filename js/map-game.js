@@ -17,7 +17,6 @@ const TEXT = {
   es: { capital: 'Capital', none: 'Sin capital', pole: '¿Quién vive aquí?', penguins: '¡Pingüinos! 🐧', flagOf: 'Bandera de', speech: 'es-ES' },
 };
 let lang = 'en';
-try { if (localStorage.getItem('lang') === 'es') lang = 'es'; } catch (e) { /* private mode: default to English */ }
 
 const FOV = 38;
 const MIN_DIST = 1.5;
@@ -529,7 +528,6 @@ function showInfo() {
 
 function setLang(l) {
   lang = l;
-  try { localStorage.setItem('lang', l); } catch (e) { /* not saved */ }
   document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
   speechSynthesis?.cancel();
   if (selected) showInfo();

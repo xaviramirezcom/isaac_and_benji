@@ -13,7 +13,6 @@ const UI = {
 const BACKGROUNDS = ['#ffe9b8', '#d6f0ff', '#e3f6d5', '#ffdfe6', '#e9e0ff', '#ffe2c7'];
 
 let animals = [], index = 0, lang = 'en', audio = null, bound = false, loading = null;
-try { if (localStorage.getItem('lang') === 'es') lang = 'es'; } catch (e) { /* default English */ }
 
 export async function enter() {
   loading ??= fetch('data/animals.json', { cache: 'no-cache' }).then((r) => r.json()).then((list) => {
@@ -66,7 +65,6 @@ function sayName() {
 
 function setLang(l) {
   lang = l;
-  try { localStorage.setItem('lang', l); } catch (e) { /* not saved */ }
   root.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
   els.lblName.textContent = UI[l].name; els.lblSound.textContent = UI[l].sound; els.lblNext.textContent = UI[l].next;
   if (animals.length) { const a = animals[index]; els.name.textContent = a[l]; els.img.alt = a[l]; }
