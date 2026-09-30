@@ -102,6 +102,15 @@ button, a { touch-action: manipulation; font: inherit; }
 .cap-icon { font-size: clamp(1.8rem, 5vw, 2.6rem); }
 .panel-cap small { display: block; text-transform: uppercase; letter-spacing: .08em; opacity: .6; font-weight: 800; font-size: .78rem; }
 .panel-cap strong { font-size: clamp(1.3rem, 4.5vw, 2.1rem); line-height: 1.1; }
+.lang {
+  position: absolute; top: -24px; left: 22px; display: flex; padding: 4px; gap: 2px; background: #fff; border-radius: 99px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, .15), 0 8px 16px rgba(0, 0, 0, .22);
+}
+.lang button {
+  min-width: 58px; height: 44px; padding: 0 12px; border: 0; border-radius: 99px; background: transparent; color: var(--ink);
+  font-size: 1.05rem; font-weight: 800; letter-spacing: .04em; cursor: pointer; transition: background .15s, color .15s;
+}
+.lang button.on { background: #3b82f6; color: #fff; }
 .speak { flex: none; background: #ffd94d; }
 .panel-close {
   position: absolute; top: -14px; right: -4px; width: 44px; height: 44px; border-radius: 50%; border: 0;

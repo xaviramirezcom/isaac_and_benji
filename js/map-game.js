@@ -12,6 +12,13 @@ const ui = {
   cap: $('#panel-cap'), capLabel: $('#panel-cap-label'),
 };
 
+const TEXT = {
+  en: { capital: 'Capital', none: 'No capital city', pole: 'Who lives here?', penguins: 'Penguins! 🐧', flagOf: 'Flag of', speech: 'en-US' },
+  es: { capital: 'Capital', none: 'Sin capital', pole: '¿Quién vive aquí?', penguins: '¡Pingüinos! 🐧', flagOf: 'Bandera de', speech: 'es-ES' },
+};
+let lang = 'en';
+try { if (localStorage.getItem('lang') === 'es') lang = 'es'; } catch (e) { /* private mode: default to English */ }
+
 const FOV = 38;
 const MIN_DIST = 1.5;
 // Shapes in the map data that have no ISO code of their own.
@@ -68,8 +75,8 @@ async function init() {
 
   progress(0.02, 'Loading the world…');
   const [world, info] = await Promise.all([
-    fetch('data/world-50m.json').then((r) => r.json()),
-    fetch('data/countries.json').then((r) => r.json()),
+    fetch('data/world-50m.json', { cache: 'no-cache' }).then((r) => r.json()),
+    fetch('data/countries.json', { cache: 'no-cache' }).then((r) => r.json()),
   ]);
   countries = buildCountries(topojson.feature(world, world.objects.countries).features, info);
 
@@ -103,7 +110,7 @@ function buildCountries(features, info) {
     const meta = info[key];
     if (!meta) { decor.push({ polys, cca2: null, color: '#e3e8ef' }); continue; }
     let c = byKey.get(key);
-    if (!c) { c = { key, name: meta.name, cca2: meta.cca2, capital: meta.capital, polys: [] }; byKey.set(key, c); }
+    if (!c) { c = { key, name: meta.name, nameEs: meta.nameEs, cca2: meta.cca2, capital: meta.capital, capitalEs: meta.capitalEs, polys: [] }; byKey.set(key, c); }
     c.polys.push(...polys);
   }
   const list = [...byKey.values()];
@@ -495,12 +502,7 @@ function select(c) {
   drawHighlight(c);
   speechSynthesis?.cancel();
 
-  ui.flag.src = `flags/${c.cca2}.svg`;
-  ui.flag.alt = `Flag of ${c.name}`;
-  ui.name.textContent = c.name;
-  if (c.cca2 === 'aq') { ui.capLabel.textContent = 'Who lives here?'; ui.cap.textContent = 'Penguins! 🐧'; }
-  else if (!c.capital) { ui.capLabel.textContent = 'Capital'; ui.cap.textContent = 'No capital city'; }
-  else { ui.capLabel.textContent = 'Capital'; ui.cap.textContent = c.capital; }
+  showInfo();
   ui.panel.classList.remove('open'); void ui.panel.offsetWidth; // restart the pop animation
   ui.panel.classList.add('open');
   ui.panel.setAttribute('aria-hidden', 'false');
@@ -512,6 +514,25 @@ function select(c) {
   // zoom so the country fills a comfortable part of the screen (narrow screens need to sit further back)
   const ext = rad(clamp(c.span, 2, 90) * 3) / Math.min(1, camera.aspect);
   flyTo(lonLatToVec3(c.lon, c.lat), 1 + ext / (2 * Math.tan(rad(FOV) / 2)));
+}
+
+function showInfo() {
+  const c = selected, t = TEXT[lang], es = lang === 'es';
+  ui.flag.src = `flags/${c.cca2}.svg`;
+  const name = es ? c.nameEs : c.name;
+  ui.flag.alt = `${t.flagOf} ${name}`;
+  ui.name.textContent = name;
+  if (c.cca2 === 'aq') { ui.capLabel.textContent = t.pole; ui.cap.textContent = t.penguins; }
+  else if (!c.capital) { ui.capLabel.textContent = t.capital; ui.cap.textContent = t.none; }
+  else { ui.capLabel.textContent = t.capital; ui.cap.textContent = es ? c.capitalEs : c.capital; }
+}
+
+function setLang(l) {
+  lang = l;
+  try { localStorage.setItem('lang', l); } catch (e) { /* not saved */ }
+  document.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
+  speechSynthesis?.cancel();
+  if (selected) showInfo();
 }
 
 function deselect() {
@@ -526,10 +547,11 @@ function deselect() {
 function speak() {
   if (!selected || !('speechSynthesis' in window)) return;
   speechSynthesis.cancel();
-  const text = selected.capital && selected.cca2 !== 'aq'
-    ? `${selected.name}. The capital is ${selected.capital}.` : selected.name;
+  const es = lang === 'es', c = selected;
+  const name = es ? c.nameEs : c.name, cap = es ? c.capitalEs : c.capital;
+  const text = cap && c.cca2 !== 'aq' ? (es ? `${name}. La capital es ${cap}.` : `${name}. The capital is ${cap}.`) : name;
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'en-US'; u.rate = 0.8;
+  u.lang = TEXT[lang].speech; u.rate = 0.8;
   speechSynthesis.speak(u);
 }
 
@@ -558,6 +580,8 @@ function bindUi() {
 
   $('#panel-close').addEventListener('click', deselect);
   $('#btn-speak').addEventListener('click', speak);
+  document.querySelectorAll('.lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  setLang(lang);
   $('#btn-random').addEventListener('click', randomCountry);
   $('#btn-zoom-in').addEventListener('click', () => zoomBy(0.55));
   $('#btn-zoom-out').addEventListener('click', () => zoomBy(1 / 0.55));
