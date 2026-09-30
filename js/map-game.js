@@ -86,7 +86,6 @@ async function init() {
   await new Promise((r) => setTimeout(r, 30)); // let the progress bar paint
   const mapCanvas = paintWorld(W, W / 2);
   buildIdMap(W / 2, W / 4);
-  for (const c of countries) { c.flagImg?.revoke(); c.flagImg = null; }
 
   buildScene(mapCanvas);
   bindUi();
@@ -181,6 +180,7 @@ function paintWorld(W, H) {
   for (const c2 of countries) {
     const flag = c2.flagImg?.img;
     const avg = flag ? averageColor(flag) : (c2.color ?? '#e3e8ef');
+    c2.avg = avg;
     // One flag bitmap per country, sized for its biggest piece, so the SVG is only rasterised once.
     let bitmap = null;
     if (flag) {
@@ -262,6 +262,8 @@ function buildScene(mapCanvas) {
     }),
   ));
 
+  buildDetail();
+
   controls = new OrbitControls(camera, canvas);
   controls.enablePan = false;
   controls.enableDamping = true; controls.dampingFactor = 0.1;
@@ -314,6 +316,111 @@ function applyViewShift(force) {
   }
 }
 
+// ---------------------------------------------------------------- sharp detail layer
+// The world texture is capped (~4096px) so it stays safe on phones. When zoomed in and the globe has settled,
+// we redraw just the visible patch at high resolution straight from the vector flags and lay it on top.
+
+const DETAIL = 3072;
+const DETAIL_MAX_DIST = 2.6;
+const detail = { mesh: null, ctx: null, tex: null, key: '', lastMove: 0, lastPos: new THREE.Vector3() };
+
+function buildDetail() {
+  const c = document.createElement('canvas'); c.width = c.height = DETAIL;
+  detail.ctx = c.getContext('2d');
+  detail.tex = new THREE.CanvasTexture(c);
+  detail.tex.colorSpace = THREE.SRGBColorSpace;
+  detail.tex.generateMipmaps = false; detail.tex.minFilter = THREE.LinearFilter;
+  detail.tex.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy());
+  detail.mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ map: detail.tex }));
+  detail.mesh.visible = false;
+  scene.add(detail.mesh);
+}
+
+function updateDetail(now) {
+  const pos = camera.position;
+  if (pos.distanceToSquared(detail.lastPos) > 1e-8) { detail.lastMove = now; detail.lastPos.copy(pos); }
+  if (now - detail.lastMove < 220 || anim.active) return; // wait until the globe settles
+
+  const d = pos.length();
+  const v = d - 1, tanHalf = Math.tan(rad(FOV) / 2);
+  const reach = THREE.MathUtils.radToDeg(v * tanHalf * Math.max(1, camera.aspect)) * 1.45; // half-size of patch, degrees
+  if (d > DETAIL_MAX_DIST || reach > 55) { detail.mesh.visible = false; detail.key = ''; return; }
+
+  const dir = pos.clone().normalize();
+  const lat0 = THREE.MathUtils.radToDeg(Math.asin(dir.y));
+  const lon0 = THREE.MathUtils.radToDeg(Math.atan2(-dir.z, dir.x));
+  const key = [lon0.toFixed(1), lat0.toFixed(1), d.toFixed(2), selected?.idx ?? 0, camera.aspect.toFixed(2)].join('|');
+  if (key === detail.key) return;
+  detail.key = key;
+
+  const reachLon = Math.min(85, reach / Math.max(0.15, Math.cos(rad(Math.min(85, Math.abs(lat0) + reach * 0.5)))));
+  const lonLo = lon0 - reachLon, lonHi = lon0 + reachLon;
+  const latLo = Math.max(-90, lat0 - reach), latHi = Math.min(90, lat0 + reach);
+
+  drawDetail(lonLo, lonHi, latLo, latHi);
+  detail.mesh.geometry.dispose();
+  detail.mesh.geometry = new THREE.SphereGeometry(1.003, 96, 48, rad(lonLo + 180), rad(lonHi - lonLo), rad(90 - latHi), rad(latHi - latLo));
+  detail.tex.needsUpdate = true;
+  detail.mesh.visible = true;
+}
+
+function drawDetail(lonLo, lonHi, latLo, latHi) {
+  const S = DETAIL, ctx = detail.ctx;
+  const sx = S / (lonHi - lonLo), sy = S / (latHi - latLo);
+  const X = (lon) => (lon - lonLo) * sx, Y = (lat) => (latHi - lat) * sy;
+  const offsets = [-360, 0, 360];
+
+  ctx.clearRect(0, 0, S, S);
+  ctx.fillStyle = '#58b6f7'; ctx.fillRect(0, 0, S, S);
+  ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 3; ctx.beginPath();
+  for (let lon = Math.ceil(lonLo / 30) * 30; lon <= lonHi; lon += 30) { ctx.moveTo(X(lon), 0); ctx.lineTo(X(lon), S); }
+  for (let lat = Math.ceil(latLo / 30) * 30; lat <= latHi; lat += 30) { if (Math.abs(lat) <= 60) { ctx.moveTo(0, Y(lat)); ctx.lineTo(S, Y(lat)); } }
+  ctx.stroke();
+
+  const traceAt = (rings, off) => {
+    ctx.beginPath();
+    for (const ring of rings) {
+      ring.forEach(([lon, lat], i) => (i ? ctx.lineTo(X(lon + off), Y(lat)) : ctx.moveTo(X(lon + off), Y(lat))));
+      ctx.closePath();
+    }
+  };
+  const visible = [];
+  for (const c of countries) for (const p of c.polys) for (const off of offsets) {
+    if (p.x1 + off < lonLo || p.x0 + off > lonHi || p.y1 < latLo || p.y0 > latHi) continue;
+    if (p.w * sx < 0.6 && p.h * sy < 0.6) continue;
+    visible.push([c, p, off]);
+  }
+
+  for (const [c, p, off] of visible) {
+    const img = c.flagImg?.img;
+    const bx = X(p.x0 + off), by = Y(p.y1), bw = p.w * sx, bh = p.h * sy;
+    traceAt(p.rings, off);
+    if (!img || bw < 3 || bh < 3) { ctx.fillStyle = c.avg ?? '#e3e8ef'; ctx.fill('evenodd'); continue; }
+    // only rasterise the part of the flag that is actually on screen
+    const x1 = Math.max(0, bx), y1 = Math.max(0, by), x2 = Math.min(S, bx + bw), y2 = Math.min(S, by + bh);
+    if (x2 <= x1 || y2 <= y1) continue;
+    ctx.save(); ctx.clip('evenodd');
+    ctx.drawImage(img, ((x1 - bx) / bw) * 640, ((y1 - by) / bh) * 480, ((x2 - x1) / bw) * 640, ((y2 - y1) / bh) * 480, x1, y1, x2 - x1, y2 - y1);
+    ctx.restore();
+  }
+
+  ctx.lineJoin = 'round'; ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(255,255,255,.9)';
+  for (const [, p, off] of visible) { traceAt(p.rings, off); ctx.stroke(); }
+
+  if (selected) { // same spotlight as the base layer: dim everything but the selected country
+    ctx.beginPath(); ctx.rect(0, 0, S, S);
+    for (const p of selected.polys) for (const off of offsets) {
+      for (const ring of p.rings) {
+        ring.forEach(([lon, lat], i) => (i ? ctx.lineTo(X(lon + off), Y(lat)) : ctx.moveTo(X(lon + off), Y(lat))));
+        ctx.closePath();
+      }
+    }
+    ctx.fillStyle = 'rgba(6, 22, 70, .5)'; ctx.fill('evenodd');
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 4;
+    for (const p of selected.polys) for (const off of offsets) { traceAt(p.rings, off); ctx.stroke(); }
+  }
+}
+
 // ---------------------------------------------------------------- frame loop
 
 function frame(now) {
@@ -332,6 +439,7 @@ function frame(now) {
   // keep a finger drag roughly 1:1 with the surface, whatever the zoom
   controls.rotateSpeed = Math.tan(rad(FOV) / 2) * (camera.position.length() - 1) / Math.PI * 1.05;
   controls.update(dt);
+  updateDetail(now);
   renderer.render(scene, camera);
 }
 
