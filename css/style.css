@@ -103,7 +103,7 @@ button, a { touch-action: manipulation; font: inherit; }
 .panel-cap small { display: block; text-transform: uppercase; letter-spacing: .08em; opacity: .6; font-weight: 800; font-size: .78rem; }
 .panel-cap strong { font-size: clamp(1.3rem, 4.5vw, 2.1rem); line-height: 1.1; }
 .lang {
-  position: absolute; top: -24px; left: 22px; display: flex; padding: 4px; gap: 2px; background: #fff; border-radius: 99px;
+  position: absolute; bottom: calc(100% + 10px); left: 8px; display: flex; padding: 4px; gap: 2px; background: #fff; border-radius: 99px;
   box-shadow: 0 4px 0 rgba(0, 0, 0, .15), 0 8px 16px rgba(0, 0, 0, .22);
 }
 .lang button {
@@ -127,11 +127,11 @@ button, a { touch-action: manipulation; font: inherit; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .bar { width: min(60vw, 320px); height: 14px; border-radius: 99px; background: rgba(255, 255, 255, .25); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: #ffd94d; border-radius: 99px; transition: width .15s; }
-/* phones in portrait: the speaker button floats on the panel's top edge to leave room for the text */
+/* phones in portrait: the speaker button sits just above the card to leave room for the text */
 @media (max-width: 520px) {
   .panel { gap: 14px; padding: 14px; }
   .panel-flag { width: 104px; }
   .panel-name { font-size: clamp(1.4rem, 7vw, 2rem); }
-  .speak { position: absolute; top: -26px; right: 56px; width: 52px; height: 52px; font-size: 24px; }
+  .speak { position: absolute; bottom: calc(100% + 8px); right: 8px; width: 52px; height: 52px; font-size: 24px; }
 }
 @media (prefers-reduced-motion: reduce) { .spinner, .panel.open .panel-flag { animation: none; } }
