@@ -1,5 +1,6 @@
-// Offline support: cache everything the app needs on first visit, then serve from cache (refreshing in the background).
-const CACHE = 'isaac-benji-v1';
+// Offline support: cache everything the app needs on first visit.
+// App code (html/js/css) is network-first so updates show up immediately; big static files are cache-first.
+const CACHE = 'isaac-benji-v2';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css', 'js/app.js', 'js/map-game.js',
   'vendor/three.module.min.js', 'vendor/OrbitControls.js', 'vendor/topojson-client.min.js',
@@ -28,11 +29,14 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const req = event.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== location.origin) return;
+  const isCode = req.mode === 'navigate' || /\.(html|js|css|webmanifest)$/.test(url.pathname) || url.pathname.endsWith('/');
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(req, { ignoreSearch: true });
     const network = fetch(req).then((res) => { if (res.ok) cache.put(req, res.clone()); return res; }).catch(() => null);
+    if (isCode) return (await network) || cached || new Response('Offline', { status: 503 });
     return cached || (await network) || new Response('Offline', { status: 503 });
   })());
 });
