@@ -43,7 +43,7 @@ export function build() {
   const head = new THREE.Group();
   const cm = loft({ x0: 0.0, x1: 1.4, w: [[0.0, 0], [0.1, 0.36], [0.4, 0.55], [0.85, 0.62], [1.2, 0.54], [1.4, 0]], top: [[0.0, 0], [0.1, 0.2], [0.4, 0.34], [0.85, 0.5], [1.2, 0.54], [1.4, 0.2]], bot: [[0.0, 0], [0.4, 0.3], [1.0, 0.34], [1.4, 0]], yc: 0.05, n: 2.2, material: fur });
   head.add(cm);
-  head.add(hairs([cm], { count: 1800, length: 0.1, radius: 0.007, color: 0x2a221c, light: 0.6, back: 0.4, seed: 81 }));
+  head.add(hairs([cm], { count: 1800, length: 0.1, radius: 0.007, color: 0x080605, light: 0.04, back: 0.4, seed: 81 }));
   root.add(part('head', 'head', head, { en: 'Head & chest', es: 'Cabeza y pecho', dEn: 'Spiders have just two body parts: the head and chest are joined.', dEs: 'Las arañas tienen solo dos partes: la cabeza y el pecho van unidos.' }));
 
   const eyes = new THREE.Group();
@@ -72,7 +72,7 @@ export function build() {
   // ---- tummy (abdomen) + silk spinners
   const tummy = new THREE.Group();
   const am = loft({ x0: -1.65, x1: -0.1, w: [[-1.65, 0], [-1.55, 0.3], [-1.15, 0.58], [-0.65, 0.66], [-0.3, 0.48], [-0.1, 0]], top: [[-1.65, 0], [-1.55, 0.28], [-1.15, 0.58], [-0.65, 0.64], [-0.3, 0.44], [-0.1, 0]], bot: [[-1.65, 0], [-1.15, 0.5], [-0.65, 0.56], [-0.1, 0]], yc: 0.05, n: 2.1, material: abd });
-  tummy.add(am); tummy.add(hairs([am], { count: 1600, length: 0.1, radius: 0.007, color: 0x2a221c, light: 0.7, back: 0.8, seed: 82 }));
+  tummy.add(am); tummy.add(hairs([am], { count: 1600, length: 0.1, radius: 0.007, color: 0x080605, light: 0.04, back: 0.8, seed: 82 }));
   root.add(part('tummy', 'tummy', tummy, { en: 'Tummy', es: 'Abdomen', dEn: 'The back body part holds the stomach and the silk-making parts.', dEs: 'La parte de atrás guarda el estómago y las partes que hacen la seda.' }));
   const silk = new THREE.Group();
   for (const s of [-1, 1]) silk.add(blob(0.1, 0.05, 0.05, mat(0x2a221c, { roughness: 0.7 }), null, [16, 12])).children.at(-1).position.set(-1.66, -0.08, s * 0.07);
@@ -90,7 +90,7 @@ export function build() {
     const f = (v) => V(v.x, v.y, v.z * s);
     const L = leg({ hip: f(sp.hip), foot: f(sp.foot), tarsusDir: f(sp.td), tarsusLen: 0.5, pole: V(0, 0.8, 1.0 * s), femur: sp.fem, tibia: sp.tib, rFem: 0.1, rTib: 0.065, rTar: 0.04, material: legMat, spineMat, spines: 3, spurs: 0, tarsi: 3, femurBulge: 0.02 });
     const meshes = []; L.traverse((o) => { if (o.isMesh && o.geometry.type !== 'ConeGeometry') meshes.push(o); });
-    L.add(hairs(meshes.slice(0, 8), { count: 140, length: 0.1, radius: 0.007, color: 0x2a221c, light: 0.6, back: 0.2, seed: 90 + spec.indexOf(sp) * 2 + (s > 0 ? 1 : 0) }));
+    L.add(hairs(meshes.slice(0, 8), { count: 140, length: 0.1, radius: 0.007, color: 0x080605, light: 0.04, back: 0.2, seed: 90 + spec.indexOf(sp) * 2 + (s > 0 ? 1 : 0) }));
     const side = s < 0 ? 'left' : 'right';
     root.add(part(`leg-${sp.n}-${side}`, 'legs', L, { en: `${names[sp.n][0]} ${side} leg`, es: `Pata ${names[sp.n][1].toLowerCase()} ${s < 0 ? 'izquierda' : 'derecha'}`, dEn: sp.n === 'fourth' ? 'A strong back leg that pushes the spider into a big jump!' : 'A hairy leg with tiny claws for gripping.', dEs: sp.n === 'fourth' ? '¡Una pata fuerte de atrás que lanza a la araña en un gran salto!' : 'Una pata peluda con garritas diminutas para agarrarse.' }));
   }

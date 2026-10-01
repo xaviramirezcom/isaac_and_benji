@@ -24,15 +24,15 @@ export const categories = {
 
 function thoraxTex() {
   return canvasTex(512, 512, (x, w, h) => {
-    x.fillStyle = '#85847f'; x.fillRect(0, 0, w, h);
-    x.fillStyle = '#1f1e1c'; for (const v of [0.1, 0.19, 0.31, 0.4]) { x.fillRect(0, v * h - 11, w * 0.97, 22); }
+    x.fillStyle = '#4a4946'; x.fillRect(0, 0, w, h);
+    x.fillStyle = '#100f0e'; for (const v of [0.1, 0.19, 0.31, 0.4]) { x.fillRect(0, v * h - 11, w * 0.97, 22); }
     const id = x.getImageData(0, 0, w, h), d = id.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * 22; d[i] += n; d[i + 1] += n; d[i + 2] += n; } x.putImageData(id, 0, 0);
   });
 }
 function abdomenTex() {
   return canvasTex(1024, 256, (x, w, h) => {
-    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#6e6a54'); g.addColorStop(0.25, '#9a8f6a'); g.addColorStop(0.5, '#6e6a54'); g.addColorStop(1, '#4a4638'); x.fillStyle = g; x.fillRect(0, 0, w, h);
-    x.fillStyle = 'rgba(25,22,18,.8)'; x.fillRect(0, h * 0.24, w, 9);                                    // dark midline
+    const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#46422f'); g.addColorStop(0.25, '#6a604a'); g.addColorStop(0.5, '#46422f'); g.addColorStop(1, '#2c2a22'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.fillStyle = 'rgba(14,12,10,.9)'; x.fillRect(0, h * 0.24, w, 12);                                    // dark midline
     for (let i = 0; i < 5; i++) { const u = (i + 0.7) / 5.4 * w; const gr = x.createLinearGradient(u - 50, 0, u + 20, 0); gr.addColorStop(0, 'rgba(25,22,18,0)'); gr.addColorStop(1, 'rgba(25,22,18,.75)'); x.fillStyle = gr; x.fillRect(u - 50, 0, 70, h); }
     const id = x.getImageData(0, 0, w, h), d = id.data; for (let i = 0; i < d.length; i += 4) { const n = (Math.random() - 0.5) * 16; d[i] += n; d[i + 1] += n; d[i + 2] += n; } x.putImageData(id, 0, 0);
   });
@@ -42,10 +42,10 @@ export function build() {
   const root = new THREE.Group();
   const G = -0.95; root.userData.groundY = G - 0.02;
   const body = (map) => mat(0xffffff, { roughness: 0.55, clearcoat: 0.25, map, bumpMap: microBumpTex(41, 70), bumpScale: 0.9 });
-  const faceMat = mat(0x8e7a3c, { roughness: 0.6, bumpMap: microBumpTex(42, 60), bumpScale: 0.8 });
+  const faceMat = mat(0x5a4c26, { roughness: 0.6, bumpMap: microBumpTex(42, 60), bumpScale: 0.8 });
   const eyeMat = mat(0xa81414, { roughness: 0.1, clearcoat: 1, bumpMap: facetTex(), bumpScale: 1.2 });
   const legMat = mat(0x151210, { roughness: 0.5, clearcoat: 0.3 }), spineMat = mat(0x0a0807, { roughness: 0.6 });
-  const bristle = { color: 0x14110e, light: 0.1, spread: 0.2 };
+  const bristle = { color: 0x080706, light: 0.03, spread: 0.2 };
 
   // ---- head
   const head = new THREE.Group();
