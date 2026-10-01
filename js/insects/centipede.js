@@ -23,7 +23,8 @@ const N = 16, D = 0.42, G = -0.42;
 
 // Centre line of the body: segment i (-1 is the head) at amplitude `amp`, wave phase `ph`. Returns position + heading.
 function lay(i, amp, ph) {
-  const x = -D * i, k = 0.62, env = 0.55 + 0.45 * Math.min(1, (i + 2) / 6);
+  const x = i < 0 ? 0.14 : -D * i, k = 0.62, // the head sits snug against the first ring
+    env = 0.55 + 0.45 * Math.min(1, (i + 2) / 6);
   const z = amp * env * Math.sin(k * i - ph), dz = amp * env * k * Math.cos(k * i - ph); // dz/di
   return { x, z, phi: Math.atan2(dz, D) }; // heading about Y (the body points along +X, segments run toward -X)
 }
