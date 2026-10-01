@@ -71,8 +71,10 @@ export function build() {
 
   // ---- tummy (abdomen) + silk spinners
   const tummy = new THREE.Group();
-  const am = loft({ x0: -1.65, x1: -0.1, w: [[-1.65, 0], [-1.55, 0.3], [-1.15, 0.58], [-0.65, 0.66], [-0.3, 0.48], [-0.1, 0]], top: [[-1.65, 0], [-1.55, 0.28], [-1.15, 0.58], [-0.65, 0.64], [-0.3, 0.44], [-0.1, 0]], bot: [[-1.65, 0], [-1.15, 0.5], [-0.65, 0.56], [-0.1, 0]], yc: 0.05, n: 2.1, material: abd });
-  tummy.add(am); tummy.add(hairs([am], { count: 1600, length: 0.1, radius: 0.007, color: 0x080605, light: 0.04, back: 0.8, seed: 82 }));
+  const am = loft({ x0: -1.65, x1: 0.06, w: [[-1.65, 0], [-1.55, 0.3], [-1.15, 0.58], [-0.65, 0.66], [-0.3, 0.48], [-0.12, 0.2], [0.06, 0.14]], top: [[-1.65, 0], [-1.55, 0.28], [-1.15, 0.58], [-0.65, 0.64], [-0.3, 0.44], [-0.12, 0.18], [0.06, 0.12]], bot: [[-1.65, 0], [-1.15, 0.5], [-0.65, 0.56], [-0.3, 0.38], [-0.12, 0.16], [0.06, 0.12]], yc: 0.05, n: 2.1, round: 0.03, material: abd });
+  tummy.add(am);
+  tummy.add(tube([V(-0.3, 0.07, 0), V(-0.05, 0.07, 0), V(0.18, 0.07, 0)], () => 0.15, fur, { segs: 8, radial: 14 })); // the thin neck (pedicel) joining the two body parts
+  tummy.add(hairs([am], { count: 1600, length: 0.1, radius: 0.007, color: 0x080605, light: 0.04, back: 0.8, seed: 82 }));
   root.add(part('tummy', 'tummy', tummy, { en: 'Tummy', es: 'Abdomen', dEn: 'The back body part holds the stomach and the silk-making parts.', dEs: 'La parte de atrás guarda el estómago y las partes que hacen la seda.' }));
   const silk = new THREE.Group();
   for (const s of [-1, 1]) silk.add(blob(0.1, 0.05, 0.05, mat(0x2a221c, { roughness: 0.7 }), null, [16, 12])).children.at(-1).position.set(-1.66, -0.08, s * 0.07);
