@@ -43,7 +43,7 @@ export function build() {
   const G = -1.15; root.userData.groundY = G - 0.02;
 
   const darkFur = mat(0x1d1710, { roughness: 0.8, bumpMap: microBumpTex(3, 70), bumpScale: 1.2 });
-  const thoraxBase = mat(0x4c3014, { roughness: 0.85, bumpMap: microBumpTex(4, 70), bumpScale: 1.0 });
+  const thoraxBase = mat(0x8a5c24, { roughness: 0.85, bumpMap: microBumpTex(4, 70), bumpScale: 1.0 });
   const abdomen = mat(0xffffff, { roughness: 0.5, clearcoat: 0.35, map: bandTex(), bumpMap: microBumpTex(6, 50), bumpScale: 0.6 });
   const eyeMat = mat(0x24150f, { roughness: 0.14, clearcoat: 1, bumpMap: facetTex(), bumpScale: 1.1 });
   const legMat = mat(0x2b1b0c, { roughness: 0.55, clearcoat: 0.3, bumpMap: microBumpTex(9, 60), bumpScale: 0.6 });
@@ -54,7 +54,7 @@ export function build() {
   const head = new THREE.Group();
   const hm = loft({ x0: 1.45, x1: 2.08, w: [[1.45, 0], [1.52, 0.4], [1.7, 0.53], [1.92, 0.46], [2.04, 0.22], [2.08, 0]], top: [[1.45, 0], [1.52, 0.36], [1.7, 0.52], [1.92, 0.44], [2.04, 0.22], [2.08, 0]], bot: [[1.45, 0], [1.55, 0.35], [1.8, 0.46], [2.0, 0.28], [2.08, 0]], yc: 0.02, n: 2.1, material: darkFur });
   head.add(hm);
-  head.add(hairs([hm], { count: 1500, length: 0.09, radius: 0.007, color: 0x8f7d5e, light: 0.4, back: 0.2, seed: 21 }));
+  head.add(hairs([hm], { count: 800, length: 0.08, radius: 0.007, color: 0x8f7d5e, light: 0.4, back: 0.2, seed: 21 }));
   root.add(part('head', 'head', head, { en: 'Head', es: 'Cabeza', dEn: 'The head holds the brain and the senses.', dEs: 'La cabeza guarda el cerebro y los sentidos.' }));
 
   const eyes = new THREE.Group();
@@ -77,14 +77,14 @@ export function build() {
   const thorax = new THREE.Group();
   const tm = loft({ x0: 0.5, x1: 1.5, w: [[0.5, 0], [0.58, 0.55], [0.85, 0.74], [1.15, 0.74], [1.38, 0.52], [1.5, 0]], top: [[0.5, 0], [0.58, 0.5], [0.85, 0.74], [1.15, 0.72], [1.38, 0.5], [1.5, 0]], bot: 0.55, yc: 0.06, n: 2.1, material: thoraxBase });
   thorax.add(tm);
-  thorax.add(hairs([tm], { count: 9000, length: 0.17, radius: 0.0085, color: 0xbf8a36, light: 0.4, back: 0.85, spread: 0.45, seed: 31, lenVar: 0.55 }));
+  thorax.add(hairs([tm], { count: 4500, length: 0.15, radius: 0.0085, color: 0xbf8a36, light: 0.4, back: 0.85, spread: 0.45, seed: 31, lenVar: 0.55 }));
   root.add(part('thorax', 'thorax', thorax, { en: 'Fuzzy middle (thorax)', es: 'Tórax peludo', dEn: 'The thorax is the strong middle. Its muscles move the wings and legs.', dEs: 'El tórax es el centro fuerte. Sus músculos mueven las alas y las patas.' }));
 
   // ---- striped tummy + stinger
   const tummy = new THREE.Group();
   const am = loft({ x0: -2.0, x1: 0.62, w: [[-2.0, 0], [-1.88, 0.2], [-1.55, 0.46], [-1.0, 0.64], [-0.4, 0.7], [0.15, 0.62], [0.5, 0.36], [0.62, 0]], top: [[-2.0, 0], [-1.88, 0.18], [-1.55, 0.42], [-1.0, 0.6], [-0.4, 0.66], [0.15, 0.58], [0.5, 0.34], [0.62, 0]], bot: [[-2.0, 0], [-1.55, 0.4], [-1.0, 0.58], [-0.4, 0.62], [0.15, 0.54], [0.62, 0]], yc: -0.02, n: 2.15, mod: (x) => 1 + 0.018 * Math.pow(Math.abs(Math.sin(((x + 2.0) / 2.62) * Math.PI * 6)), 0.6), material: abdomen });
   tummy.add(am);
-  tummy.add(hairs([am], { count: 2300, length: 0.075, radius: 0.0055, color: 0xb8924c, light: 0.5, back: 0.9, seed: 41, region: (x) => x > -1.7 }));
+  tummy.add(hairs([am], { count: 1100, length: 0.07, radius: 0.0055, color: 0xb8924c, light: 0.5, back: 0.9, seed: 41, region: (x) => x > -1.7 }));
   root.add(part('tummy', 'tummy', tummy, { en: 'Striped tummy', es: 'Abdomen rayado', dEn: 'The tummy makes wax and holds the honey stomach.', dEs: 'El abdomen produce cera y guarda el estómago de la miel.' }));
   const sting = new THREE.Group();
   sting.add(cone(V(-1.98, -0.04, 0), V(-1, -0.12, 0), 0.38, 0.05, mat(0x2a1a0c, { roughness: 0.35, clearcoat: 0.6 }), 10));
@@ -120,7 +120,7 @@ export function build() {
       const bt = blob(0.17, 0.045, 0.11, legMat); bt.position.copy(A).addScaledVector(dir, 0.14); bt.quaternion.setFromUnitVectors(V(1, 0, 0), dir); L.add(bt);
     }
     const meshes = []; L.traverse((o) => { if (o.isMesh && o.geometry.type !== 'ConeGeometry') meshes.push(o); });
-    L.add(hairs(meshes.slice(0, 6), { count: 110, length: 0.09, radius: 0.005, color: 0x6a4a22, light: 0.3, back: 0.3, seed: 51 + sp.n.length + s }));
+    L.add(hairs(meshes.slice(0, 6), { count: 60, length: 0.08, radius: 0.005, color: 0x6a4a22, light: 0.3, back: 0.3, seed: 51 + sp.n.length + s }));
     const side = s < 0 ? 'left' : 'right';
     root.add(part(`leg-${sp.n}-${side}`, 'legs', L, { en: `${sp.n[0].toUpperCase() + sp.n.slice(1)} ${side} leg`, es: `Pata ${{ front: 'delantera', middle: 'del medio', hind: 'trasera' }[sp.n]} ${s < 0 ? 'izquierda' : 'derecha'}`,
       dEn: sp.basket ? 'A hind leg with a pollen basket full of yellow pollen!' : 'A hairy walking leg. The front legs clean the antennae.', dEs: sp.basket ? '¡Una pata trasera con una cestita llena de polen amarillo!' : 'Una pata peluda para caminar. Las de adelante limpian las antenas.' }));
