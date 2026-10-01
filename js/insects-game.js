@@ -17,12 +17,14 @@ const T = {
   en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', walk: 'Walk', fly: 'Fly', speech: 'en-US' },
   es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', walk: 'Caminar', fly: 'Volar', speech: 'es-ES' },
 };
-const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede'];
+const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede', 'rhino', 'pillbug'];
 const FOV = 36;
 
 let registry = {}, built = {}, lang = 'en', loading = null;
 let renderer, scene, camera, controls, pmrem, raf = 0, running = false, lastT = 0, thumbsDone = false;
 let key, ground, scroller, prevRootY = 0;
+const ICON_ROLL = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="8" fill="currentColor"/><path d="M5 12a12 12 0 0 1 20-4M27 20a12 12 0 0 1-20 4" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>';
+let ICON_FLY = '';
 let cur = null; // the insect on screen: { id, mod, root, parts: Map, center, radius }
 let selection = null; // { ids:Set, name, desc }
 let isolated = false, exploded = false;
@@ -147,7 +149,8 @@ function show(id) {
   if (cur) scene.remove(cur.root);
   cur = makeInsect(id);
   resetState(); shift.y = shift.ty = 0; camera.clearViewOffset();
-  ui.walk.hidden = !cur.motion; ui.fly.hidden = !cur.motion?.canFly;
+  ui.walk.hidden = !cur.motion; ui.fly.hidden = !(cur.motion?.canFly || cur.motion?.second);
+  ICON_FLY ||= ui.fly.querySelector('svg').outerHTML; ui.fly.querySelector('svg').outerHTML = cur.motion?.second ? ICON_ROLL : ICON_FLY; modeLabels();
   scene.add(cur.root);
   ground.position.y = cur.root.userData.groundY ?? -1; scroller.position.y = ground.position.y + 0.004; prevRootY = 0;
   { const r = cur.radius * 1.5, sc = key.shadow.camera; sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r; sc.near = 0.5; sc.far = 40; sc.updateProjectionMatrix(); key.target.position.copy(cur.center); key.target.updateMatrixWorld(); }
@@ -166,6 +169,8 @@ function homeDistance() {
   const aspect = camera.aspect, vf = THREE.MathUtils.degToRad(FOV), hf = 2 * Math.atan(Math.tan(vf / 2) * aspect);
   return (cur.radius * 1.12) / Math.sin(Math.min(vf, hf) / 2);
 }
+
+function modeLabels() { const t = T[lang]; $('#lbl-fly').textContent = cur?.motion?.second?.label?.[lang] ?? t.fly; }
 
 function resetState() {
   selection = null; isolated = false; exploded = false;
@@ -253,7 +258,7 @@ function setLang(l, silent) {
   lang = l;
   document.querySelectorAll('#view-insect .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
   const t = T[l];
-  $('#ic-speak-l').textContent = t.say; $('#lbl-walk').textContent = t.walk; $('#lbl-fly').textContent = t.fly;
+  $('#ic-speak-l').textContent = t.say; $('#lbl-walk').textContent = t.walk; modeLabels();
   if (registry.beetle || Object.keys(registry).length) {
     if (!ui.cards.hidden) renderList();
     if (cur && !silent) {
@@ -346,9 +351,9 @@ function bind() {
     exploded = !exploded; ui.explode.classList.toggle('on', exploded);
     if (!selection) { anim.target.copy(cur.center); anim.dist = Math.min(controls.maxDistance, homeDist * (exploded ? 1.3 : 1)); anim.active = true; }
   });
-  const setMode = (m) => { if (!cur.motion || (m === 'fly' && !cur.motion.canFly)) return; const now = cur.motion.setMode(m); ui.walk.classList.toggle('on', now === 'walk'); ui.fly.classList.toggle('on', now === 'fly'); };
+  const setMode = (which) => { const mo = cur.motion; if (!mo) return; const id = which === 'walk' ? 'walk' : (mo.second?.id ?? 'fly'); if (id === 'fly' && !mo.canFly) return; const now = mo.setMode(id); ui.walk.classList.toggle('on', now === 'walk'); ui.fly.classList.toggle('on', !!now && now !== 'walk'); };
   ui.walk.addEventListener('click', () => setMode('walk'));
-  ui.fly.addEventListener('click', () => setMode('fly'));
+  ui.fly.addEventListener('click', () => setMode('second'));
   $('#btn-ireset').addEventListener('click', () => {
     resetState(); shift.ty = 0; anim.target.copy(cur.center); anim.dist = homeDist; anim.active = true;
   });
