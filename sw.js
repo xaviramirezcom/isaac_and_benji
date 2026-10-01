@@ -1,9 +1,9 @@
 // Offline support: cache everything the app needs on first visit.
 // App code (html/js/css) is network-first so updates show up immediately; big static files are cache-first.
-const CACHE = 'isaac-benji-v6';
+const CACHE = 'isaac-benji-v7';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css', 'js/app.js', 'js/map-game.js',
-  'js/animals-game.js', 'data/animals.json', 'vendor/three.module.min.js', 'vendor/OrbitControls.js', 'vendor/topojson-client.min.js',
+  'js/animals-game.js', 'js/insects-game.js', 'js/insects/lib.js', 'js/insects/beetle.js', 'js/insects/bee.js', 'js/insects/ant.js', 'vendor/RoomEnvironment.js', 'data/animals.json', 'vendor/three.module.min.js', 'vendor/OrbitControls.js', 'vendor/topojson-client.min.js',
   'data/world-50m.json', 'data/countries.json', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
 ];
 

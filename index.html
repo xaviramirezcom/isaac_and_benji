@@ -32,7 +32,41 @@
       <a class="round-btn back" href="#/" aria-label="Back">←</a>
       <div class="tiles">
         <a class="game-tile" href="#/isaac/map"><span class="emoji" aria-hidden="true">🗺️</span><span>World Map</span></a>
+        <a class="game-tile insects-tile" href="#/isaac/insects"><span class="emoji" aria-hidden="true">🐞</span><span>Insects</span></a>
       </div>
+    </section>
+
+
+    <!-- Insects: pick one -->
+    <section id="view-insects" class="view insects-list" hidden aria-label="Insects">
+      <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
+      <div class="insect-cards" id="insect-cards"></div>
+    </section>
+
+    <!-- Insects: explore one in 3D -->
+    <section id="view-insect" class="view insect-view" hidden aria-label="Insect in 3D">
+      <canvas id="insect-canvas" aria-label="3D insect"></canvas>
+      <a class="round-btn back" href="#/isaac/insects" aria-label="All insects">←</a>
+      <div class="insect-title"><b id="insect-name"></b><i id="insect-sci"></i></div>
+      <div class="insect-tools">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="on">EN</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
+        <button class="round-btn small" id="btn-explode" type="button" aria-label="Explode"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4v6M16 22v6M4 16h6M22 16h6M7.5 7.5l4.2 4.2M20.3 20.3l4.2 4.2M24.5 7.5l-4.2 4.2M11.7 20.3l-4.2 4.2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></button>
+        <button class="round-btn small" id="btn-ireset" type="button" aria-label="Reset"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 16a9 9 0 1 0 3-6.7M7 5v6h6" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+
+      <div class="insect-card" id="insect-card" aria-live="polite">
+        <div class="ic-text"><h3 id="ic-name"></h3><p id="ic-desc"></p></div>
+        <div class="ic-actions">
+          <button type="button" class="ic-btn" id="ic-speak"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg><span id="ic-speak-l">Say it</span></button>
+          <button type="button" class="ic-btn" id="ic-only"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M2 16s5-9 14-9 14 9 14 9-5 9-14 9S2 16 2 16z" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linejoin="round"/><circle cx="16" cy="16" r="4.2" fill="currentColor"/></svg><span id="ic-only-l">Only this</span></button>
+          <button type="button" class="ic-btn remove" id="ic-remove"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M10 16h12" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/></svg><span id="ic-remove-l">Remove</span></button>
+        </div>
+      </div>
+      <div class="chips" id="insect-chips" role="group" aria-label="Parts"></div>
+      <div class="loading" id="insect-loading"><div class="spinner" aria-hidden="true">🐞</div><p>Loading…</p></div>
     </section>
 
     <!-- Benji's games -->

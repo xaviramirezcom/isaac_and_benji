@@ -198,3 +198,52 @@ button, a { touch-action: manipulation; font: inherit; }
 @keyframes slideR { from { transform: translateX(70px); opacity: 0; } to { transform: none; opacity: 1; } }
 @keyframes slideL { from { transform: translateX(-70px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .stage.from-right .animal-pic, .stage.from-left .animal-pic, .stage.from-right .animal-name, .stage.from-left .animal-name { animation: none; } }
+
+/* ---------- insects (Isaac) ---------- */
+.game-tile.insects-tile { background: linear-gradient(160deg, #6bcB77, #2f9e5b); }
+.insects-list { background: linear-gradient(160deg, #cfeec0, #8fd1a0); display: grid; place-items: center; }
+.insect-cards { display: flex; flex-wrap: wrap; gap: clamp(14px, 3vw, 28px); justify-content: center; padding: 84px 20px 20px; max-height: 100%; overflow-y: auto; }
+.insect-card-tile {
+  width: min(78vw, 270px); background: #fff; border-radius: 32px; padding: 14px 14px 18px; text-decoration: none; color: var(--ink); text-align: center;
+  box-shadow: 0 10px 0 rgba(0, 0, 0, .13), 0 22px 36px rgba(0, 0, 0, .14); transition: transform .1s, box-shadow .1s; display: flex; flex-direction: column; gap: 6px;
+}
+.insect-card-tile:active { transform: translateY(7px); box-shadow: 0 2px 0 rgba(0, 0, 0, .13); }
+.insect-card-tile .thumb { aspect-ratio: 1; border-radius: 24px; background: radial-gradient(circle at 50% 45%, #3f8a5f, #1c4a35); display: grid; place-items: center; overflow: hidden; }
+.insect-card-tile .thumb img { width: 100%; height: 100%; object-fit: contain; }
+.insect-card-tile .thumb span { font-size: 5rem; }
+.insect-card-tile b { font-size: 1.4rem; line-height: 1.1; }
+.insect-card-tile i { font-size: .9rem; opacity: .65; }
+
+.insect-view { background: radial-gradient(ellipse at 50% 40%, #2f7a52 0%, #174330 65%, #0c2519 100%); overflow: hidden; }
+#insect-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+.insect-title { position: absolute; top: calc(env(safe-area-inset-top) + 18px); left: 0; right: 0; text-align: center; color: #fff; pointer-events: none; text-shadow: 0 2px 6px rgba(0, 0, 0, .4); padding: 0 150px; }
+.insect-title b { display: block; font-size: clamp(1.1rem, 3.4vw, 1.9rem); line-height: 1.1; }
+.insect-title i { display: block; font-size: clamp(.8rem, 2.4vw, 1.05rem); opacity: .85; margin-top: 2px; }
+.insect-tools { position: absolute; top: calc(env(safe-area-inset-top) + 16px); right: calc(env(safe-area-inset-right) + 16px); display: flex; flex-direction: column; align-items: flex-end; gap: 12px; z-index: 5; }
+.insect-tools .lang { position: static; }
+.round-btn svg { width: 56%; height: 56%; display: block; }
+.round-btn.on { background: #ffd94d; }
+
+.chips { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 12px); display: flex; gap: 10px; padding: 6px 16px; overflow-x: auto; z-index: 4; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 0; border-radius: 99px; padding: 0 20px; height: 52px; background: #fff; color: var(--ink); font-weight: 800; font-size: 1.05rem; box-shadow: 0 5px 0 rgba(0, 0, 0, .2); cursor: pointer; white-space: nowrap; }
+.chip.on { background: #ffd94d; }
+.chip:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .2); }
+
+.insect-card {
+  position: absolute; z-index: 6; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 82px); width: min(680px, calc(100% - 28px));
+  background: #fff; border-radius: 28px; padding: 16px 18px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, .12), 0 20px 40px rgba(0, 0, 0, .35); transform: translate(-50%, 160%); visibility: hidden;
+  transition: transform .3s cubic-bezier(.2, .9, .3, 1.1), visibility 0s .3s;
+}
+.insect-card.open { transform: translate(-50%, 0); visibility: visible; transition: transform .3s cubic-bezier(.2, .9, .3, 1.1), visibility 0s; }
+.ic-text { flex: 1 1 260px; min-width: 0; }
+.ic-text h3 { margin: 0 0 4px; font-size: clamp(1.3rem, 4.4vw, 1.9rem); line-height: 1.1; }
+.ic-text p { margin: 0; font-size: clamp(.95rem, 2.8vw, 1.1rem); line-height: 1.35; opacity: .85; }
+.ic-actions { display: flex; gap: 10px; flex: 0 0 auto; }
+.ic-btn { display: flex; align-items: center; gap: 8px; border: 0; border-radius: 18px; height: 56px; padding: 0 16px; background: #3b82f6; color: #fff; font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: 0 5px 0 rgba(0, 0, 0, .2); }
+.ic-btn svg { width: 26px; height: 26px; flex: none; }
+.ic-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .2); }
+.ic-btn.remove { background: #ff6b5b; }
+.ic-btn.on { background: #13a06f; }
+@media (max-width: 560px) { .ic-btn span { display: none; } .ic-btn { width: 56px; padding: 0; justify-content: center; } .insect-title { padding: 0 150px 0 84px; text-align: left; } .insect-title b { font-size: 1.1rem; } }
