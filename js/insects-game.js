@@ -17,7 +17,7 @@ const T = {
   en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', walk: 'Walk', fly: 'Fly', speech: 'en-US' },
   es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', walk: 'Caminar', fly: 'Volar', speech: 'es-ES' },
 };
-const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider'];
+const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede'];
 const FOV = 36;
 
 let registry = {}, built = {}, lang = 'en', loading = null;
