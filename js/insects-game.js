@@ -16,7 +16,7 @@ const T = {
   en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', speech: 'en-US' },
   es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', speech: 'es-ES' },
 };
-const ORDER = ['beetle', 'bee', 'ant'];
+const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider'];
 const FOV = 36;
 
 let registry = {}, built = {}, lang = 'en', loading = null;
@@ -86,24 +86,23 @@ function renderList() {
   if (thumbsDone) fillThumbs();
 }
 
-function makeThumbs() {
+async function makeThumbs() {
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
   r.setSize(360, 360); r.setPixelRatio(1); r.toneMapping = THREE.NeutralToneMapping;
   const sc = new THREE.Scene(), pm = new THREE.PMREMGenerator(r);
   sc.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
-  const k = new THREE.DirectionalLight(0xffffff, 1.5); k.position.set(4, 8, 5); sc.add(k); sc.add(new THREE.HemisphereLight(0xdfffe8, 0x1c3a2a, 0.55));
+  const k = new THREE.DirectionalLight(0xffffff, 1.8); k.position.set(4, 8, 5); sc.add(k); sc.add(new THREE.HemisphereLight(0xdfffe8, 0x1c3a2a, 0.55));
   const cam = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
-  const urls = {};
   for (const id of ORDER.filter((i) => registry[i])) {
+    await new Promise((res) => setTimeout(res, 40)); // one insect at a time so the page stays responsive
     const m = makeInsect(id);
     sc.add(m.root);
     const d = m.radius / Math.sin(THREE.MathUtils.degToRad(FOV / 2)) * 0.8;
     cam.position.copy(m.center).addScaledVector(m.mod.info.cameraDir, d); cam.lookAt(m.center);
-    r.render(sc, cam); urls[id] = r.domElement.toDataURL('image/png');
-    sc.remove(m.root);
+    r.render(sc, cam); thumbUrls[id] = r.domElement.toDataURL('image/png');
+    sc.remove(m.root); fillThumbs();
   }
   pm.dispose(); r.dispose(); r.forceContextLoss();
-  return urls;
 }
 let thumbUrls = {};
 function fillThumbs() {
@@ -117,7 +116,7 @@ export async function enter(view, id) {
   setLang(lang, true);
   if (view === 'insects') {
     renderList();
-    if (!thumbsDone) { thumbsDone = true; setTimeout(() => { try { thumbUrls = makeThumbs(); fillThumbs(); } catch (e) { console.warn(e); } }, 60); }
+    if (!thumbsDone) { thumbsDone = true; setTimeout(() => { makeThumbs().catch((e) => console.warn(e)); }, 60); }
     return;
   }
   if (!registry[id]) { location.hash = '#/isaac/insects'; return; }

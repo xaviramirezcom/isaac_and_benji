@@ -60,6 +60,15 @@ export function loft({ x0, x1, w, top, bot, n = 2.2, yc = 0, zc = 0, segX = 96, 
   return new THREE.Mesh(g, material);
 }
 
+// One half (side = +1 right / -1 left) of a dome-shaped body that is symmetric about z=0: the halves meet in a seam on top.
+export function halfLoft(side, opts) {
+  const m = loft({ ...opts, zc: 0 });
+  const p = m.geometry.attributes.position;
+  for (let i = 0; i < p.count; i++) { const z = p.getZ(i); p.setZ(i, side > 0 ? Math.max(z, 0) : Math.min(z, 0)); }
+  weld(m.geometry);
+  return m;
+}
+
 export function blob(rx, ry, rz, material, deform = null, seg = [64, 40]) {
   const g = new THREE.SphereGeometry(1, seg[0], seg[1]);
   const p = g.attributes.position, v = new THREE.Vector3();
