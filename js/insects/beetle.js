@@ -1,6 +1,6 @@
 // Paulosawaya whymperi: a glossy chestnut-red scarab (chafer) beetle from the Andes / Amazon region.
 import * as THREE from '../../vendor/three.module.min.js';
-import { V, rad, mat, loft, blob, ball, cone, leg, beadAntenna, hairs, wing, part, shellColorTex, pitBumpTex, microBumpTex, facetTex } from './lib.js';
+import { V, rad, mat, loft, blob, ball, cone, leg, beadAntenna, hairs, wing, part, makeMotion, shellColorTex, pitBumpTex, microBumpTex, facetTex } from './lib.js';
 
 export const info = {
   id: 'beetle', icon: '🪲',
@@ -76,16 +76,16 @@ export function build() {
   const ew = [[-1.5, 0], [-1.35, 0.18], [-1.05, 0.36], [-0.45, 0.53], [0.2, 0.6], [0.7, 0.58], [0.95, 0]];
   for (const s of [-1, 1]) {
     const e = loft({ x0: -1.5, x1: 0.95, w: ew, zc: ew.map(([x, v]) => [x, v * s * 0.985]), top: [[-1.5, 0], [-1.35, 0.22], [-1.0, 0.42], [-0.4, 0.57], [0.3, 0.6], [0.8, 0.53], [0.95, 0]], bot: 0.22, yc: 0.1, n: 2.2, round: 0.035, segX: 110, segR: 60, material: elytraMat });
-    const g = new THREE.Group(); g.add(e);
+    const pivot = V(0.88, 0.5, s * 0.28), g = new THREE.Group(); g.position.copy(pivot); e.position.copy(pivot).negate(); g.add(e); // hinged at the front shoulder
     root.add(part(`cover-${s < 0 ? 'left' : 'right'}`, 'covers', g, { en: `${s < 0 ? 'Left' : 'Right'} wing cover`, es: `Cubre-ala ${s < 0 ? 'izquierdo' : 'derecho'}`, dEn: 'A hard, shiny cover called an elytron. Beetles lift it up before they fly.', dEs: 'Una cubierta dura y brillante llamada élitro. El escarabajo la levanta antes de volar.' }));
   }
 
-  // ---- folded flying wings under the covers
+  // ---- folded flying wings under the covers (each hinged at its root so it can unfold)
   const wings = new THREE.Group();
   for (const s of [-1, 1]) {
-    const w = wing({ length: 2.1, width: 0.6, veins: 7, tint: '#d8993f', alpha: 0.9, veinColor: 'rgba(90,50,15,.8)', curve: 0.03, seed: 6 });
-    w.position.set(-1.4, 0.2, s * 0.3); w.rotation.y = s > 0 ? 0 : Math.PI; if (s < 0) { w.position.set(-1.4, 0.2, -0.3); w.scale.z = -1; w.rotation.y = 0; }
-    wings.add(w);
+    const w = wing({ length: 2.1, width: 0.6, lateral: 0.3, veins: 7, tint: '#d8993f', alpha: 0.9, veinColor: 'rgba(90,50,15,.8)', curve: 0.03, seed: 6 });
+    if (s < 0) w.scale.z = -1;
+    const hw = new THREE.Group(); hw.name = `hw-${s < 0 ? 'left' : 'right'}`; hw.position.set(0.6, 0.2, s * 0.3); hw.rotation.y = Math.PI; hw.add(w); wings.add(hw);
   }
   root.add(part('wings', 'wings', wings, { en: 'Flying wings', es: 'Alas para volar', dEn: 'Folded up like paper under the covers. When open, they are bigger than the body.', dEs: 'Dobladas como papel bajo los cubre-alas. Abiertas son más grandes que el cuerpo.' }));
 
@@ -110,4 +110,11 @@ export function build() {
       dEn: sp.n === 'front' ? 'A digging leg with three strong teeth.' : 'A walking leg with little spines that grip the ground.', dEs: sp.n === 'front' ? 'Una pata para cavar con tres dientes fuertes.' : 'Una pata para caminar con espinitas que se agarran al suelo.' }));
   }
   return root;
+}
+
+export function motion(root) {
+  return makeMotion(root, { legOrder: ['front', 'middle', 'hind'], stride: 0.9, lift: 0.4, period: 0.95, duty: 0.62, bob: 0.03,
+    fly: { hover: 1.1, tilt: rad(14), freq: 4.5, legBack: { front: 0.2, middle: -0.2, hind: -0.55 },
+      wings: [{ ids: ['hw-left', 'hw-right'], yaw: (s) => Math.PI + rad(80) * s, roll: rad(4), amp: rad(38), unfold: 1.55 }],
+      covers: [{ ids: ['cover-left', 'cover-right'], pitch: rad(36), splay: rad(30) }] } });
 }

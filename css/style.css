@@ -247,3 +247,9 @@ button, a { touch-action: manipulation; font: inherit; }
 .ic-btn.remove { background: #ff6b5b; }
 .ic-btn.on { background: #13a06f; }
 @media (max-width: 560px) { .ic-btn span { display: none; } .ic-btn { width: 56px; padding: 0; justify-content: center; } .insect-title { padding: 0 150px 0 84px; text-align: left; } .insect-title b { font-size: 1.1rem; } }
+
+.mode-btn { display: flex; align-items: center; gap: 8px; height: 52px; padding: 0 18px; border: 0; border-radius: 99px; background: #fff; color: var(--ink); font-weight: 800; font-size: 1rem; cursor: pointer; box-shadow: var(--shadow); transition: transform .1s, background .15s; }
+.mode-btn svg { width: 26px; height: 26px; flex: none; }
+.mode-btn.on { background: #ffd94d; }
+.mode-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .18); }
+.mode-btn[hidden] { display: none; }

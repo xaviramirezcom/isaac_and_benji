@@ -1,6 +1,6 @@
 // Seven-spot ladybird (Coccinella septempunctata).
 import * as THREE from '../../vendor/three.module.min.js';
-import { V, rad, mat, loft, halfLoft, blob, ball, tube, leg, hairs, wing, part, canvasTex, microBumpTex, facetTex } from './lib.js';
+import { V, rad, mat, loft, halfLoft, blob, ball, tube, leg, hairs, wing, part, makeMotion, canvasTex, microBumpTex, facetTex } from './lib.js';
 
 export const info = {
   id: 'ladybug', icon: '🐞',
@@ -72,15 +72,16 @@ export function build() {
   // ---- spotted shell: two red domes meeting in a seam
   for (const s of [-1, 1]) {
     const e = halfLoft(s, { x0: -0.95, x1: 0.52, w: [[-0.95, 0.0], [-0.9, 0.302], [-0.8, 0.504], [-0.65, 0.672], [-0.45, 0.792], [-0.2, 0.84], [0.05, 0.792], [0.28, 0.645], [0.45, 0.419], [0.52, 0.235]], top: [[-0.95, 0.0], [-0.9, 0.405], [-0.8, 0.611], [-0.65, 0.77], [-0.45, 0.878], [-0.2, 0.92], [0.05, 0.878], [0.28, 0.745], [0.45, 0.527], [0.52, 0.332]], bot: 0.1, yc: 0.08, n: 2.0, round: 0.03, segX: 100, segR: 72, material: mat(0xffffff, { ...gloss, map: elytraTex(s < 0), bumpMap: microBumpTex(37, 30), bumpScale: 0.3 }) });
-    const g = new THREE.Group(); g.add(e);
+    const pivot = V(0.5, 0.45, s * 0.15), g = new THREE.Group(); g.position.copy(pivot); e.position.copy(pivot).negate(); g.add(e); // hinged at the front
     root.add(part(`cover-${s < 0 ? 'left' : 'right'}`, 'covers', g, { en: `${s < 0 ? 'Left' : 'Right'} shell cover`, es: `Cubierta ${s < 0 ? 'izquierda' : 'derecha'}`, dEn: 'A red shell with black spots. Red tells birds: “I taste yucky!”', dEs: 'Un caparazón rojo con lunares. El rojo avisa a los pájaros: “¡Sé feo!”' }));
   }
 
-  // ---- folded flying wings
+  // ---- folded flying wings (each hinged at its root so it can unfold)
   const wings = new THREE.Group();
   for (const s of [-1, 1]) {
     const w = wing({ length: 1.5, width: 0.42, lateral: 0.3, veins: 5, tint: '#8a8078', alpha: 0.8, veinColor: 'rgba(30,25,20,.8)', curve: 0.02, seed: 8 });
-    if (s < 0) w.scale.z = -1; w.position.set(-0.85, 0.16, s * 0.25); wings.add(w);
+    if (s < 0) w.scale.z = -1;
+    const hw = new THREE.Group(); hw.name = `hw-${s < 0 ? 'left' : 'right'}`; hw.position.set(0.35, 0.14, s * 0.22); hw.rotation.y = Math.PI; hw.add(w); wings.add(hw);
   }
   root.add(part('wings', 'wings', wings, { en: 'Flying wings', es: 'Alas para volar', dEn: 'Thin wings folded under the shell. A ladybug opens them to fly away!', dEs: 'Alas delgadas dobladas bajo el caparazón. ¡La mariquita las abre para volar!' }));
 
@@ -102,4 +103,11 @@ export function build() {
     root.add(part(`leg-${sp.n}-${side}`, 'legs', L, { en: `${sp.n[0].toUpperCase() + sp.n.slice(1)} ${side} leg`, es: `Pata ${{ front: 'delantera', middle: 'del medio', hind: 'trasera' }[sp.n]} ${s < 0 ? 'izquierda' : 'derecha'}`, dEn: 'A tiny leg with sticky pads that grip leaves.', dEs: 'Una patita con almohadillas pegajosas que se agarran a las hojas.' }));
   }
   return root;
+}
+
+export function motion(root) {
+  return makeMotion(root, { legOrder: ['front', 'middle', 'hind'], stride: 0.4, lift: 0.2, period: 0.55, duty: 0.62, bob: 0.015,
+    fly: { hover: 0.9, tilt: rad(12), freq: 6, legBack: { front: 0.1, middle: -0.1, hind: -0.3 },
+      wings: [{ ids: ['hw-left', 'hw-right'], yaw: (s) => Math.PI + rad(80) * s, roll: rad(4), amp: rad(40), unfold: 1.5 }],
+      covers: [{ ids: ['cover-left', 'cover-right'], pitch: rad(34), splay: rad(32) }] } });
 }

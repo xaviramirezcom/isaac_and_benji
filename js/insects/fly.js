@@ -1,6 +1,6 @@
 // Housefly (Musca domestica).
 import * as THREE from '../../vendor/three.module.min.js';
-import { V, rad, mat, loft, blob, ball, tube, cone, leg, hairs, wing, part, canvasTex, microBumpTex, facetTex } from './lib.js';
+import { V, rad, mat, loft, blob, ball, tube, cone, leg, hairs, wing, part, makeMotion, canvasTex, microBumpTex, facetTex } from './lib.js';
 
 export const info = {
   id: 'fly', icon: '🪰',
@@ -105,4 +105,10 @@ export function build() {
     root.add(part(`leg-${sp.n}-${side}`, 'legs', L, { en: `${sp.n[0].toUpperCase() + sp.n.slice(1)} ${side} leg`, es: `Pata ${{ front: 'delantera', middle: 'del medio', hind: 'trasera' }[sp.n]} ${s < 0 ? 'izquierda' : 'derecha'}`, dEn: 'A hairy leg with sticky pads. Flies taste with their feet!', dEs: 'Una pata peluda con almohadillas pegajosas. ¡Las moscas prueban con los pies!' }));
   }
   return root;
+}
+
+export function motion(root) {
+  return makeMotion(root, { legOrder: ['front', 'middle', 'hind'], stride: 0.5, lift: 0.22, period: 0.6, duty: 0.6, bob: 0.015,
+    fly: { hover: 0.9, tilt: rad(10), freq: 9, legBack: { front: 0.3, middle: -0.1, hind: -0.5 },
+      wings: [{ ids: ['wing-left', 'wing-right'], yaw: (s) => Math.PI + rad(62) * s, roll: rad(10), amp: rad(40), unfold: 1.0 }] } });
 }

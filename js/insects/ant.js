@@ -1,6 +1,6 @@
 // Carpenter ant (Camponotus), worker: black head and tummy, red-brown middle.
 import * as THREE from '../../vendor/three.module.min.js';
-import { V, rad, mat, loft, blob, ball, cone, tube, leg, beadAntenna, hairs, part, microBumpTex, facetTex } from './lib.js';
+import { V, rad, mat, loft, blob, ball, cone, tube, leg, beadAntenna, hairs, part, makeMotion, microBumpTex, facetTex } from './lib.js';
 
 export const info = {
   id: 'ant', icon: '🐜',
@@ -87,4 +87,8 @@ export function build() {
       dEn: 'A long, strong leg with tiny claws for climbing.', dEs: 'Una pata larga y fuerte con garritas para trepar.' }));
   }
   return root;
+}
+
+export function motion(root) {
+  return makeMotion(root, { legOrder: ['front', 'middle', 'hind'], stride: 1.1, lift: 0.4, period: 0.75, duty: 0.6, bob: 0.025 });
 }

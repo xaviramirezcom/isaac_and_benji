@@ -1,6 +1,6 @@
 // Western honey bee (Apis mellifera), worker.
 import * as THREE from '../../vendor/three.module.min.js';
-import { V, rad, mat, loft, blob, ball, cone, tube, leg, beadAntenna, hairs, wing, part, canvasTex, microBumpTex, facetTex } from './lib.js';
+import { V, rad, mat, loft, blob, ball, cone, tube, leg, beadAntenna, hairs, wing, part, makeMotion, canvasTex, microBumpTex, facetTex } from './lib.js';
 
 export const info = {
   id: 'bee', icon: '🐝',
@@ -112,18 +112,23 @@ export function build() {
   ];
   for (const sp of spec) for (const s of [-1, 1]) {
     const f = (v) => V(v.x, v.y, v.z * s);
-    const L = leg({ hip: f(sp.hip), foot: f(sp.foot), tarsusDir: f(sp.td), tarsusLen: sp.tar, pole: V(0, 0.6, 1.0 * s), femur: sp.fem, tibia: sp.tib, rFem: sp.rf, rTib: sp.rt, rTar: 0.028, material: legMat, spineMat, spines: 2, spurs: 2, tarsi: 4 });
-    if (sp.basket) { // pollen basket on the hind shin: a shiny hollow plate edged with hairs, holding a ball of pollen
-      const K = L.userData.knee, A = f(sp.foot).clone().addScaledVector(f(sp.td).normalize(), -sp.tar), mid = K.clone().lerp(A, 0.5), dir = A.clone().sub(K).normalize();
-      const plate = blob(0.46, 0.05, 0.17, mat(0x3a2a14, { roughness: 0.25, clearcoat: 0.8 })); plate.position.copy(mid).addScaledVector(V(0, 0, s), 0.04); plate.quaternion.setFromUnitVectors(V(1, 0, 0), dir); L.add(plate);
-      const pollen = blob(0.2, 0.17, 0.17, mat(0xf3b323, { roughness: 0.9, bumpMap: microBumpTex(13, 120), bumpScale: 2 }), (v) => v.multiplyScalar(1 + 0.05 * Math.sin(v.x * 18) * Math.cos(v.y * 14))); pollen.position.copy(mid).addScaledVector(V(0, 0, s), 0.18).addScaledVector(V(0, 0.05, 0), 1); L.add(pollen);
-      const bt = blob(0.17, 0.045, 0.11, legMat); bt.position.copy(A).addScaledVector(dir, 0.14); bt.quaternion.setFromUnitVectors(V(1, 0, 0), dir); L.add(bt);
+    const L = leg({ hip: f(sp.hip), foot: f(sp.foot), tarsusDir: f(sp.td), tarsusLen: sp.tar, pole: V(0, 0.6, 1.0 * s), femur: sp.fem, tibia: sp.tib, rFem: sp.rf, rTib: sp.rt, rTar: 0.028, material: legMat, spineMat, spines: 2, spurs: 2, tarsi: 4, fur: { count: 150, length: 0.1, radius: 0.0055, color: 0x6a4a22, light: 0.3, back: 0.3, seed: 51 + sp.n.length + s } });
+    if (sp.basket) { // pollen basket on the hind shin: a shiny hollow plate edged with hairs, holding a ball of pollen (in the shin's own frame)
+      const T = L.userData.tibia, tl = L.userData.tibiaLength;
+      const plate = blob(0.045, 0.46, 0.17, mat(0x3a2a14, { roughness: 0.25, clearcoat: 0.8 })); plate.position.set(0.075, tl * 0.5, 0); T.add(plate);
+      const pollen = blob(0.18, 0.2, 0.18, mat(0xf3b323, { roughness: 0.9, bumpMap: microBumpTex(13, 120), bumpScale: 2 }), (v) => v.multiplyScalar(1 + 0.05 * Math.sin(v.x * 18) * Math.cos(v.y * 14))); pollen.position.set(0.2, tl * 0.5, 0); T.add(pollen);
+      const bt = blob(0.05, 0.17, 0.11, legMat); bt.position.set(0.04, 0.15, 0); L.userData.tarsus.add(bt);
     }
-    const meshes = []; L.traverse((o) => { if (o.isMesh && o.geometry.type !== 'ConeGeometry') meshes.push(o); });
-    L.add(hairs(meshes.slice(0, 6), { count: 60, length: 0.08, radius: 0.005, color: 0x6a4a22, light: 0.3, back: 0.3, seed: 51 + sp.n.length + s }));
     const side = s < 0 ? 'left' : 'right';
     root.add(part(`leg-${sp.n}-${side}`, 'legs', L, { en: `${sp.n[0].toUpperCase() + sp.n.slice(1)} ${side} leg`, es: `Pata ${{ front: 'delantera', middle: 'del medio', hind: 'trasera' }[sp.n]} ${s < 0 ? 'izquierda' : 'derecha'}`,
       dEn: sp.basket ? 'A hind leg with a pollen basket full of yellow pollen!' : 'A hairy walking leg. The front legs clean the antennae.', dEs: sp.basket ? '¡Una pata trasera con una cestita llena de polen amarillo!' : 'Una pata peluda para caminar. Las de adelante limpian las antenas.' }));
   }
   return root;
+}
+
+export function motion(root) {
+  return makeMotion(root, { legOrder: ['front', 'middle', 'hind'], stride: 0.55, lift: 0.25, period: 0.8, duty: 0.62, bob: 0.02,
+    fly: { hover: 1.0, tilt: rad(16), freq: 7, legBack: { front: 0.25, middle: -0.1, hind: -0.55 },
+      wings: [{ ids: ['forewing-left', 'forewing-right'], yaw: (s) => Math.PI + rad(66) * s, roll: rad(12), amp: rad(42), unfold: 1.0 },
+              { ids: ['hindwing-left', 'hindwing-right'], yaw: (s) => Math.PI + rad(74) * s, roll: rad(8), amp: rad(38), phase: 0.15, unfold: 1.0 }] } });
 }

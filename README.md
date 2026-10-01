@@ -4,7 +4,7 @@ A tiny web app of calm, simple games for two brothers. Works on tablet and iPhon
 
 - **Home** – pick Isaac or Benji.
 - **Isaac → World Map** – a 3D globe where every country is painted with its flag. Drag to spin, pinch (or use ＋/－) to zoom, tap a country to see its flag, name and capital. 🔊 reads it aloud, 🎲 jumps to a random country.
-- **Isaac → Insects** – six little creatures in 3D (Whymper's chafer beetle *Paulosawaya whymperi*, honey bee, carpenter ant, ladybug, housefly, jumping spider), built in code with real anatomy: swipe to turn, pinch to zoom, tap a part to learn about it, remove parts, show only one part, or explode the whole insect. EN/ES, spoken names.
+- **Isaac → Insects** – six little creatures in 3D (Whymper's chafer beetle *Paulosawaya whymperi*, honey bee, carpenter ant, ladybug, housefly, jumping spider), built in code with real anatomy: swipe to turn, pinch to zoom, tap a part to learn about it, remove parts, show only one part, or explode the whole insect. EN/ES, spoken names. **Walk** and **Fly** buttons bring them to life: insects walk on alternating tripods, the spider on alternating sets of four legs, and the flyers lift their wing covers, unfold their wings and hover (ant and spider only walk).
 - **Benji → Animals** – a big picture of an animal with three big taps: say the name (🗣️), play the real animal sound (🔊), next animal (➡️). Tapping the picture also plays the sound. EN/ES switch, credits under ⓘ. 17 animals.
 
 ## Run it

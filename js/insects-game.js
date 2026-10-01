@@ -11,17 +11,18 @@ const ui = {
   loading: $('#insect-loading'), card: $('#insect-card'), name: $('#ic-name'), desc: $('#ic-desc'),
   only: $('#ic-only'), remove: $('#ic-remove'), chips: $('#insect-chips'), explode: $('#btn-explode'),
   title: $('#insect-name'), sci: $('#insect-sci'), cards: $('#insect-cards'),
+  walk: $('#btn-walk'), fly: $('#btn-fly'),
 };
 const T = {
-  en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', speech: 'en-US' },
-  es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', speech: 'es-ES' },
+  en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', walk: 'Walk', fly: 'Fly', speech: 'en-US' },
+  es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', walk: 'Caminar', fly: 'Volar', speech: 'es-ES' },
 };
 const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider'];
 const FOV = 36;
 
 let registry = {}, built = {}, lang = 'en', loading = null;
 let renderer, scene, camera, controls, pmrem, raf = 0, running = false, lastT = 0, thumbsDone = false;
-let key, ground;
+let key, ground, scroller, prevRootY = 0;
 let cur = null; // the insect on screen: { id, mod, root, parts: Map, center, radius }
 let selection = null; // { ids:Set, name, desc }
 let isolated = false, exploded = false;
@@ -53,7 +54,7 @@ function makeInsect(id) {
       base: c.position.clone(), removed: false, hidden: false, op: 1, off: new THREE.Vector3(),
     });
   });
-  return (built[id] = { id, mod, root: group, parts, center, radius });
+  return (built[id] = { id, mod, root: group, parts, center, radius, motion: mod.motion?.(group) ?? null });
 }
 
 function setupRenderer() {
@@ -68,6 +69,7 @@ function setupRenderer() {
   key = new THREE.DirectionalLight(0xfff4e6, 2.2); key.position.set(4, 9, 5); key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -0.0004; key.shadow.normalBias = 0.02; scene.add(key);
   const rim = new THREE.DirectionalLight(0xbfe8ff, 0.9); rim.position.set(-6, 3, -5); scene.add(rim);
   ground = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.38 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  scroller = makeScroller(); scene.add(scroller);
   scene.add(new THREE.HemisphereLight(0xdfffe8, 0x1c3a2a, 0.55));
   camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 100);
   controls = new OrbitControls(camera, canvas);
@@ -75,6 +77,17 @@ function setupRenderer() {
   controls.addEventListener('start', () => { anim.active = false; });
   bind();
   if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__insect = { get camera() { return camera; }, get controls() { return controls; }, get cur() { return cur; }, select, deselect };
+}
+
+// A faintly speckled floor that slides backwards while the insect walks (so the feet seem to grip the ground)
+function makeScroller() {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  let a = 7; const r = () => { a = (a * 16807) % 2147483647; return a / 2147483647; };
+  for (let i = 0; i < 160; i++) { x.fillStyle = r() > 0.5 ? 'rgba(255,255,255,.35)' : 'rgba(0,0,0,.28)'; x.beginPath(); x.arc(r() * 256, r() * 256, 1.5 + r() * 5, 0, 7); x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(14, 14);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshBasicMaterial({ map: t, transparent: true, opacity: 0, depthWrite: false }));
+  m.rotation.x = -Math.PI / 2; m.visible = false; m.userData.tile = 40 / 14;
+  return m;
 }
 
 // ------------------------------------------------------------ list + thumbnails
@@ -134,8 +147,9 @@ function show(id) {
   if (cur) scene.remove(cur.root);
   cur = makeInsect(id);
   resetState(); shift.y = shift.ty = 0; camera.clearViewOffset();
+  ui.walk.hidden = !cur.motion; ui.fly.hidden = !cur.motion?.canFly;
   scene.add(cur.root);
-  ground.position.y = cur.root.userData.groundY ?? -1;
+  ground.position.y = cur.root.userData.groundY ?? -1; scroller.position.y = ground.position.y + 0.004; prevRootY = 0;
   { const r = cur.radius * 1.5, sc = key.shadow.camera; sc.left = -r; sc.right = r; sc.top = r; sc.bottom = -r; sc.near = 0.5; sc.far = 40; sc.updateProjectionMatrix(); key.target.position.copy(cur.center); key.target.updateMatrixWorld(); }
   const { mod } = cur;
   ui.title.textContent = mod.info.name[lang]; ui.sci.textContent = mod.info.sci;
@@ -155,6 +169,7 @@ function homeDistance() {
 
 function resetState() {
   selection = null; isolated = false; exploded = false;
+  cur.motion?.snap(); ui.walk.classList.remove('on'); ui.fly.classList.remove('on'); cur.root.position.y = 0; cur.root.rotation.set(0, 0, 0);
   ui.explode.classList.remove('on'); ui.card.classList.remove('open');
   for (const p of cur.parts.values()) { p.removed = false; p.hidden = false; p.op = 1; p.off.set(0, 0, 0); p.obj.position.copy(p.base); p.obj.visible = true; applyOpacity(p, 1); setGlow(p, false); }
   refreshChips();
@@ -238,7 +253,7 @@ function setLang(l, silent) {
   lang = l;
   document.querySelectorAll('#view-insect .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
   const t = T[l];
-  $('#ic-speak-l').textContent = t.say;
+  $('#ic-speak-l').textContent = t.say; $('#lbl-walk').textContent = t.walk; $('#lbl-fly').textContent = t.fly;
   if (registry.beetle || Object.keys(registry).length) {
     if (!ui.cards.hidden) renderList();
     if (cur && !silent) {
@@ -279,6 +294,13 @@ function frame(now) {
     if (tgtOff) p.off.lerp(tgtOff, k); else p.off.lerp(new THREE.Vector3(), k);
     p.obj.position.copy(p.base).add(p.off);
     setGlow(p, !!sel && p.op > 0.05, now);
+  }
+  if (cur.motion) {
+    const speed = cur.motion.update(dt);
+    const ry = cur.root.position.y, dy = ry - prevRootY; prevRootY = ry;
+    if (dy) { controls.target.y += dy; camera.position.y += dy; anim.target.y += dy; }
+    const w = cur.motion.state.walk; scroller.visible = w > 0.01; scroller.material.opacity = 0.55 * w;
+    scroller.material.map.offset.x += (speed * dt) / scroller.userData.tile;
   }
   if (anim.active) {
     const ka = 1 - Math.exp(-dt * 5);
@@ -324,6 +346,9 @@ function bind() {
     exploded = !exploded; ui.explode.classList.toggle('on', exploded);
     if (!selection) { anim.target.copy(cur.center); anim.dist = Math.min(controls.maxDistance, homeDist * (exploded ? 1.3 : 1)); anim.active = true; }
   });
+  const setMode = (m) => { if (!cur.motion || (m === 'fly' && !cur.motion.canFly)) return; const now = cur.motion.setMode(m); ui.walk.classList.toggle('on', now === 'walk'); ui.fly.classList.toggle('on', now === 'fly'); };
+  ui.walk.addEventListener('click', () => setMode('walk'));
+  ui.fly.addEventListener('click', () => setMode('fly'));
   $('#btn-ireset').addEventListener('click', () => {
     resetState(); shift.ty = 0; anim.target.copy(cur.center); anim.dist = homeDist; anim.active = true;
   });

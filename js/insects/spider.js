@@ -1,6 +1,6 @@
 // Bold jumping spider (Phidippus audax): black, fuzzy, big front eyes, shiny green jaws, white spots. Not an insect: 8 legs, 2 body parts.
 import * as THREE from '../../vendor/three.module.min.js';
-import { V, rad, mat, loft, blob, ball, tube, cone, leg, hairs, part, canvasTex, microBumpTex } from './lib.js';
+import { V, rad, mat, loft, blob, ball, tube, cone, leg, hairs, part, makeMotion, canvasTex, microBumpTex } from './lib.js';
 
 export const info = {
   id: 'spider', icon: '🕷️',
@@ -90,11 +90,13 @@ export function build() {
   const names = { first: ['Front', 'Delantera'], second: ['Second', 'Segunda'], third: ['Third', 'Tercera'], fourth: ['Back', 'Trasera'] };
   for (const sp of spec) for (const s of [-1, 1]) {
     const f = (v) => V(v.x, v.y, v.z * s);
-    const L = leg({ hip: f(sp.hip), foot: f(sp.foot), tarsusDir: f(sp.td), tarsusLen: 0.5, pole: V(0, 0.8, 1.0 * s), femur: sp.fem, tibia: sp.tib, rFem: 0.1, rTib: 0.065, rTar: 0.04, material: legMat, spineMat, spines: 3, spurs: 0, tarsi: 3, femurBulge: 0.02 });
-    const meshes = []; L.traverse((o) => { if (o.isMesh && o.geometry.type !== 'ConeGeometry') meshes.push(o); });
-    L.add(hairs(meshes.slice(0, 8), { count: 140, length: 0.1, radius: 0.007, color: 0x080605, light: 0.04, back: 0.2, seed: 90 + spec.indexOf(sp) * 2 + (s > 0 ? 1 : 0) }));
+    const L = leg({ hip: f(sp.hip), foot: f(sp.foot), tarsusDir: f(sp.td), tarsusLen: 0.5, pole: V(0, 0.8, 1.0 * s), femur: sp.fem, tibia: sp.tib, rFem: 0.1, rTib: 0.065, rTar: 0.04, material: legMat, spineMat, spines: 3, spurs: 0, tarsi: 3, femurBulge: 0.02, fur: { count: 150, length: 0.1, radius: 0.007, color: 0x080605, light: 0.04, back: 0.2, seed: 90 + spec.indexOf(sp) * 2 + (s > 0 ? 1 : 0) } });
     const side = s < 0 ? 'left' : 'right';
     root.add(part(`leg-${sp.n}-${side}`, 'legs', L, { en: `${names[sp.n][0]} ${side} leg`, es: `Pata ${names[sp.n][1].toLowerCase()} ${s < 0 ? 'izquierda' : 'derecha'}`, dEn: sp.n === 'fourth' ? 'A strong back leg that pushes the spider into a big jump!' : 'A hairy leg with tiny claws for gripping.', dEs: sp.n === 'fourth' ? '¡Una pata fuerte de atrás que lanza a la araña en un gran salto!' : 'Una pata peluda con garritas diminutas para agarrarse.' }));
   }
   return root;
+}
+
+export function motion(root) {
+  return makeMotion(root, { legOrder: ['first', 'second', 'third', 'fourth'], stride: 1.0, lift: 0.4, period: 0.85, duty: 0.6, bob: 0.02 });
 }

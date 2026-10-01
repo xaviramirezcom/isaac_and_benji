@@ -192,44 +192,109 @@ export function hairs(meshes, { count = 2000, length = 0.12, radius = 0.01, colo
   return inst;
 }
 
-// ---------------------------------------------------------------- legs (two-bone IK + jointed foot)
-function limb(a, b, r0, r1, material, bulge = 0.0) {
-  const mid = a.clone().lerp(b, 0.5);
-  return tube([a, mid, b], (t) => r0 + (r1 - r0) * t + bulge * Math.sin(Math.PI * t), material, { segs: 12, radial: 12 });
+// ---------------------------------------------------------------- legs: a posable rig (two-bone IK + jointed foot)
+function rod(len, r0, r1, bulge, material, radial = 12) {
+  const pts = [], n = 8;
+  for (let i = 0; i <= n; i++) { const t = i / n; pts.push(new THREE.Vector2(Math.max(0.002, r0 + (r1 - r0) * t + bulge * Math.sin(Math.PI * t)), t * len)); }
+  const g = new THREE.LatheGeometry(pts, radial); g.computeVertexNormals();
+  return new THREE.Mesh(g, material);
 }
 function solveKnee(H, A, lf, lt, pole) {
-  const d0 = A.clone().sub(H), d = Math.min(d0.length(), (lf + lt) * 0.999), dir = d0.clone().normalize();
+  const d0 = A.clone().sub(H), d = Math.max(0.05, Math.min(d0.length(), (lf + lt) * 0.999)), dir = d0.clone().normalize();
   const a = (lf * lf - lt * lt + d * d) / (2 * d), h = Math.sqrt(Math.max(lf * lf - a * a, 0.0001));
   const p = pole.clone().sub(dir.clone().multiplyScalar(pole.dot(dir))).normalize();
   return H.clone().addScaledVector(dir, a).addScaledVector(p, h);
 }
-// hip -> femur -> knee -> tibia -> ankle -> tarsus (jointed) -> claws at the foot
-export function leg({ hip, foot, pole = V(0, 1, 0.25), femur, tibia, tarsusDir, tarsusLen, rFem = 0.1, rTib = 0.05, rTar = 0.028, material, spineMat, spines = 0, spurs = 2, teeth = 0, tarsi = 5, coxa = 1.0, femurBulge = 0.03, hairy = false }) {
+// hip -> femur -> knee -> tibia -> ankle -> tarsus (jointed) -> claws. rig.update() re-poses the leg for a new hip/foot position.
+export function leg({ hip, foot, pole = V(0, 1, 0.25), femur, tibia, tarsusDir, tarsusLen, rFem = 0.1, rTib = 0.05, rTar = 0.028, material, spineMat, spines = 0, spurs = 2, teeth = 0, tarsi = 5, coxa = 1.0, femurBulge = 0.03, fur = null }) {
   const g = new THREE.Group(), sm = spineMat ?? material;
-  const td = tarsusDir.clone().normalize(), A = foot.clone().addScaledVector(td, -tarsusLen);
-  const K = solveKnee(hip, A, femur, tibia, pole);
-  g.add(ball(hip, rFem * 0.75 * coxa, material));                                  // coxa (hip joint)
-  g.add(limb(hip, K, rFem * 0.95, rFem * 0.75, material, femurBulge));            // femur
-  g.add(ball(K, rFem * 0.62, material));                                           // knee
-  g.add(limb(K, A, rTib * 1.25, rTib * 0.85, material, 0.0));                      // tibia
-  const tdir = A.clone().sub(K).normalize(), outward = V(0, 0, Math.sign(foot.z || 1));
-  const perp = tdir.clone().cross(V(1, 0, 0)).normalize(); if (perp.dot(outward) < 0) perp.negate();
-  for (let i = 0; i < spines; i++) {                                               // spiny tibia
-    const t = 0.25 + (0.7 * i) / Math.max(spines - 1, 1), p = K.clone().lerp(A, t), side = i % 2 ? 1 : -1;
-    const d = perp.clone().multiplyScalar(0.8).addScaledVector(tdir, 0.5).addScaledVector(V(0, 1, 0), 0.25 * side); g.add(cone(p, d, 0.12, 0.014, sm, 5));
+  const outward = V(0, 0, Math.sign(foot.z || 1)), td = tarsusDir.clone().normalize();
+  const M = new THREE.Matrix4(), X = V(0, 0, 0), Y = V(0, 0, 0), Z = V(0, 0, 0);
+  const orient = (grp, from, to) => {
+    Y.copy(to).sub(from).normalize(); X.copy(outward).addScaledVector(Y, -outward.dot(Y));
+    if (X.lengthSq() < 1e-4) X.set(1, 0, 0).addScaledVector(Y, -Y.x); X.normalize(); Z.crossVectors(X, Y);
+    grp.quaternion.setFromRotationMatrix(M.makeBasis(X, Y, Z)); grp.position.copy(from);
+  };
+
+  const coxaBall = ball(V(0, 0, 0), rFem * 0.75 * coxa, material);
+  const femurG = new THREE.Group(), femurRod = rod(femur, rFem * 0.95, rFem * 0.75, femurBulge, material); femurG.add(femurRod);
+  const kneeBall = ball(V(0, 0, 0), rFem * 0.62, material);
+  const tibiaG = new THREE.Group(), tibiaRod = rod(tibia, rTib * 1.25, rTib * 0.85, 0, material); tibiaG.add(tibiaRod);
+  const ankleBall = ball(V(0, 0, 0), rTib * 0.72, material);
+  const tarsusG = new THREE.Group();
+  // tibia details live in the tibia's own frame: x = outward, y = along the shin
+  for (let i = 0; i < spines; i++) { const t = 0.25 + (0.7 * i) / Math.max(spines - 1, 1); tibiaG.add(cone(V(rTib * 0.9, t * tibia, 0), V(0.8, 0.5, i % 2 ? 0.25 : -0.25), 0.12, 0.014, sm, 5)); }
+  for (let i = 0; i < teeth; i++) { const t = 0.45 + i * 0.2; tibiaG.add(cone(V(rTib * 0.6, t * tibia, 0), V(1, 0.55, 0), 0.2, rTib * 0.75, sm, 4)); }
+  for (let i = 0; i < spurs; i++) tibiaG.add(cone(V(0, tibia, 0), V(0.35 * (i ? -0.6 : 1), 1, 0), 0.17, 0.02, sm, 5));
+  for (let i = 0; i < tarsi; i++) { // jointed foot, built along the foot's own +Y
+    const y0 = (tarsusLen * i) / tarsi, y1 = (tarsusLen * (i + 1)) / tarsi, r0 = rTar * (1.25 - 0.45 * (i / tarsi)), r1 = rTar * (1.25 - 0.45 * ((i + 1) / tarsi));
+    const seg = rod(y1 - y0, r0, r1, 0, material, 10); seg.position.y = y0; tarsusG.add(seg); tarsusG.add(ball(V(0, y1, 0), r1 * 0.95, material));
   }
-  for (let i = 0; i < teeth; i++) {                                                // broad digging teeth
-    const t = 0.45 + i * 0.2, p = K.clone().lerp(A, t), d = perp.clone().addScaledVector(tdir, 0.55); g.add(cone(p.addScaledVector(perp, rTib * 0.5), d, 0.2, rTib * 0.75, sm, 4));
+  for (const sgn of [-1, 1]) tarsusG.add(cone(V(0, tarsusLen, 0), V(-0.25, 1, 0.55 * sgn), 0.13, 0.017, sm, 5)); // claws
+  if (fur) { femurG.add(hairs([femurRod], { ...fur, count: Math.round(fur.count * 0.45) })); tibiaG.add(hairs([tibiaRod], { ...fur, count: Math.round(fur.count * 0.55), seed: (fur.seed ?? 1) + 7 })); }
+  g.add(coxaBall, femurG, kneeBall, tibiaG, ankleBall, tarsusG);
+
+  const A = V(0, 0, 0);
+  function pose(h, f) {
+    A.copy(f).addScaledVector(td, -tarsusLen);
+    const K = solveKnee(h, A, femur, tibia, pole);
+    coxaBall.position.copy(h); orient(femurG, h, K); kneeBall.position.copy(K); orient(tibiaG, K, A); ankleBall.position.copy(A);
+    orient(tarsusG, A, A.clone().add(td));
   }
-  for (let i = 0; i < spurs; i++) g.add(cone(A, tdir.clone().add(perp.clone().multiplyScalar(0.35 * (i ? -0.6 : 1))), 0.17, 0.02, sm, 5));
-  g.add(ball(A, rTib * 0.72, material));                                           // ankle
-  for (let i = 0; i < tarsi; i++) {                                                // jointed foot
-    const t0 = i / tarsi, t1 = (i + 1) / tarsi, a = A.clone().lerp(foot, t0), b = A.clone().lerp(foot, t1), r = rTar * (1.25 - 0.45 * t0);
-    g.add(limb(a, b, r, rTar * (1.25 - 0.45 * t1), material)); g.add(ball(b, r * 0.92, material));
-  }
-  for (const s of [-1, 1]) g.add(cone(foot, td.clone().addScaledVector(perp, 0.55 * s).addScaledVector(V(0, -0.4, 0), 1), 0.13, 0.017, sm, 5)); // claws
-  g.userData.knee = K;
+  pose(hip, foot);
+  g.userData.rig = { hip: hip.clone(), foot: foot.clone(), reach: femur + tibia + tarsusLen, update: (hipOffset, footDelta) => pose(hip.clone().add(hipOffset), foot.clone().add(footDelta)) };
+  g.userData.tibia = tibiaG; g.userData.tarsus = tarsusG; g.userData.tibiaLength = tibia;
   return g;
+}
+
+// ---------------------------------------------------------------- motion: walking and flying
+// cfg = { legOrder, stride, lift, period, duty, bob, fly?: { hover, tilt, freq, legBack, wings:[{ids,yaw,roll,amp,phase,unfold}], covers:[{ids,pitch,splay}] } }
+export function makeMotion(root, cfg) {
+  const legs = [], idx = cfg.legOrder;
+  root.traverse((o) => { if (o.userData.rig && o.name.startsWith('leg-')) legs.push(o); });
+  const info = legs.map((o) => { const [, n, side] = o.name.split('-'); return { o, n, s: side === 'left' ? -1 : 1, phase: ((idx.indexOf(n) + (side === 'right' ? 1 : 0)) % 2) * 0.5, rig: o.userData.rig }; });
+  const sideOf = (id) => (id.endsWith('left') ? -1 : 1);
+  const grab = (list = []) => list.flatMap((w) => w.ids.map((id) => { const obj = root.getObjectByName(id); return obj ? { obj, w, s: sideOf(id), rest: { q: obj.quaternion.clone(), sx: obj.scale.x } } : null; })).filter(Boolean);
+  const AX = V(1, 0, 0), AY = V(0, 1, 0), qa = new THREE.Quaternion(), qb = new THREE.Quaternion(), qf = new THREE.Quaternion();
+  const wings = grab(cfg.fly?.wings), covers = grab(cfg.fly?.covers);
+  const st = { mode: null, walk: 0, fly: 0, cycle: 0, flap: 0, t: 0 };
+  const duty = cfg.duty ?? 0.6, T = cfg.period, speedUnits = cfg.stride / (duty * T), lerp = THREE.MathUtils.lerp, ease = THREE.MathUtils.smoothstep;
+  const m = {
+    canFly: !!cfg.fly, state: st,
+    setMode(mode) { st.mode = st.mode === mode ? null : mode; return st.mode; },
+    snap() { st.mode = null; st.walk = st.fly = 0; this.update(0.0001); },
+    update(dt) {
+      const k = 1 - Math.exp(-dt * 6);
+      st.walk += ((st.mode === 'walk' ? 1 : 0) - st.walk) * k; st.fly += ((st.mode === 'fly' ? 1 : 0) - st.fly) * k;
+      if (st.walk < 0.001) st.walk = 0; if (st.fly < 0.001) st.fly = 0;
+      st.t += dt; st.cycle += (dt / T) * (st.walk > 0.02 ? 1 : 0); st.flap += dt * (cfg.fly?.freq ?? 0) * Math.PI * 2 * (st.fly > 0.02 ? 1 : 0);
+      const bobY = (cfg.bob ?? 0.02) * Math.sin(st.cycle * Math.PI * 4) * st.walk;
+      const hover = cfg.fly ? cfg.fly.hover * st.fly + 0.05 * Math.sin(st.t * 3) * st.fly : 0;
+      root.position.y = bobY + hover; root.rotation.z = (cfg.fly ? cfg.fly.tilt * st.fly : 0); root.rotation.x = 0.015 * Math.sin(st.cycle * Math.PI * 2) * st.walk;
+      for (const L of info) {
+        const ph = (st.cycle + L.phase) % 1; let dx = 0, dy = 0;
+        if (ph < duty) dx = cfg.stride * (0.5 - ph / duty); else { const u = (ph - duty) / (1 - duty); dx = cfg.stride * (-0.5 + ease(u, 0, 1)); dy = cfg.lift * Math.sin(Math.PI * u); }
+        dx *= st.walk; dy *= st.walk;
+        const rig = L.rig; let delta = V(dx, dy - bobY, 0); // (feet stay on the ground while the body bobs)
+        if (st.fly > 0) { // legs hang down and trail behind in flight (they are in the body's frame, so they rise with it)
+          const back = cfg.fly.legBack?.[L.n] ?? -0.2, drop = -(rig.reach * 0.62);
+          const target = rig.hip.clone().add(V(back, drop, L.s * 0.28));
+          delta = rig.foot.clone().add(delta).lerp(target, st.fly).sub(rig.foot);
+        }
+        rig.update(V(0, 0, 0), delta);
+      }
+      for (const w of wings) { // flight pose = spread out (yaw), then beat up/down about the body axis
+        const c = w.w, flap = Math.sin(st.flap + (c.phase ?? 0)) * (c.amp ?? 0.7);
+        qb.setFromAxisAngle(AY, c.yaw(w.s)); qa.setFromAxisAngle(AX, -w.s * (c.roll + flap)); qf.copy(qa).multiply(qb);
+        w.obj.quaternion.slerpQuaternions(w.rest.q, qf, st.fly);
+        w.obj.scale.x = lerp(w.rest.sx, c.unfold ?? w.rest.sx, st.fly);
+      }
+      for (const c of covers) { c.obj.rotation.z = -c.w.pitch * st.fly + 0.03 * Math.sin(st.flap) * st.fly; c.obj.rotation.x = -c.s * c.w.splay * st.fly; }
+      return speedUnits * st.walk;
+    },
+  };
+  m.update(0.0001);
+  return m;
 }
 
 // ---------------------------------------------------------------- antennae
