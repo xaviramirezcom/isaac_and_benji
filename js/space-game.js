@@ -1,5 +1,5 @@
 // Isaac's Solar System: a 3D, fully explorable solar system where every sun, planet and moon is a sleepy face
-// that wakes up (dark eyes, huge grin full of little teeth) when you get close. Swipe to turn, pinch to zoom, tap a body.
+// that wakes up (dark eyes, huge grin full of little teeth) when you press Wake up on its card. Swipe to turn, pinch to zoom, tap a body.
 import * as THREE from '../vendor/three.module.min.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import { BODIES, paint, ringTexture } from './space/bodies.js';
@@ -11,8 +11,8 @@ const ui = {
   chips: $('#space-chips'), pause: $('#btn-pause'), title: $('#space-title'),
 };
 const T = {
-  en: { title: 'Solar System', say: 'Say it', close: 'Close', moons: 'Moons', speech: 'en-US' },
-  es: { title: 'Sistema Solar', say: 'Escucha', close: 'Cerrar', moons: 'Lunas', speech: 'es-ES' },
+  en: { title: 'Solar System', wake: 'Wake up', sleep: 'Sleep', say: 'Say it', close: 'Close', moons: 'Moons', speech: 'en-US' },
+  es: { title: 'Sistema Solar', wake: 'Despertar', sleep: 'Dormir', say: 'Escucha', close: 'Cerrar', moons: 'Lunas', speech: 'es-ES' },
 };
 const FOV = 45;
 const ROCKY = new Set(['moon', 'mercury', 'mars', 'pluto', 'ganymede', 'callisto', 'charon', 'rockdark', 'europa', 'io']);
@@ -103,7 +103,7 @@ function makeBody(d, parent, texSize) {
     uniforms: { uEye: { value: 0 }, uMouth: { value: 0 }, uChomp: { value: 0 }, uSlit: { value: 0 }, uLit: { value: d.id === 'sun' ? 1 : 0 }, uLight: { value: new THREE.Vector3(0, 0, 1) },
       uDark: { value: new THREE.Vector3(...(f.dark ?? [0.03, 0.025, 0.025])) }, uTeeth: { value: f.teeth ? new THREE.Vector3(...f.teeth) : (() => { const c = new THREE.Color(d.color); return new THREE.Vector3(c.r, c.g, c.b).multiplyScalar(1.25); })() } } });
   const overlay = new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.006, seg[0], seg[1]), fm); mesh.add(overlay);
-  const b = { d, parent, anchor, tilt, mesh, overlay, fm, angle: Math.random() * Math.PI * 2, w: d.id === 'sun' ? 1 : 0, blink: 2 + Math.random() * 4, bounce: 0, phase: Math.random() * 6.28, wasAwake: d.id === 'sun', moons: [] };
+  const b = { d, parent, anchor, tilt, mesh, overlay, fm, angle: Math.random() * Math.PI * 2, w: 0, awake: false, blink: 2 + Math.random() * 4, bounce: 0, phase: Math.random() * 6.28, wasAwake: false, moons: [] };
   if (ATMO[d.kind]) {
     const am = new THREE.ShaderMaterial({ vertexShader: ATMO_VERT, fragmentShader: ATMO_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uCol: { value: new THREE.Vector3(...ATMO[d.kind]) } } });
     mesh.add(new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.07, 48, 32), am));
@@ -188,12 +188,11 @@ function frame(now) {
     if (b.parent) b.mesh.rotation.y = -b.angle - Math.PI / 2;
     else b.mesh.rotation.y += (d.spin ?? 0.3) * (focus === b ? 0.3 : 1) * dt * ts;
   }
-  // faces: wake up when the camera is close (or the body is focused)
+  // faces: appear when the card's Wake up button is pressed, and disappear again on Sleep
   camera.updateMatrixWorld(); const vm = camera.matrixWorldInverse;
   for (const b of bodies) {
     b.anchor.getWorldPosition(world);
-    const near = camera.position.distanceTo(world) < b.d.r * 11 || focus === b || b.d.id === 'sun';
-    b.w = Math.min(1, Math.max(0, b.w + (near ? dt / 3.6 : -dt / 1.2))); // waking takes a few slow seconds; falling asleep is quicker
+    b.w = Math.min(1, Math.max(0, b.w + (b.awake ? dt / 3.6 : -dt / 2.2))); // a face appears slowly, and fades away again when told to sleep
     if (b.w > 0.5 && !b.wasAwake) { b.wasAwake = true; b.bounce = 1; } if (b.w < 0.2) b.wasAwake = false;
     const u = b.fm.uniforms;
     u.uSlit.value = b.w > 0.01 ? 1 : 0; u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.08, 0.45); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.4, 1.0); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
@@ -230,8 +229,9 @@ function showCard(b) {
   const t = T[lang]; ui.name.textContent = nm(b); ui.fact.textContent = b.d.fact[lang]; ui.stat.textContent = b.d.stat?.[lang] ?? '';
   ui.moons.innerHTML = b.moons.length ? `<span>${t.moons}:</span>` + b.moons.map((m) => `<button type="button" class="moon-chip" data-id="${m.d.id}">${m.d[lang]}</button>`).join('') : '';
   ui.moons.querySelectorAll('.moon-chip').forEach((el) => el.addEventListener('click', () => focusOn(bodies.find((x) => x.d.id === el.dataset.id))));
-  ui.card.classList.remove('mini'); ui.card.classList.add('open');
+  wakeLabel(b); ui.card.classList.remove('mini'); ui.card.classList.add('open');
 }
+function wakeLabel(b = focus) { if (b) $('#sc-wake-l').textContent = b.awake ? T[lang].sleep : T[lang].wake; }
 const CHIPS = BODIES.flatMap((d) => (d.id === 'earth' ? [d, d.moons[0]] : [d])); // our Moon gets its own button
 function buildChips() {
   ui.chips.innerHTML = CHIPS.map((d) => `<button type="button" class="chip" data-id="${d.id}">${d[lang]}</button>`).join('');
@@ -275,6 +275,7 @@ function bind() {
   };
   canvas.addEventListener('pointerup', (e) => up(e, false)); canvas.addEventListener('pointercancel', (e) => up(e, true));
   ui.card.addEventListener('click', () => { if (ui.card.classList.contains('mini')) ui.card.classList.remove('mini'); });
+  $('#sc-wake').addEventListener('click', () => { if (!focus) return; focus.awake = !focus.awake; wakeLabel(); });
   $('#sc-speak').addEventListener('click', speak); $('#sc-close').addEventListener('click', () => focusOn(null));
   ui.pause.addEventListener('click', () => { paused = !paused; ui.pause.innerHTML = paused ? PLAY_ICON : PAUSE_ICON; ui.pause.classList.toggle('on', paused); });
   $('#btn-sreset').addEventListener('click', () => { focusOn(null); anim.dist = 130; anim.active = true; camera.position.set(0, 62, 128).multiplyScalar(1); });
