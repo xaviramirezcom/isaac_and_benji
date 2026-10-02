@@ -8,86 +8,108 @@ const $ = (s) => document.querySelector(s);
 const root = $('#view-space'), canvas = $('#space-canvas');
 const ui = {
   loading: $('#space-loading'), bar: $('#space-bar'), card: $('#space-card'), name: $('#sc-name'), fact: $('#sc-fact'), stat: $('#sc-stat'), moons: $('#sc-moons'),
-  chips: $('#space-chips'), pause: $('#btn-pause'), face: $('#btn-face'), title: $('#space-title'),
+  chips: $('#space-chips'), pause: $('#btn-pause'), title: $('#space-title'),
 };
 const T = {
-  en: { title: 'Solar System', grin: 'Grin', smile: 'Smile', say: 'Say it', close: 'Close', moons: 'Moons', speech: 'en-US' },
-  es: { title: 'Sistema Solar', grin: 'Sonrisa grande', smile: 'Sonrisa', say: 'Escucha', close: 'Cerrar', moons: 'Lunas', speech: 'es-ES' },
+  en: { title: 'Solar System', say: 'Say it', close: 'Close', moons: 'Moons', speech: 'en-US' },
+  es: { title: 'Sistema Solar', say: 'Escucha', close: 'Cerrar', moons: 'Lunas', speech: 'es-ES' },
 };
 const FOV = 45;
+const ROCKY = new Set(['moon', 'mercury', 'mars', 'pluto', 'ganymede', 'callisto', 'charon', 'rockdark', 'europa', 'io']);
+const ATMO = { earth: [0.35, 0.65, 1.0], venus: [1.0, 0.85, 0.5], mars: [1.0, 0.6, 0.4], titan: [1.0, 0.7, 0.3], jupiter: [1.0, 0.85, 0.65], saturn: [1.0, 0.9, 0.65], uranus: [0.6, 0.95, 1.0], neptune: [0.4, 0.55, 1.0] };
+const ATMO_VERT = `#include <common>
+#include <logdepthbuf_pars_vertex>
+varying vec3 vN; varying vec3 vV;
+void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv;
+#include <logdepthbuf_vertex>
+}`;
+const ATMO_FRAG = `precision highp float;
+#include <logdepthbuf_pars_fragment>
+uniform vec3 uCol; varying vec3 vN; varying vec3 vV;
+void main(){
+#include <logdepthbuf_fragment>
+  float f = pow(1.0 - clamp(dot(normalize(vN), normalize(vV)), 0.0, 1.0), 2.6); gl_FragColor = vec4(uCol * f, f * 0.9);
+}`;
 const PAUSE_ICON = '<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="8" y="6" width="6" height="20" rx="2" fill="currentColor"/><rect x="18" y="6" width="6" height="20" rx="2" fill="currentColor"/></svg>';
 const PLAY_ICON = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 5l17 11L9 27z" fill="currentColor"/></svg>';
 
 let lang = 'en', ready = false, running = false, loadPromise = null, raf = 0, lastT = 0;
 let renderer, scene, camera, controls, sunLight;
 const bodies = []; // every body (sun, planets, moons): { d, parent, anchor, tilt, spin, overlay, mat, angle, w, ... }
-let focus = null, paused = false, grin = true, styleNow = 1;
+let focus = null, paused = false;
 const anim = { active: false, dist: 130 };
 
 // ------------------------------------------------------------ the face (a shader painted on the front of every body)
 const FACE_VERT = `#include <common>
 #include <logdepthbuf_pars_vertex>
-varying vec3 vVP; varying vec3 vVC;
-void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vVP = mv.xyz; vVC = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz; gl_Position = projectionMatrix * mv;
+varying vec3 vL; varying vec3 vVN;
+void main(){ vL = normalize(position); vVN = normalize(normalMatrix * normal); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 #include <logdepthbuf_vertex>
 }`;
+// The face lives in the planet's own frame (local +Z), so it turns with the planet. Carved, ragged-edged, like "The Moon Wakes Up".
 const FACE_FRAG = `precision highp float;
 #include <logdepthbuf_pars_fragment>
-uniform float uEye, uMouth, uStyle, uLit, uRadius; uniform vec3 uLight, uDark, uTeeth;
-varying vec3 vVP; varying vec3 vVC;
+uniform float uEye, uMouth, uLit, uChomp; uniform vec3 uLight, uDark, uTeeth;
+varying vec3 vL; varying vec3 vVN;
+float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
 float ell(vec2 q, vec2 e){ return (length(q / e) - 1.0) * min(e.x, e.y); }
+vec2 rot(vec2 q, float a){ float c = cos(a), s = sin(a); return vec2(c * q.x - s * q.y, s * q.x + c * q.y); }
 void main(){
 #include <logdepthbuf_fragment>
-  vec3 d = vVP - vVC; vec2 p = d.xy / uRadius; float r = length(p);
-  if (d.z <= 0.0 || r > 1.0) discard;
-  float lit = mix(clamp(dot(normalize(d), uLight) * 0.9 + 0.32, 0.25, 1.0), 1.0, uLit);
-  vec2 f = p / 0.94;
-  // eyes: closed (a sleepy curve) -> wide open dark ovals
-  float ew = mix(0.12, 0.105, uEye) * mix(1.1, 1.0, uStyle), eh = mix(0.014, 0.19, uEye) * mix(0.9, 1.0, uStyle);
-  vec2 qL = f - vec2(-0.3, 0.27), qR = f - vec2(0.3, 0.27);
-  float curl = (1.0 - uEye) * 0.06; qL.y += curl * (1.0 - pow(qL.x / ew, 2.0)) - 0.0; qR.y += curl * (1.0 - pow(qR.x / ew, 2.0));
-  float dL = ell(qL, vec2(ew, eh)), dR = ell(qR, vec2(ew, eh));
-  // mouth: a wide grin whose ends curl up
-  float W = mix(0.42, 0.64, uStyle), ax = abs(f.x) / W;
-  float top = -0.15 + 0.14 * ax * ax;
-  float depth = mix(0.012, mix(0.24, 0.42, uStyle), uMouth) * sqrt(max(0.0, 1.0 - ax * ax));
+  float LIT = mix(clamp(dot(normalize(vVN), uLight) * 0.9 + 0.32, 0.25, 1.0), 1.0, uLit);
+  if (vL.z < 0.02) discard;
+  vec2 f = vL.xy;
+  float rag = (vn(f * 26.0) - 0.5) * 0.028 + (vn(f * 70.0) - 0.5) * 0.01;
+  // eyes: sleepy curves -> big slanted dark ovals
+  float ew = mix(0.15, 0.125, uEye), eh = mix(0.012, 0.215, uEye);
+  vec2 qL = rot(f - vec2(-0.34, 0.30), -0.2), qR = rot(f - vec2(0.34, 0.30), 0.2);
+  float curl = (1.0 - uEye) * 0.07; qL.y += curl * (1.0 - pow(qL.x / ew, 2.0)); qR.y += curl * (1.0 - pow(qR.x / ew, 2.0));
+  float dE = min(ell(qL, vec2(ew, eh)), ell(qR, vec2(ew, eh))) + rag;
+  // mouth: a huge crescent grin
+  float W = 0.76, ax = abs(f.x) / W;
+  float top = -0.12 + 0.2 * ax * ax * ax;
+  float depth = mix(0.012, 0.50 + 0.04 * uChomp, uMouth) * pow(max(0.0, 1.0 - ax * ax), 0.65);
   float bot = top - depth;
-  float dm = max(max(f.y - top, bot - f.y), (ax - 1.0) * W);
-  // little teeth along both edges (only in the grin style)
-  float tl = 0.105 * uMouth * smoothstep(0.35, 0.9, uStyle) * (0.45 + 0.55 * sqrt(max(0.0, 1.0 - ax * ax)));
-  float tu = fract((f.x + W) / (2.0 * W) * 24.0), tb = fract((f.x + W) / (2.0 * W) * 24.0 + 0.5);
-  float triU = 1.0 - abs(2.0 * tu - 1.0), triB = 1.0 - abs(2.0 * tb - 1.0);
-  float teethU = step(top - tl * triU, f.y), teethB = step(f.y, bot + tl * 0.9 * triB);
-  float insE = max(1.0 - smoothstep(-0.005, 0.005, dL), 1.0 - smoothstep(-0.005, 0.005, dR));
-  float insM = 1.0 - smoothstep(-0.005, 0.005, dm);
+  float dm = max(max(f.y - top, bot - f.y), (ax - 1.0) * W) + rag * 1.3;
+  // lots of little pointy teeth, uneven like the real thing
+  float N = 26.0, t = (f.x + W) / (2.0 * W) * N, cell = floor(t), fr = fract(t);
+  float hu = 0.65 + 0.7 * h21(vec2(cell, 3.0)), hb = 0.65 + 0.7 * h21(vec2(cell, 9.0));
+  float tri = 1.0 - abs(2.0 * fr - 1.0), tri2 = 1.0 - abs(2.0 * fract(t + 0.5) - 1.0);
+  float body = sqrt(max(0.0, 1.0 - ax * ax)), tl = 0.12 * uMouth * (0.4 + 0.6 * body);
+  float teethU = step(top - tl * hu * tri, f.y), teethB = step(f.y, bot + tl * hb * 0.9 * tri2);
+  float insE = 1.0 - smoothstep(-0.004, 0.004, dE), insM = 1.0 - smoothstep(-0.004, 0.004, dm);
   float ins = max(insE, insM);
-  vec3 col = uDark * mix(1.4, 0.35, clamp(-dm * 7.0, 0.0, 1.0));
+  vec3 col = uDark * mix(1.5, 0.3, clamp(-min(dE, dm) * 6.0, 0.0, 1.0));
   float teeth = max(teethU, teethB) * insM * step(0.04, uMouth);
-  col = mix(col, uTeeth * lit * (0.78 + 0.22 * max(triU, triB)), teeth);
-  // friendly style: a tiny shine in each open eye
-  float shine = (1.0 - uStyle) * uEye * insE * (1.0 - smoothstep(0.0, 0.03, min(length(qL - vec2(-0.04, 0.06)), length(qR - vec2(-0.04, 0.06)))));
-  col = mix(col, vec3(1.0), shine);
-  float edge = min(min(dL, dR), dm);
-  float carve = (1.0 - ins) * 0.55 * smoothstep(0.075, 0.0, edge);
-  float a = max(ins, carve) * smoothstep(1.0, 0.82, r);
-  gl_FragColor = vec4(col, a);
+  float shade = 0.74 + 0.26 * max(tri, tri2);
+  col = mix(col, uTeeth * (0.55 + 0.45 * LIT) * shade, teeth);
+  float edge = min(dE, dm);
+  // carved rim: dark crack all around, a faint bright lip on the lower side
+  float crack = (1.0 - ins) * 0.7 * smoothstep(0.05, 0.0, edge);
+  float a = max(ins, crack);
+  gl_FragColor = vec4(col * (1.0 + 0.0), a);
 }`;
 
 // ------------------------------------------------------------ building the system
 const world = new THREE.Vector3();
 function makeBody(d, parent, texSize) {
-  const anchor = new THREE.Group(), tilt = new THREE.Group(); tilt.rotation.z = d.tilt ?? 0; anchor.add(tilt);
+  const anchor = new THREE.Group(), tilt = new THREE.Group(); tilt.rotation.z = d.rings ? (d.tilt ?? 0) : 0; anchor.add(tilt);
   const map = new THREE.CanvasTexture(paint(d, texSize, texSize / 2)); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
   const seg = d.r > 1 ? [72, 48] : [48, 32];
   const geo = new THREE.SphereGeometry(d.r, seg[0], seg[1]);
-  const material = d.id === 'sun' ? new THREE.MeshBasicMaterial({ map }) : new THREE.MeshStandardMaterial({ map, roughness: 0.95, metalness: 0 });
+  const material = d.id === 'sun' ? new THREE.MeshBasicMaterial({ map }) : new THREE.MeshStandardMaterial({ map, roughness: 0.95, metalness: 0, ...(ROCKY.has(d.kind) ? { bumpMap: map, bumpScale: 2.2 } : {}) });
   const mesh = new THREE.Mesh(geo, material); tilt.add(mesh);
   const f = d.face ?? {};
   const fm = new THREE.ShaderMaterial({ vertexShader: FACE_VERT, fragmentShader: FACE_FRAG, transparent: true, depthWrite: false,
-    uniforms: { uEye: { value: 0 }, uMouth: { value: 0 }, uStyle: { value: 1 }, uLit: { value: d.id === 'sun' ? 1 : 0 }, uRadius: { value: d.r * 1.006 }, uLight: { value: new THREE.Vector3(0, 0, 1) },
+    uniforms: { uEye: { value: 0 }, uMouth: { value: 0 }, uChomp: { value: 0 }, uLit: { value: d.id === 'sun' ? 1 : 0 }, uLight: { value: new THREE.Vector3(0, 0, 1) },
       uDark: { value: new THREE.Vector3(...(f.dark ?? [0.03, 0.025, 0.025])) }, uTeeth: { value: new THREE.Vector3(...(f.teeth ?? [0.93, 0.91, 0.82])) } } });
-  const overlay = new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.006, seg[0], seg[1]), fm); anchor.add(overlay);
+  const overlay = new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.006, seg[0], seg[1]), fm); mesh.add(overlay);
   const b = { d, parent, anchor, tilt, mesh, overlay, fm, angle: Math.random() * Math.PI * 2, w: d.id === 'sun' ? 1 : 0, blink: 2 + Math.random() * 4, bounce: 0, wasAwake: d.id === 'sun', moons: [] };
+  if (ATMO[d.kind]) {
+    const am = new THREE.ShaderMaterial({ vertexShader: ATMO_VERT, fragmentShader: ATMO_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uCol: { value: new THREE.Vector3(...ATMO[d.kind]) } } });
+    mesh.add(new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.07, 48, 32), am));
+  }
   if (d.rings) {
     const rg = new THREE.RingGeometry(d.r * 1.35, d.r * 2.45, 96, 1), pos = rg.attributes.position, uv = rg.attributes.uv, v = new THREE.Vector3();
     for (let i = 0; i < pos.count; i++) { v.fromBufferAttribute(pos, i); uv.setXY(i, (v.length() - d.r * 1.35) / (d.r * 1.1), 0.5); }
@@ -157,7 +179,6 @@ function frame(now) {
   raf = requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
   const ts = paused ? 0 : 1;
-  styleNow += ((grin ? 1 : 0) - styleNow) * (1 - Math.exp(-dt * 6));
   for (const b of bodies) {
     const d = b.d;
     if (d.id !== 'sun') {
@@ -165,7 +186,7 @@ function frame(now) {
       b.angle += omega * dt * ts;
       b.anchor.position.set(Math.cos(b.angle) * d.orbit, 0, Math.sin(b.angle) * d.orbit);
     }
-    b.mesh.rotation.y += (d.spin ?? 0.3) * dt * ts;
+    b.mesh.rotation.y += (d.spin ?? 0.3) * (focus === b ? 0.3 : 1) * dt * ts;
   }
   // faces: wake up when the camera is close (or the body is focused); blink now and then
   camera.updateMatrixWorld(); const vm = camera.matrixWorldInverse;
@@ -176,9 +197,9 @@ function frame(now) {
     if (b.w > 0.5 && !b.wasAwake) { b.wasAwake = true; b.bounce = 1; } if (b.w < 0.2) b.wasAwake = false;
     b.blink -= dt; let blink = 1; if (b.blink < 0.14) { blink = Math.abs(b.blink / 0.14 - 0.5) * 2; if (b.blink < 0) b.blink = 3 + Math.random() * 5; }
     const u = b.fm.uniforms;
-    u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.05, 0.55) * (b.w > 0.6 ? blink : 1); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.3, 1.0); u.uStyle.value = styleNow;
+    u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.05, 0.55) * (b.w > 0.6 ? blink : 1); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.3, 1.0); u.uChomp.value = Math.sin(now / 420 + b.blink * 3);
     lightV.copy(world).negate().normalize().transformDirection(vm); u.uLight.value.copy(lightV);
-    b.bounce = Math.max(0, b.bounce - dt * 1.6); const s = 1 + 0.12 * Math.sin(b.bounce * Math.PI); b.mesh.scale.setScalar(s); b.overlay.scale.setScalar(s);
+    b.bounce = Math.max(0, b.bounce - dt * 1.6); const s = 1 + 0.12 * Math.sin(b.bounce * Math.PI); b.mesh.scale.setScalar(s);
   }
   // camera follows the focused body as it travels
   const goal = focus ? (focus.anchor.getWorldPosition(tmp2), tmp2) : tmp2.set(0, 0, 0);
@@ -218,7 +239,7 @@ function refreshChips() { ui.chips.querySelectorAll('.chip').forEach((el) => el.
 function setLang(l) {
   lang = l; const t = T[l];
   document.querySelectorAll('#view-space .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
-  ui.title.textContent = t.title; $('#sc-speak-l').textContent = t.say; $('#sc-close-l').textContent = t.close; $('#lbl-face').textContent = grin ? t.grin : t.smile;
+  ui.title.textContent = t.title; $('#sc-speak-l').textContent = t.say; $('#sc-close-l').textContent = t.close;
   ui.chips.querySelectorAll('.chip').forEach((el) => { el.textContent = BODIES.find((d) => d.id === el.dataset.id)[l]; });
   if (focus) showCard(focus); speechSynthesis?.cancel();
 }
@@ -252,7 +273,6 @@ function bind() {
   canvas.addEventListener('pointerup', (e) => up(e, false)); canvas.addEventListener('pointercancel', (e) => up(e, true));
   $('#sc-speak').addEventListener('click', speak); $('#sc-close').addEventListener('click', () => focusOn(null));
   ui.pause.addEventListener('click', () => { paused = !paused; ui.pause.innerHTML = paused ? PLAY_ICON : PAUSE_ICON; ui.pause.classList.toggle('on', paused); });
-  ui.face.addEventListener('click', () => { grin = !grin; ui.face.classList.toggle('on', !grin); $('#lbl-face').textContent = grin ? T[lang].grin : T[lang].smile; });
   $('#btn-sreset').addEventListener('click', () => { focusOn(null); anim.dist = 130; anim.active = true; camera.position.set(0, 62, 128).multiplyScalar(1); });
   document.querySelectorAll('#view-space .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
   new ResizeObserver(resize).observe(root);
