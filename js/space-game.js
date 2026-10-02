@@ -61,11 +61,11 @@ void main(){
   if (vL.z < 0.02) discard;
   vec2 f = vL.xy; f.y += 0.14; // the face sits a little low on the disc, like the real thing
   float rag = (vn(f * 26.0) - 0.5) * 0.024 + (vn(f * 70.0) - 0.5) * 0.009;
-  // eyes: thin sleepy slits -> small dark hollows, set low and close to the mouth
-  float ew = mix(0.105, 0.095, uEye), eh = mix(0.006, 0.058, uEye);
+  // eyes: grow out of nothing into small dark hollows, set low and close to the mouth
+  float es = uEye * (1.0 + 0.3 * sin(uEye * 3.14159));
+  vec2 ee = vec2(0.1, 0.058) * max(es, 0.0005);
   vec2 qL = rot(f - vec2(-0.18, 0.2), -0.22), qR = rot(f - vec2(0.18, 0.2), 0.22);
-  float curl = (1.0 - uEye) * 0.03; qL.y += curl * (1.0 - pow(qL.x / ew, 2.0)); qR.y += curl * (1.0 - pow(qR.x / ew, 2.0));
-  float dE = min(ell(qL, vec2(ew, eh)), ell(qR, vec2(ew, eh))) + rag;
+  float dE = min(ell(qL, ee), ell(qR, ee)) + rag; if (uEye < 0.01) dE = 1.0;
   // mouth: starts as a little pout, then opens into a wide laughing bowl edged with tiny teeth
   float ms = pow(uMouth, 0.6);
   float W = 0.6 * ms, ax = abs(f.x) / max(W, 0.001);
@@ -188,16 +188,15 @@ function frame(now) {
     if (b.parent) b.mesh.rotation.y = -b.angle - Math.PI / 2;
     else b.mesh.rotation.y += (d.spin ?? 0.3) * (focus === b ? 0.3 : 1) * dt * ts;
   }
-  // faces: wake up when the camera is close (or the body is focused); blink now and then
+  // faces: wake up when the camera is close (or the body is focused)
   camera.updateMatrixWorld(); const vm = camera.matrixWorldInverse;
   for (const b of bodies) {
     b.anchor.getWorldPosition(world);
     const near = camera.position.distanceTo(world) < b.d.r * 11 || focus === b || b.d.id === 'sun';
     b.w = Math.min(1, Math.max(0, b.w + (near ? dt / 3.6 : -dt / 1.2))); // waking takes a few slow seconds; falling asleep is quicker
     if (b.w > 0.5 && !b.wasAwake) { b.wasAwake = true; b.bounce = 1; } if (b.w < 0.2) b.wasAwake = false;
-    b.blink -= dt; let blink = 1; if (b.blink < 0.14) { blink = Math.abs(b.blink / 0.14 - 0.5) * 2; if (b.blink < 0) b.blink = 3 + Math.random() * 5; }
     const u = b.fm.uniforms;
-    u.uSlit.value = THREE.MathUtils.smoothstep(b.w, 0.02, 0.2); u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.25, 0.55) * (b.w > 0.85 ? blink : 1); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.5, 1.0); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
+    u.uSlit.value = b.w > 0.01 ? 1 : 0; u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.08, 0.45); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.4, 1.0); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
     lightV.copy(world).negate().normalize().transformDirection(vm); u.uLight.value.copy(lightV);
     b.bounce = Math.max(0, b.bounce - dt * 1.6); const s = 1 + 0.12 * Math.sin(b.bounce * Math.PI); b.mesh.scale.setScalar(s);
   }
