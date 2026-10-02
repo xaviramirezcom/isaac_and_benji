@@ -104,7 +104,7 @@ function makeBody(d, parent, texSize) {
   const f = d.face ?? {};
   const fm = new THREE.ShaderMaterial({ vertexShader: FACE_VERT, fragmentShader: FACE_FRAG, transparent: true, depthWrite: false,
     uniforms: { uEye: { value: 0 }, uMouth: { value: 0 }, uChomp: { value: 0 }, uSlit: { value: 0 }, uLit: { value: d.id === 'sun' ? 1 : 0 }, uLight: { value: new THREE.Vector3(0, 0, 1) },
-      uDark: { value: new THREE.Vector3(...(f.dark ?? [0.03, 0.025, 0.025])) }, uTeeth: { value: f.teeth ? new THREE.Vector3(...f.teeth) : (() => { const c = new THREE.Color(d.color); return new THREE.Vector3(c.r, c.g, c.b).multiplyScalar(1.25); })() } } });
+      uDark: { value: new THREE.Vector3(...(f.dark ?? [0.03, 0.025, 0.025])) }, uTeeth: { value: new THREE.Vector3(0.9, 0.88, 0.8) } } });
   const overlay = new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.006, seg[0], seg[1]), fm); mesh.add(overlay);
   const b = { d, parent, anchor, tilt, mesh, overlay, fm, angle: Math.random() * Math.PI * 2, w: 0, awake: false, blink: 2 + Math.random() * 4, bounce: 0, phase: Math.random() * 6.28, wasAwake: false, moons: [] };
   if (ATMO[d.kind]) {
