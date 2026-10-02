@@ -69,7 +69,7 @@ void main(){
   // mouth: a huge crescent grin
   float W = 0.76, ax = abs(f.x) / W;
   float top = -0.12 + 0.2 * ax * ax * ax;
-  float depth = mix(0.012, 0.50 + 0.04 * uChomp, uMouth) * pow(max(0.0, 1.0 - ax * ax), 0.65);
+  float depth = mix(0.012, 0.52 * mix(0.28, 1.0, uChomp), uMouth) * pow(max(0.0, 1.0 - ax * ax), 0.65);
   float bot = top - depth;
   float dm = max(max(f.y - top, bot - f.y), (ax - 1.0) * W) + rag * 1.3;
   // lots of little pointy teeth, uneven like the real thing
@@ -105,7 +105,7 @@ function makeBody(d, parent, texSize) {
     uniforms: { uEye: { value: 0 }, uMouth: { value: 0 }, uChomp: { value: 0 }, uLit: { value: d.id === 'sun' ? 1 : 0 }, uLight: { value: new THREE.Vector3(0, 0, 1) },
       uDark: { value: new THREE.Vector3(...(f.dark ?? [0.03, 0.025, 0.025])) }, uTeeth: { value: new THREE.Vector3(...(f.teeth ?? [0.93, 0.91, 0.82])) } } });
   const overlay = new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.006, seg[0], seg[1]), fm); mesh.add(overlay);
-  const b = { d, parent, anchor, tilt, mesh, overlay, fm, angle: Math.random() * Math.PI * 2, w: d.id === 'sun' ? 1 : 0, blink: 2 + Math.random() * 4, bounce: 0, wasAwake: d.id === 'sun', moons: [] };
+  const b = { d, parent, anchor, tilt, mesh, overlay, fm, angle: Math.random() * Math.PI * 2, w: d.id === 'sun' ? 1 : 0, blink: 2 + Math.random() * 4, bounce: 0, phase: Math.random() * 6.28, wasAwake: d.id === 'sun', moons: [] };
   if (ATMO[d.kind]) {
     const am = new THREE.ShaderMaterial({ vertexShader: ATMO_VERT, fragmentShader: ATMO_FRAG, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uCol: { value: new THREE.Vector3(...ATMO[d.kind]) } } });
     mesh.add(new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.07, 48, 32), am));
@@ -199,7 +199,7 @@ function frame(now) {
     if (b.w > 0.5 && !b.wasAwake) { b.wasAwake = true; b.bounce = 1; } if (b.w < 0.2) b.wasAwake = false;
     b.blink -= dt; let blink = 1; if (b.blink < 0.14) { blink = Math.abs(b.blink / 0.14 - 0.5) * 2; if (b.blink < 0) b.blink = 3 + Math.random() * 5; }
     const u = b.fm.uniforms;
-    u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.05, 0.55) * (b.w > 0.6 ? blink : 1); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.3, 1.0); u.uChomp.value = Math.sin(now / 420 + b.blink * 3);
+    u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.05, 0.55) * (b.w > 0.6 ? blink : 1); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.3, 1.0); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 480 + b.phase), 0.05, 0.95);
     lightV.copy(world).negate().normalize().transformDirection(vm); u.uLight.value.copy(lightV);
     b.bounce = Math.max(0, b.bounce - dt * 1.6); const s = 1 + 0.12 * Math.sin(b.bounce * Math.PI); b.mesh.scale.setScalar(s);
   }
