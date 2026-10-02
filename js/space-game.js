@@ -68,7 +68,7 @@ void main(){
   float dE = min(ell(qL, vec2(ew, eh)), ell(qR, vec2(ew, eh))) + rag;
   // mouth: a huge crescent grin
   float W = 0.76, ax = abs(f.x) / W;
-  float top = -0.13 + 0.07 * ax * ax * ax;
+  float top = -0.12 + 0.2 * ax * ax * ax;
   float depth = mix(0.012, 0.52 * mix(0.62, 1.0, uChomp), uMouth) * pow(max(0.0, 1.0 - ax * ax), 0.65);
   float bot = top - depth;
   float dm = max(max(f.y - top, bot - f.y), (ax - 1.0) * W) + rag * 1.3;
