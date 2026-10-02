@@ -75,17 +75,17 @@ export function paint(body, w, h) {
   const put = (i, col) => { d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = 255; };
   for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
     const u = i / w, v = j / h, nx = u * PX, ny = v * PX / 2, idx = (j * w + i) * 4; let col;
-    const n = fbm(nx, ny, PX, 5, S), n2 = fbm(nx * 2.3 + 5, ny * 2.3, PX * 2.3 | 0 || 1, 4, S + 3);
+    const n = fbm(nx, ny, PX, 5, S), n2 = fbm(nx * 2 + 5, ny * 2, PX * 2, 4, S + 3);
     if (kind === 'sun') { const t = sm(0.3, 0.75, fbm(nx * 3, ny * 3, PX * 3, 4, S)); col = mix(hex('#ff7a10'), hex('#fff0a0'), t * 0.9 + 0.1); }
     else if (kind === 'earth') {
       const lat = Math.abs(v - 0.5) * 2, land = sm(0.5, 0.56, n + 0.03 * (1 - lat)), ocean = mix(hex('#1b5ca8'), hex('#2f86d6'), n2);
       const green = mix(hex('#3f8a3a'), hex('#8a7a3c'), sm(0.45, 0.8, n2)); col = mix(ocean, green, land);
-      const cloud = sm(0.52, 0.72, fbm(nx * 1.6 + 9, ny * 1.6, PX * 1.6 | 0 || 1, 5, S + 11)); col = mix(col, [255, 255, 255], cloud * 0.8);
+      const cloud = sm(0.52, 0.72, fbm(nx * 2 + 9, ny * 2, PX * 2, 5, S + 11)); col = mix(col, [255, 255, 255], cloud * 0.8);
       col = mix(col, [245, 248, 255], sm(0.84, 0.93, lat));
     }
     else if (kind === 'mars') { col = mix(hex('#c8603a'), hex('#8a3a20'), sm(0.42, 0.7, n2)); col = mix(col, hex('#e8a070'), sm(0.55, 0.8, n) * 0.4); col = mix(col, [250, 245, 240], sm(0.9, 0.96, Math.abs(v - 0.5) * 2)); }
     else if (GAS[kind]) {
-      const pal = GAS[kind].map(hex), warp = (fbm(nx * 1.2, ny * 3, PX * 1.2 | 0 || 1, 4, S) - 0.5) * (kind === 'venus' ? 0.5 : 0.06);
+      const pal = GAS[kind].map(hex), warp = (fbm(nx, ny * 3, PX, 4, S) - 0.5) * (kind === 'venus' ? 0.5 : 0.06);
       const t = ((v + warp) * pal.length * (kind === 'uranus' ? 0.5 : 1)), a = Math.floor(t), f = t - a;
       col = mix(pal[((a % pal.length) + pal.length) % pal.length], pal[(((a + 1) % pal.length) + pal.length) % pal.length], sm(0.25, 0.75, f));
       col = mix(col, [255, 255, 255], (fbm(nx * 4, ny * 6, PX * 4, 3, S + 5) - 0.5) * 0.18);

@@ -145,7 +145,7 @@ async function init() {
   }
   controls = new OrbitControls(camera, canvas);
   controls.enablePan = false; controls.enableDamping = true; controls.dampingFactor = 0.09; controls.rotateSpeed = 0.8; controls.zoomSpeed = 1.0; controls.maxDistance = 330; controls.minDistance = 6;
-  controls.addEventListener('start', () => { anim.active = false; });
+  controls.addEventListener('start', () => { anim.active = false; ui.card.classList.add('mini'); }); // touching the space tucks the card away
   camera.position.set(0, 62, 128); controls.update();
   buildChips(); bind(); resize();
   if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__space = { get camera() { return camera; }, get controls() { return controls; }, bodies, focusOn };
@@ -233,7 +233,7 @@ function showCard(b) {
   const t = T[lang]; ui.name.textContent = nm(b); ui.fact.textContent = b.d.fact[lang]; ui.stat.textContent = b.d.stat?.[lang] ?? '';
   ui.moons.innerHTML = b.moons.length ? `<span>${t.moons}:</span>` + b.moons.map((m) => `<button type="button" class="moon-chip" data-id="${m.d.id}">${m.d[lang]}</button>`).join('') : '';
   ui.moons.querySelectorAll('.moon-chip').forEach((el) => el.addEventListener('click', () => focusOn(bodies.find((x) => x.d.id === el.dataset.id))));
-  ui.card.classList.add('open');
+  ui.card.classList.remove('mini'); ui.card.classList.add('open');
 }
 const CHIPS = BODIES.flatMap((d) => (d.id === 'earth' ? [d, d.moons[0]] : [d])); // our Moon gets its own button
 function buildChips() {
@@ -277,6 +277,7 @@ function bind() {
     if (!pointers) { down = null; multi = false; }
   };
   canvas.addEventListener('pointerup', (e) => up(e, false)); canvas.addEventListener('pointercancel', (e) => up(e, true));
+  ui.card.addEventListener('click', () => { if (ui.card.classList.contains('mini')) ui.card.classList.remove('mini'); });
   $('#sc-speak').addEventListener('click', speak); $('#sc-close').addEventListener('click', () => focusOn(null));
   ui.pause.addEventListener('click', () => { paused = !paused; ui.pause.innerHTML = paused ? PLAY_ICON : PAUSE_ICON; ui.pause.classList.toggle('on', paused); });
   $('#btn-sreset').addEventListener('click', () => { focusOn(null); anim.dist = 130; anim.active = true; camera.position.set(0, 62, 128).multiplyScalar(1); });

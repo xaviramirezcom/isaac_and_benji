@@ -255,6 +255,13 @@ button, a { touch-action: manipulation; font: inherit; }
 .mode-btn[hidden] { display: none; }
 
 /* ---------- space (Isaac) ---------- */
+#space-card { transition: transform .3s cubic-bezier(.2, .9, .3, 1.1), visibility 0s .3s, width .25s, padding .25s; }
+#space-card.open { transition: transform .3s cubic-bezier(.2, .9, .3, 1.1), visibility 0s, width .25s, padding .25s; }
+#space-card.mini { width: auto; max-width: calc(100% - 28px); padding: 8px 20px; border-radius: 99px; gap: 10px; flex-wrap: nowrap; cursor: pointer; }
+#space-card.mini .ic-text { flex: 0 1 auto; }
+#space-card.mini .ic-text h3 { margin: 0; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#space-card.mini .ic-text p, #space-card.mini .moon-row, #space-card.mini .ic-actions { display: none; }
+#space-card.mini::after { content: '⌃'; font-weight: 900; font-size: 1.3rem; line-height: 1; opacity: .55; }
 .game-tile.space-tile { background: linear-gradient(160deg, #6a5cff, #2a2a8a); }
 .space-view { background: #03040c; overflow: hidden; }
 #space-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
