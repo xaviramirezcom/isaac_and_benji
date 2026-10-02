@@ -182,7 +182,7 @@ function frame(now) {
   for (const b of bodies) {
     const d = b.d, ts = b.parent && focus && (focus === b || focus === b.parent) ? ts0 * 0.2 : ts0; // calmer moons while you look at them
     if (d.id !== 'sun') {
-      const omega = b.parent ? d.w : 0.12 * Math.pow(19 / d.orbit, 0.8);
+      const omega = b.parent ? d.w : 0.09 * Math.pow(19 / d.orbit, 1.2);
       b.angle += omega * dt * ts;
       b.anchor.position.set(Math.cos(b.angle) * d.orbit, 0, Math.sin(b.angle) * d.orbit);
     }
@@ -235,17 +235,18 @@ function showCard(b) {
   ui.moons.querySelectorAll('.moon-chip').forEach((el) => el.addEventListener('click', () => focusOn(bodies.find((x) => x.d.id === el.dataset.id))));
   ui.card.classList.add('open');
 }
+const CHIPS = BODIES.flatMap((d) => (d.id === 'earth' ? [d, d.moons[0]] : [d])); // our Moon gets its own button
 function buildChips() {
-  ui.chips.innerHTML = BODIES.map((d) => `<button type="button" class="chip" data-id="${d.id}">${d[lang]}</button>`).join('');
+  ui.chips.innerHTML = CHIPS.map((d) => `<button type="button" class="chip" data-id="${d.id}">${d[lang]}</button>`).join('');
   ui.chips.querySelectorAll('.chip').forEach((el) => el.addEventListener('click', () => { const b = bodies.find((x) => x.d.id === el.dataset.id); focusOn(focus === b ? null : b); }));
 }
-function refreshChips() { ui.chips.querySelectorAll('.chip').forEach((el) => el.classList.toggle('on', !!focus && (focus.d.id === el.dataset.id || focus.parent?.d.id === el.dataset.id))); }
+function refreshChips() { ui.chips.querySelectorAll('.chip').forEach((el) => el.classList.toggle('on', !!focus && (focus.d.id === el.dataset.id || (focus.parent?.d.id === el.dataset.id && !CHIPS.some((c) => c.id === focus.d.id))))); }
 
 function setLang(l) {
   lang = l; const t = T[l];
   document.querySelectorAll('#view-space .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
   ui.title.textContent = t.title; $('#sc-speak-l').textContent = t.say; $('#sc-close-l').textContent = t.close;
-  ui.chips.querySelectorAll('.chip').forEach((el) => { el.textContent = BODIES.find((d) => d.id === el.dataset.id)[l]; });
+  ui.chips.querySelectorAll('.chip').forEach((el) => { el.textContent = CHIPS.find((d) => d.id === el.dataset.id)[l]; });
   if (focus) showCard(focus); speechSynthesis?.cancel();
 }
 function speak() {
