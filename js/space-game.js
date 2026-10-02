@@ -67,16 +67,17 @@ void main(){
   vec2 qL = rot(f - vec2(-0.18, 0.2), -0.22), qR = rot(f - vec2(0.18, 0.2), 0.22);
   float dE = min(ell(qL, ee), ell(qR, ee)) + rag; if (uEye < 0.01) dE = 1.0;
   // mouth: starts as a little pout, then opens into a wide laughing bowl edged with tiny teeth
-  float ms = pow(uMouth, 0.6);
-  float W = 0.6 * ms, ax = abs(f.x) / max(W, 0.001);
+  float sc = max(uMouth * (1.0 + 0.18 * sin(uMouth * 3.14159)), 0.0005); // pops out of nothing, like the eyes
+  vec2 g = vec2(f.x, -0.27 + (f.y + 0.27) / sc) / vec2(sc, 1.0);
+  float W = 0.6, ax = abs(g.x) / W;
   float top = -0.04 + 0.12 * ax * ax;
-  float depth = 0.46 * ms * mix(0.8, 1.0, uChomp) * pow(max(0.0, 1.0 - ax * ax), 0.6);
+  float depth = 0.46 * mix(0.8, 1.0, uChomp) * pow(max(0.0, 1.0 - ax * ax), 0.6);
   float bot = top - depth;
-  float dm = max(max(f.y - top, bot - f.y), (ax - 1.0) * W) + rag * 1.2;
-  float N = 46.0, t = (f.x + W) / (2.0 * W) * N;
+  float dm = (max(max(g.y - top, bot - g.y), (ax - 1.0) * W) + rag * 1.2) * sc;
+  float N = 46.0, t = (g.x + W) / (2.0 * W) * N;
   float tri = 1.0 - abs(2.0 * fract(t) - 1.0), tri2 = 1.0 - abs(2.0 * fract(t + 0.5) - 1.0);
-  float tl = 0.04 * ms * (0.5 + 0.5 * sqrt(max(0.0, 1.0 - ax * ax)));
-  float teethU = step(top - tl * tri, f.y), teethB = step(f.y, bot + tl * 0.8 * tri2);
+  float tl = 0.04 * (0.5 + 0.5 * sqrt(max(0.0, 1.0 - ax * ax)));
+  float teethU = step(top - tl * tri, g.y), teethB = step(g.y, bot + tl * 0.8 * tri2);
   float insE = 1.0 - smoothstep(-0.004, 0.004, dE), insM = (1.0 - smoothstep(-0.004, 0.004, dm)) * step(0.01, uMouth);
   float ins = max(insE, insM);
   vec3 col = uDark * mix(1.5, 0.3, clamp(-min(dE, dm) * 6.0, 0.0, 1.0));
