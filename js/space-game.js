@@ -62,31 +62,21 @@ void main(){
   vec2 f = vL.xy;
   float rag = (vn(f * 26.0) - 0.5) * 0.028 + (vn(f * 70.0) - 0.5) * 0.01;
   // eyes: sleepy curves -> big slanted dark ovals
-  float ew = mix(0.11, 0.125, uEye), eh = mix(0.01, 0.085, uEye);
-  vec2 qL = rot(f - vec2(-0.22, 0.27), -0.2), qR = rot(f - vec2(0.22, 0.27), 0.2);
+  float ew = mix(0.11, 0.11, uEye), eh = mix(0.008, 0.075, uEye);
+  vec2 qL = rot(f - vec2(-0.2, 0.3), -0.2), qR = rot(f - vec2(0.2, 0.3), 0.2);
   float curl = (1.0 - uEye) * 0.07; qL.y += curl * (1.0 - pow(qL.x / ew, 2.0)); qR.y += curl * (1.0 - pow(qR.x / ew, 2.0));
   float dE = min(ell(qL, vec2(ew, eh)), ell(qR, vec2(ew, eh))) + rag;
-  // mouth: a huge crescent grin
-  float W = 0.76, ax = abs(f.x) / W;
-  float top = -0.12 + 0.2 * ax * ax * ax;
-  float depth = mix(0.012, 0.52 * mix(0.62, 1.0, uChomp), uMouth) * pow(max(0.0, 1.0 - ax * ax), 0.65);
-  float bot = top - depth;
-  float dm = max(max(f.y - top, bot - f.y), (ax - 1.0) * W) + rag * 1.3;
-  // lots of little pointy teeth, uneven like the real thing
-  float N = 26.0, t = (f.x + W) / (2.0 * W) * N, cell = floor(t), fr = fract(t);
-  float hu = 0.65 + 0.7 * h21(vec2(cell, 3.0)), hb = 0.65 + 0.7 * h21(vec2(cell, 9.0));
-  float tri = 1.0 - abs(2.0 * fr - 1.0), tri2 = 1.0 - abs(2.0 * fract(t + 0.5) - 1.0);
-  float body = sqrt(max(0.0, 1.0 - ax * ax)), tl = 0.12 * uMouth * (0.4 + 0.6 * body);
-  float teethU = step(top - tl * hu * tri, f.y), teethB = step(f.y, bot + tl * hb * 0.9 * tri2);
+  // mouth: a big round hole that yawns open (like the "Diamond Planet Wakes Up" short)
+  float open = mix(0.05, 1.0, uMouth) * mix(0.66, 1.0, uChomp);
+  vec2 mq = (f - vec2(0.0, -0.25)) / vec2(0.36, 0.3 * open + 0.002);
+  float mp = pow(pow(abs(mq.x), 2.4) + pow(abs(mq.y), 2.4), 1.0 / 2.4);
+  float dm = (mp - 1.0) * 0.3 * open + rag * 1.2;
   float insE = 1.0 - smoothstep(-0.004, 0.004, dE), insM = 1.0 - smoothstep(-0.004, 0.004, dm);
   float ins = max(insE, insM);
-  vec3 col = uDark * mix(1.5, 0.3, clamp(-min(dE, dm) * 6.0, 0.0, 1.0));
-  float teeth = max(teethU, teethB) * insM * step(0.04, uMouth);
-  float shade = 0.74 + 0.26 * max(tri, tri2);
-  col = mix(col, uTeeth * (0.55 + 0.45 * LIT) * shade, teeth);
+  vec3 col = uDark * mix(1.5, 0.25, clamp(-min(dE, dm) * 5.0, 0.0, 1.0));
   float edge = min(dE, dm);
   // carved rim: dark crack all around, a faint bright lip on the lower side
-  float crack = (1.0 - ins) * 0.7 * smoothstep(0.05, 0.0, edge);
+  float crack = (1.0 - ins) * 0.6 * smoothstep(0.09, 0.0, edge);
   float a = max(ins, crack);
   gl_FragColor = vec4(col * (1.0 + 0.0), a);
 }`;
