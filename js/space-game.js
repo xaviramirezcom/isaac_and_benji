@@ -62,8 +62,8 @@ void main(){
   vec2 f = vL.xy;
   float rag = (vn(f * 26.0) - 0.5) * 0.028 + (vn(f * 70.0) - 0.5) * 0.01;
   // eyes: sleepy curves -> big slanted dark ovals
-  float ew = mix(0.15, 0.125, uEye), eh = mix(0.012, 0.215, uEye);
-  vec2 qL = rot(f - vec2(-0.34, 0.30), -0.2), qR = rot(f - vec2(0.34, 0.30), 0.2);
+  float ew = mix(0.11, 0.088, uEye), eh = mix(0.01, 0.145, uEye);
+  vec2 qL = rot(f - vec2(-0.33, 0.28), -0.2), qR = rot(f - vec2(0.33, 0.28), 0.2);
   float curl = (1.0 - uEye) * 0.07; qL.y += curl * (1.0 - pow(qL.x / ew, 2.0)); qR.y += curl * (1.0 - pow(qR.x / ew, 2.0));
   float dE = min(ell(qL, vec2(ew, eh)), ell(qR, vec2(ew, eh))) + rag;
   // mouth: a huge crescent grin
