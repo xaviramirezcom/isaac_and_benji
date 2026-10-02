@@ -73,7 +73,9 @@ void main(){
   float top = -0.04 + 0.12 * ax * ax;
   float depth = 0.46 * mix(0.8, 1.0, uChomp) * pow(max(0.0, 1.0 - ax * ax), 0.6);
   float bot = top - depth;
-  float dm = (max(max(g.y - top, bot - g.y), (ax - 1.0) * W) + rag * 1.2) * sc;
+  float dmB = max(max(g.y - top, bot - g.y), (ax - 1.0) * W);
+  float dmO = ell(g - vec2(0.0, -0.27), vec2(0.5, 0.2)); // while small (appearing/vanishing) it is a soft oval, like the eyes
+  float dm = (mix(dmO, dmB, smoothstep(0.35, 0.9, sc)) + rag * 1.2) * sc;
   float N = 46.0, t = (g.x + W) / (2.0 * W) * N;
   float tri = 1.0 - abs(2.0 * fract(t) - 1.0), tri2 = 1.0 - abs(2.0 * fract(t + 0.5) - 1.0);
   float tl = 0.04 * (0.5 + 0.5 * sqrt(max(0.0, 1.0 - ax * ax)));
@@ -81,7 +83,7 @@ void main(){
   float insE = 1.0 - smoothstep(-0.004, 0.004, dE), insM = (1.0 - smoothstep(-0.004, 0.004, dm)) * step(0.01, uMouth);
   float ins = max(insE, insM);
   vec3 col = uDark * mix(1.5, 0.3, clamp(-min(dE, dm) * 6.0, 0.0, 1.0));
-  float teeth = max(teethU, teethB) * insM;
+  float teeth = max(teethU, teethB) * insM * smoothstep(0.7, 1.0, sc);
   col = mix(col, uTeeth * (0.5 + 0.5 * LIT) * (0.75 + 0.25 * max(tri, tri2)), teeth);
   float edge = min(dE, dm);
   // carved rim: dark crack all around, a faint bright lip on the lower side
@@ -194,7 +196,7 @@ function frame(now) {
       b.anchor.position.set(Math.cos(b.angle) * d.orbit, 0, Math.sin(b.angle) * d.orbit);
     }
     if (b.turning > 0) { // Wake up was pressed: turn the face round to look at the user
-      b.turning -= dt; faceCamera(b, 1 - Math.exp(-dt * 4.5));
+      b.turning -= dt; faceCamera(b, 1 - Math.exp(-dt * 2.5));
     } else if (b.parent && !b.awake && b.w < 0.01) b.mesh.rotation.y = -b.angle - Math.PI / 2; // moons are tidally locked (like ours) while asleep
     else b.mesh.rotateY((d.spin ?? 0.3) * (focus === b || b.awake ? 0.06 : 1) * dt * ts);
   }
@@ -202,12 +204,11 @@ function frame(now) {
   camera.updateMatrixWorld(); const vm = camera.matrixWorldInverse;
   for (const b of bodies) {
     b.anchor.getWorldPosition(world);
-    b.w = Math.min(1, Math.max(0, b.w + (b.awake ? dt / 2.2 : -dt / 1.6))); // a face appears slowly, and fades away again when told to sleep
-    if (b.w > 0.5 && !b.wasAwake) { b.wasAwake = true; b.bounce = 1; } if (b.w < 0.2) b.wasAwake = false;
-    const u = b.fm.uniforms;
+    b.w = Math.min(1, Math.max(0, b.w + (b.awake ? dt / 4.4 : -dt / 3.2))); // a face appears slowly, and fades away again when told to sleep
+        const u = b.fm.uniforms;
     u.uSlit.value = b.w > 0.01 ? 1 : 0; u.uEye.value = u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.05, 0.6); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
     lightV.copy(world).negate().normalize().transformDirection(vm); u.uLight.value.copy(lightV);
-    b.bounce = Math.max(0, b.bounce - dt * 1.6); const s = 1 + 0.12 * Math.sin(b.bounce * Math.PI); b.mesh.scale.setScalar(s);
+    
   }
   // camera follows the focused body as it travels
   const goal = focus ? (focus.anchor.getWorldPosition(tmp2), tmp2) : tmp2.set(0, 0, 0);
@@ -284,8 +285,8 @@ function bind() {
     if (!pointers) { down = null; multi = false; }
   };
   canvas.addEventListener('pointerup', (e) => up(e, false)); canvas.addEventListener('pointercancel', (e) => up(e, true));
-  ui.card.addEventListener('click', () => { if (ui.card.classList.contains('mini')) ui.card.classList.remove('mini'); });
-  $('#sc-wake').addEventListener('click', () => { if (!focus) return; focus.awake = !focus.awake; if (focus.awake) focus.turning = 1.6; wakeLabel(); });
+  ui.card.addEventListener('click', (e) => { if (!e.target.closest('button') && ui.card.classList.contains('mini')) ui.card.classList.remove('mini'); });
+  $('#sc-wake').addEventListener('click', () => { if (!focus) return; focus.awake = !focus.awake; if (focus.awake) focus.turning = 3; wakeLabel(); ui.card.classList.add('mini'); });
   $('#sc-speak').addEventListener('click', speak); $('#sc-close').addEventListener('click', () => focusOn(null));
   ui.pause.addEventListener('click', () => { paused = !paused; ui.pause.innerHTML = paused ? PLAY_ICON : PAUSE_ICON; ui.pause.classList.toggle('on', paused); });
   $('#btn-sreset').addEventListener('click', () => { focusOn(null); anim.dist = 130; anim.active = true; camera.position.set(0, 62, 128).multiplyScalar(1); });
