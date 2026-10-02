@@ -49,7 +49,7 @@ void main(){ vL = normalize(position); vVN = normalize(normalMatrix * normal); g
 // The face lives in the planet's own frame (local +Z), so it turns with the planet. Carved, ragged-edged, like "The Moon Wakes Up".
 const FACE_FRAG = `precision highp float;
 #include <logdepthbuf_pars_fragment>
-uniform float uEye, uMouth, uLit, uChomp; uniform vec3 uLight, uDark, uTeeth;
+uniform float uEye, uMouth, uLit, uChomp, uSlit; uniform vec3 uLight, uDark, uTeeth;
 varying vec3 vL; varying vec3 vVN;
 float h21(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y); }
@@ -85,7 +85,7 @@ void main(){
   float edge = min(dE, dm);
   // carved rim: dark crack all around, a faint bright lip on the lower side
   float crack = (1.0 - ins) * 0.7 * smoothstep(0.05, 0.0, edge);
-  float a = max(ins, crack);
+  float a = max(ins, crack) * uSlit;
   gl_FragColor = vec4(col * (1.0 + 0.0), a);
 }`;
 
@@ -100,7 +100,7 @@ function makeBody(d, parent, texSize) {
   const mesh = new THREE.Mesh(geo, material); tilt.add(mesh);
   const f = d.face ?? {};
   const fm = new THREE.ShaderMaterial({ vertexShader: FACE_VERT, fragmentShader: FACE_FRAG, transparent: true, depthWrite: false,
-    uniforms: { uEye: { value: 0 }, uMouth: { value: 0 }, uChomp: { value: 0 }, uLit: { value: d.id === 'sun' ? 1 : 0 }, uLight: { value: new THREE.Vector3(0, 0, 1) },
+    uniforms: { uEye: { value: 0 }, uMouth: { value: 0 }, uChomp: { value: 0 }, uSlit: { value: 0 }, uLit: { value: d.id === 'sun' ? 1 : 0 }, uLight: { value: new THREE.Vector3(0, 0, 1) },
       uDark: { value: new THREE.Vector3(...(f.dark ?? [0.03, 0.025, 0.025])) }, uTeeth: { value: f.teeth ? new THREE.Vector3(...f.teeth) : (() => { const c = new THREE.Color(d.color); return new THREE.Vector3(c.r, c.g, c.b).multiplyScalar(1.25); })() } } });
   const overlay = new THREE.Mesh(new THREE.SphereGeometry(d.r * 1.006, seg[0], seg[1]), fm); mesh.add(overlay);
   const b = { d, parent, anchor, tilt, mesh, overlay, fm, angle: Math.random() * Math.PI * 2, w: d.id === 'sun' ? 1 : 0, blink: 2 + Math.random() * 4, bounce: 0, phase: Math.random() * 6.28, wasAwake: d.id === 'sun', moons: [] };
@@ -193,11 +193,11 @@ function frame(now) {
   for (const b of bodies) {
     b.anchor.getWorldPosition(world);
     const near = camera.position.distanceTo(world) < b.d.r * 11 || focus === b || b.d.id === 'sun';
-    b.w += ((near ? 1 : 0) - b.w) * (1 - Math.exp(-dt * 2.4));
+    b.w = Math.min(1, Math.max(0, b.w + (near ? dt / 3.6 : -dt / 1.2))); // waking takes a few slow seconds; falling asleep is quicker
     if (b.w > 0.5 && !b.wasAwake) { b.wasAwake = true; b.bounce = 1; } if (b.w < 0.2) b.wasAwake = false;
     b.blink -= dt; let blink = 1; if (b.blink < 0.14) { blink = Math.abs(b.blink / 0.14 - 0.5) * 2; if (b.blink < 0) b.blink = 3 + Math.random() * 5; }
     const u = b.fm.uniforms;
-    u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.05, 0.55) * (b.w > 0.6 ? blink : 1); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.3, 1.0); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
+    u.uSlit.value = THREE.MathUtils.smoothstep(b.w, 0.02, 0.2); u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.25, 0.55) * (b.w > 0.85 ? blink : 1); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.5, 1.0); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
     lightV.copy(world).negate().normalize().transformDirection(vm); u.uLight.value.copy(lightV);
     b.bounce = Math.max(0, b.bounce - dt * 1.6); const s = 1 + 0.12 * Math.sin(b.bounce * Math.PI); b.mesh.scale.setScalar(s);
   }
