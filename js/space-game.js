@@ -94,7 +94,7 @@ void main(){
 // ------------------------------------------------------------ building the system
 const world = new THREE.Vector3();
 function makeBody(d, parent, texSize) {
-  const anchor = new THREE.Group(), tilt = new THREE.Group(); tilt.rotation.z = d.rings ? (d.tilt ?? 0) : 0; anchor.add(tilt);
+  const anchor = new THREE.Group(), tilt = new THREE.Group(); tilt.rotation.z = d.tilt ?? 0; anchor.add(tilt);
   const map = new THREE.CanvasTexture(paint(d, texSize, texSize / 2)); map.colorSpace = THREE.SRGBColorSpace; map.anisotropy = 4;
   const seg = d.r > 1 ? [72, 48] : [48, 32];
   const geo = new THREE.SphereGeometry(d.r, seg[0], seg[1]);
@@ -178,15 +178,17 @@ function frame(now) {
   if (!running) return;
   raf = requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
-  const ts = paused ? 0 : 1;
+  const ts0 = paused ? 0 : 1;
   for (const b of bodies) {
-    const d = b.d;
+    const d = b.d, ts = b.parent && focus && (focus === b || focus === b.parent) ? ts0 * 0.2 : ts0; // calmer moons while you look at them
     if (d.id !== 'sun') {
       const omega = b.parent ? d.w : 0.12 * Math.pow(19 / d.orbit, 0.8);
       b.angle += omega * dt * ts;
       b.anchor.position.set(Math.cos(b.angle) * d.orbit, 0, Math.sin(b.angle) * d.orbit);
     }
-    b.mesh.rotation.y += (d.spin ?? 0.3) * (focus === b ? 0.3 : 1) * dt * ts;
+    // moons are tidally locked (like ours): the same face always looks at its planet
+    if (b.parent) b.mesh.rotation.y = -b.angle - Math.PI / 2;
+    else b.mesh.rotation.y += (d.spin ?? 0.3) * (focus === b ? 0.3 : 1) * dt * ts;
   }
   // faces: wake up when the camera is close (or the body is focused); blink now and then
   camera.updateMatrixWorld(); const vm = camera.matrixWorldInverse;
@@ -206,8 +208,10 @@ function frame(now) {
   const k = 1 - Math.exp(-dt * 7); tmp.copy(goal).sub(controls.target).multiplyScalar(k);
   controls.target.add(tmp); camera.position.add(tmp);
   if (anim.active) {
-    const dir = tmp.copy(camera.position).sub(controls.target), cur = dir.length(), nd = cur + (anim.dist - cur) * (1 - Math.exp(-dt * 3));
-    camera.position.copy(controls.target).addScaledVector(dir.normalize(), nd); if (Math.abs(nd - anim.dist) < anim.dist * 0.01) anim.active = false;
+    const dir = tmp.copy(camera.position).sub(controls.target), cur = dir.length();
+    if (anim.faceParent && focus?.parent) { focus.parent.anchor.getWorldPosition(tmp2); tmp2.sub(controls.target).setY(0).normalize().setY(0.28).normalize(); dir.normalize().lerp(tmp2, 1 - Math.exp(-dt * 2.5)).multiplyScalar(cur); }
+    const nd = anim.settled ? cur : cur + (anim.dist - cur) * (1 - Math.exp(-dt * 3));
+    camera.position.copy(controls.target).addScaledVector(dir.normalize(), nd); if (Math.abs(nd - anim.dist) < anim.dist * 0.01) { anim.settled = true; if (!anim.faceParent) anim.active = false; }
   }
   controls.rotateSpeed = 0.5 + 0.4 * Math.min(1, camera.position.distanceTo(controls.target) / 60);
   controls.update();
@@ -217,9 +221,10 @@ function frame(now) {
 // ------------------------------------------------------------ focus, card, chips
 const nm = (b) => b.d[lang];
 function focusOn(b) {
-  focus = b; anim.active = true;
+  focus = b; anim.active = true; anim.faceParent = false;
   if (b) {
-    const reach = Math.max(b.d.r * 4.5, ...(b.moons?.map((m) => m.d.orbit * 1.5) ?? [0]));
+    const reach = Math.max(b.d.r * (b.parent ? 6 : 4.5), ...(b.moons?.map((m) => m.d.orbit * 1.5) ?? [0]));
+    anim.faceParent = !!b.parent; anim.settled = false; // a moon: look at it from its planet's side, so we meet its face
     anim.dist = Math.min(reach, 90); controls.minDistance = b.d.r * 1.8; showCard(b);
   } else { anim.dist = 130; controls.minDistance = 6; ui.card.classList.remove('open'); }
   refreshChips();
