@@ -253,3 +253,13 @@ button, a { touch-action: manipulation; font: inherit; }
 .mode-btn.on { background: #ffd94d; }
 .mode-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .18); }
 .mode-btn[hidden] { display: none; }
+
+/* ---------- space (Isaac) ---------- */
+.game-tile.space-tile { background: linear-gradient(160deg, #6a5cff, #2a2a8a); }
+.space-view { background: #03040c; overflow: hidden; }
+#space-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
+.space-view .loading { background: radial-gradient(ellipse at 50% 40%, #1a2050, #03040c); }
+.sc-stat { margin: 6px 0 0 !important; font-weight: 800; color: #3b5bd9; opacity: 1 !important; }
+.moon-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; font-weight: 800; font-size: .9rem; }
+.moon-chip { border: 0; border-radius: 99px; padding: 6px 14px; background: #e8edff; color: var(--ink); font-weight: 800; cursor: pointer; font-size: .9rem; }
+.moon-chip:active { transform: translateY(2px); }

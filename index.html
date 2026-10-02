@@ -33,6 +33,7 @@
       <div class="tiles">
         <a class="game-tile" href="#/isaac/map"><span class="emoji" aria-hidden="true">🗺️</span><span>World Map</span></a>
         <a class="game-tile insects-tile" href="#/isaac/insects"><span class="emoji" aria-hidden="true">🐞</span><span>Insects</span></a>
+        <a class="game-tile space-tile" href="#/isaac/space"><span class="emoji" aria-hidden="true">🪐</span><span>Space</span></a>
       </div>
     </section>
 
@@ -69,6 +70,32 @@
       </div>
       <div class="chips" id="insect-chips" role="group" aria-label="Parts"></div>
       <div class="loading" id="insect-loading"><div class="spinner" aria-hidden="true">🐞</div><p>Loading…</p></div>
+    </section>
+
+
+    <!-- Solar system -->
+    <section id="view-space" class="view space-view" hidden aria-label="Solar system">
+      <canvas id="space-canvas" aria-label="3D solar system"></canvas>
+      <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
+      <div class="insect-title"><b id="space-title">Solar System</b></div>
+      <div class="insect-tools">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="on">EN</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
+        <button class="round-btn small" id="btn-pause" type="button" aria-label="Pause the planets"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="8" y="6" width="6" height="20" rx="2" fill="currentColor"/><rect x="18" y="6" width="6" height="20" rx="2" fill="currentColor"/></svg></button>
+        <button class="round-btn small" id="btn-sreset" type="button" aria-label="See the whole solar system"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M7 16a9 9 0 1 0 3-6.7M7 5v6h6" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="mode-btn" id="btn-face" type="button" aria-label="Change the faces"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="11.5" cy="13" r="2" fill="currentColor"/><circle cx="20.5" cy="13" r="2" fill="currentColor"/><path d="M9.5 19.5c2 4.5 11 4.5 13 0" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg><span id="lbl-face">Grin</span></button>
+      </div>
+      <div class="insect-card" id="space-card" aria-live="polite">
+        <div class="ic-text"><h3 id="sc-name"></h3><p id="sc-fact"></p><p class="sc-stat" id="sc-stat"></p><div class="moon-row" id="sc-moons"></div></div>
+        <div class="ic-actions">
+          <button type="button" class="ic-btn" id="sc-speak"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg><span id="sc-speak-l">Say it</span></button>
+          <button type="button" class="ic-btn remove" id="sc-close"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 8l16 16M24 8L8 24" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"/></svg><span id="sc-close-l">Close</span></button>
+        </div>
+      </div>
+      <div class="chips" id="space-chips" role="group" aria-label="Planets"></div>
+      <div class="loading" id="space-loading"><div class="spinner" aria-hidden="true">🪐</div><div class="bar"><i id="space-bar"></i></div><p>Waking up the planets…</p></div>
     </section>
 
     <!-- Benji's games -->
