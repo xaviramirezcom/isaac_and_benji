@@ -173,6 +173,14 @@ function resize() {
 
 // ------------------------------------------------------------ the loop
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), lightV = new THREE.Vector3();
+const fq = new THREE.Quaternion(), fm4 = new THREE.Matrix4(), fz = new THREE.Vector3(), fx = new THREE.Vector3(), fy = new THREE.Vector3(), fup = new THREE.Vector3(), fw = new THREE.Vector3();
+function faceCamera(b, k) { // rotate the planet so its face (local +Z) looks at the camera, with the eyes level
+  b.tilt.getWorldQuaternion(fq).invert(); b.anchor.getWorldPosition(fw);
+  fz.copy(camera.position).sub(fw).normalize().applyQuaternion(fq);
+  fup.set(0, 1, 0).applyQuaternion(fq); fx.crossVectors(fup, fz);
+  if (fx.lengthSq() < 1e-6) fx.set(1, 0, 0); fx.normalize(); fy.crossVectors(fz, fx);
+  fq.setFromRotationMatrix(fm4.makeBasis(fx, fy, fz)); b.mesh.quaternion.slerp(fq, k);
+}
 function frame(now) {
   if (!running) return;
   raf = requestAnimationFrame(frame);
@@ -185,18 +193,19 @@ function frame(now) {
       b.angle += omega * dt * ts;
       b.anchor.position.set(Math.cos(b.angle) * d.orbit, 0, Math.sin(b.angle) * d.orbit);
     }
-    // moons are tidally locked (like ours): the same face always looks at its planet
-    if (b.parent) b.mesh.rotation.y = -b.angle - Math.PI / 2;
-    else b.mesh.rotation.y += (d.spin ?? 0.3) * (focus === b ? 0.3 : 1) * dt * ts;
+    if (b.turning > 0) { // Wake up was pressed: turn the face round to look at the user
+      b.turning -= dt; faceCamera(b, 1 - Math.exp(-dt * 4.5));
+    } else if (b.parent && !b.awake && b.w < 0.01) b.mesh.rotation.y = -b.angle - Math.PI / 2; // moons are tidally locked (like ours) while asleep
+    else b.mesh.rotateY((d.spin ?? 0.3) * (focus === b || b.awake ? 0.06 : 1) * dt * ts);
   }
   // faces: appear when the card's Wake up button is pressed, and disappear again on Sleep
   camera.updateMatrixWorld(); const vm = camera.matrixWorldInverse;
   for (const b of bodies) {
     b.anchor.getWorldPosition(world);
-    b.w = Math.min(1, Math.max(0, b.w + (b.awake ? dt / 3.6 : -dt / 2.2))); // a face appears slowly, and fades away again when told to sleep
+    b.w = Math.min(1, Math.max(0, b.w + (b.awake ? dt / 2.2 : -dt / 1.6))); // a face appears slowly, and fades away again when told to sleep
     if (b.w > 0.5 && !b.wasAwake) { b.wasAwake = true; b.bounce = 1; } if (b.w < 0.2) b.wasAwake = false;
     const u = b.fm.uniforms;
-    u.uSlit.value = b.w > 0.01 ? 1 : 0; u.uEye.value = THREE.MathUtils.smoothstep(b.w, 0.08, 0.45); u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.4, 1.0); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
+    u.uSlit.value = b.w > 0.01 ? 1 : 0; u.uEye.value = u.uMouth.value = THREE.MathUtils.smoothstep(b.w, 0.05, 0.6); u.uChomp.value = THREE.MathUtils.smoothstep(0.5 + 0.5 * Math.sin(now / 1500 + b.phase), 0.05, 0.95);
     lightV.copy(world).negate().normalize().transformDirection(vm); u.uLight.value.copy(lightV);
     b.bounce = Math.max(0, b.bounce - dt * 1.6); const s = 1 + 0.12 * Math.sin(b.bounce * Math.PI); b.mesh.scale.setScalar(s);
   }
@@ -276,7 +285,7 @@ function bind() {
   };
   canvas.addEventListener('pointerup', (e) => up(e, false)); canvas.addEventListener('pointercancel', (e) => up(e, true));
   ui.card.addEventListener('click', () => { if (ui.card.classList.contains('mini')) ui.card.classList.remove('mini'); });
-  $('#sc-wake').addEventListener('click', () => { if (!focus) return; focus.awake = !focus.awake; wakeLabel(); });
+  $('#sc-wake').addEventListener('click', () => { if (!focus) return; focus.awake = !focus.awake; if (focus.awake) focus.turning = 1.6; wakeLabel(); });
   $('#sc-speak').addEventListener('click', speak); $('#sc-close').addEventListener('click', () => focusOn(null));
   ui.pause.addEventListener('click', () => { paused = !paused; ui.pause.innerHTML = paused ? PLAY_ICON : PAUSE_ICON; ui.pause.classList.toggle('on', paused); });
   $('#btn-sreset').addEventListener('click', () => { focusOn(null); anim.dist = 130; anim.active = true; camera.position.set(0, 62, 128).multiplyScalar(1); });
