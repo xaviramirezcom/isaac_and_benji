@@ -175,13 +175,12 @@ function resize() {
 
 // ------------------------------------------------------------ the loop
 const tmp = new THREE.Vector3(), tmp2 = new THREE.Vector3(), lightV = new THREE.Vector3();
-const fq = new THREE.Quaternion(), fm4 = new THREE.Matrix4(), fz = new THREE.Vector3(), fx = new THREE.Vector3(), fy = new THREE.Vector3(), fup = new THREE.Vector3(), fw = new THREE.Vector3();
-function faceCamera(b, k) { // rotate the planet so its face (local +Z) looks at the camera, with the eyes level
+const fq = new THREE.Quaternion(), fz = new THREE.Vector3(), fw = new THREE.Vector3();
+function faceCamera(b, k) { // spin the planet about its own axis until its face (local +Z) looks as much at the camera as the axis allows
   b.tilt.getWorldQuaternion(fq).invert(); b.anchor.getWorldPosition(fw);
-  fz.copy(camera.position).sub(fw).normalize().applyQuaternion(fq);
-  fup.set(0, 1, 0).applyQuaternion(fq); fx.crossVectors(fup, fz);
-  if (fx.lengthSq() < 1e-6) fx.set(1, 0, 0); fx.normalize(); fy.crossVectors(fz, fx);
-  fq.setFromRotationMatrix(fm4.makeBasis(fx, fy, fz)); b.mesh.quaternion.slerp(fq, k);
+  fz.copy(camera.position).sub(fw).applyQuaternion(fq);
+  const goal = Math.atan2(fz.x, fz.z); let diff = goal - b.mesh.rotation.y; diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+  b.mesh.rotation.y += diff * k;
 }
 function frame(now) {
   if (!running) return;
@@ -198,7 +197,7 @@ function frame(now) {
     if (b.turning > 0) { // Wake up was pressed: turn the face round to look at the user
       b.turning -= dt; faceCamera(b, 1 - Math.exp(-dt * 2.5));
     } else if (b.parent && !b.awake && b.w < 0.01) b.mesh.rotation.y = -b.angle - Math.PI / 2; // moons are tidally locked (like ours) while asleep
-    else b.mesh.rotateY((d.spin ?? 0.3) * (focus === b || b.awake ? 0.06 : 1) * dt * ts);
+    else b.mesh.rotation.y += (d.spin ?? 0.3) * (focus === b || b.awake ? 0.35 : 1) * dt * ts;
   }
   // faces: appear when the card's Wake up button is pressed, and disappear again on Sleep
   camera.updateMatrixWorld(); const vm = camera.matrixWorldInverse;
