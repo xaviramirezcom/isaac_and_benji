@@ -36,3 +36,23 @@ export const STORM = [
     label: { en: 'Derecho', es: 'Derecho' },
     desc: { en: 'A derecho is a huge line of storms with straight-line winds that can last for hundreds of miles. Its winds can match a tornado: roofs and garage doors are ripped off and trees fall.', es: 'Un derecho es una enorme línea de tormentas con vientos rectos que pueden durar cientos de kilómetros. Sus vientos igualan a los de un tornado: arrancan techos y portones de garaje y derriban árboles.' } },
 ];
+
+// Hurricanes follow the Saffir–Simpson scale (sustained wind, NWS). The simulation scales the storm down so the eye (calm centre) and the eyewall
+// (the ring of the strongest wind) both fit over the town.
+export const HURRICANE = [
+  { id: 'h1', short: 'Cat 1', mph: '74–95', kmh: '119–153', vmax: 85, rain: 1, lightning: 0.1, cloud: 1,
+    label: { en: 'Very dangerous', es: 'Muy peligroso' },
+    desc: { en: 'A hurricane is a giant spinning storm with a calm, clear EYE in the middle, surrounded by a ring of the strongest wind. Category 1: shingles and siding come off, big branches snap and power lines fall.', es: 'Un huracán es una tormenta gigante que gira, con un OJO tranquilo y despejado en el centro, rodeado por un anillo de los vientos más fuertes. Categoría 1: se caen tejas y revestimientos, se rompen ramas grandes y caen cables de luz.' } },
+  { id: 'h2', short: 'Cat 2', mph: '96–110', kmh: '154–177', vmax: 103, rain: 1, lightning: 0.14, cloud: 1,
+    label: { en: 'Extremely dangerous', es: 'Extremadamente peligroso' },
+    desc: { en: 'Category 2: roofs and siding are badly damaged, many trees snap or are pulled out of the ground, and the power can be out for days.', es: 'Categoría 2: los techos y revestimientos sufren mucho daño, muchos árboles se parten o se arrancan y puede faltar la luz por días.' } },
+  { id: 'h3', short: 'Cat 3', mph: '111–129', kmh: '178–208', vmax: 120, rain: 1, lightning: 0.16, cloud: 1,
+    label: { en: 'Devastating', es: 'Devastador' },
+    desc: { en: 'Category 3 is a major hurricane. Roofs and gable walls are torn off houses, and most trees fall and block the roads.', es: 'La categoría 3 es un huracán mayor. Se arrancan techos y paredes de las casas y casi todos los árboles caen y bloquean las calles.' } },
+  { id: 'h4', short: 'Cat 4', mph: '130–156', kmh: '209–251', vmax: 143, rain: 1, lightning: 0.18, cloud: 1,
+    label: { en: 'Catastrophic', es: 'Catastrófico' },
+    desc: { en: 'Category 4: most of a house’s roof and some walls are lost, nearly all trees and power poles fall, and the area can be unlivable for weeks.', es: 'Categoría 4: las casas pierden casi todo el techo y algunas paredes, caen casi todos los árboles y postes, y la zona puede quedar inhabitable por semanas.' } },
+  { id: 'h5', short: 'Cat 5', mph: '157 or more', mphEs: '157 o más', kmh: '252 or more', kmhEs: '252 o más', vmax: 170, rain: 1, lightning: 0.2, cloud: 1,
+    label: { en: 'Catastrophic', es: 'Catastrófico' },
+    desc: { en: 'Category 5 is the strongest. Most houses are destroyed, with total roof failure and walls collapsing. Hurricanes this strong are rare.', es: 'La categoría 5 es la más fuerte. Casi todas las casas quedan destruidas, con techos y paredes que se derrumban. Huracanes así de fuertes son raros.' } },
+];

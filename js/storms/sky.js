@@ -21,17 +21,23 @@ export function createSky() {
 export function createClouds() {
   const group = new THREE.Group(), layers = [];
   const make = (y, R, seed, swirl, alpha, dark) => {
-    const U = { uTime: { value: 0 }, uCenter: { value: new THREE.Vector2() }, uR: { value: R }, uY: { value: y }, uCamY: { value: 0 }, uCover: { value: 1 }, uSwirl: { value: swirl }, uAlpha: { value: alpha }, uDark: { value: dark }, uSeed: { value: seed }, uFlash: { value: 0 }, uGreen: { value: 0 } };
+    const U = { uTime: { value: 0 }, uCenter: { value: new THREE.Vector2() }, uR: { value: R }, uY: { value: y }, uCamY: { value: 0 }, uCover: { value: 1 }, uSwirl: { value: swirl }, uAlpha: { value: alpha }, uDark: { value: dark }, uSeed: { value: seed }, uFlash: { value: 0 }, uGreen: { value: 0 }, uSpiral: { value: 0 }, uArms: { value: 2 }, uPitch: { value: 4 }, uRot: { value: 0.2 }, uEyeR: { value: 0 }, uCore: { value: 0 } };
     const mt = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false, uniforms: U,
       vertexShader: 'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
       fragmentShader: `${NOISE}
-        uniform float uTime, uR, uY, uCamY, uCover, uSwirl, uAlpha, uDark, uSeed, uFlash, uGreen; uniform vec2 uCenter; varying vec3 vW;
+        uniform float uTime, uR, uY, uCamY, uCover, uSwirl, uAlpha, uDark, uSeed, uFlash, uGreen, uSpiral, uArms, uPitch, uRot, uEyeR, uCore; uniform vec2 uCenter; varying vec3 vW;
         void main(){
           vec2 p = vW.xz - uCenter; float r = length(p) / uR;
           float a = uSwirl * (1.0 - clamp(r, 0.0, 1.0)) * uTime * 0.12; vec2 q = vec2(cos(a) * p.x - sin(a) * p.y, sin(a) * p.x + cos(a) * p.y);
           float n = fbm(q * 0.011 + uSeed), n2 = fbm(q * 0.034 + 5.0 + uTime * 0.01 + uSeed);
           float dens = smoothstep(0.52 - 0.34 * uCover, 0.86, n * 0.72 + n2 * 0.42) * (1.0 - smoothstep(0.5, 1.0, r));
+          float len = length(p), th = atan(p.y, p.x);
+          float ph = th * uArms + log(len * 0.03 + 1.0) * uPitch * 3.0 - uTime * uRot;
+          float arm = 0.5 + 0.5 * cos(ph + n * 1.5);
+          dens *= mix(1.0, smoothstep(0.08, 0.85, arm) * 1.35, uSpiral);                // spiral rain bands
+          dens = max(dens, exp(-pow(len / (uR * 0.14), 2.0)) * uCore);                  // a dense churning core
+          if (uEyeR > 0.0) { float hole = smoothstep(uEyeR * 0.8, uEyeR * 1.25, len), ring = exp(-pow((len - uEyeR * 1.9) / (uEyeR * 0.9), 2.0)); dens = max(dens * hole, ring * 0.97); }   // the clear eye and its eyewall
           vec3 col = mix(vec3(0.05, 0.06, 0.07), vec3(0.48, 0.5, 0.5), clamp(n2 * (0.45 + 0.9 * r) * (1.0 - 0.6 * uDark) + 0.05 + 0.25 * n * r, 0.0, 1.0));
           col *= mix(vec3(1.0), vec3(0.86, 1.0, 0.9), uGreen);
           col += vec3(0.5, 0.55, 0.8) * uFlash * (1.0 - r);
@@ -39,7 +45,7 @@ export function createClouds() {
           gl_FragColor = vec4(col, dens * uAlpha * fade);
         }`,
     });
-    const m = new THREE.Mesh(new THREE.CircleGeometry(R, 64), mt); m.rotation.x = -Math.PI / 2; m.position.y = y; m.frustumCulled = false; m.renderOrder = 1;
+    const m = new THREE.Mesh(new THREE.CircleGeometry(R > 400 ? 1350 : R, 96), mt); m.rotation.x = -Math.PI / 2; m.position.y = y; m.frustumCulled = false; m.renderOrder = 1;
     group.add(m); layers.push({ m, U }); return { m, U };
   };
   make(236, 760, 1.3, 0.3, 0.8, 0.5); make(206, 620, 7.1, 0.5, 0.9, 0.7); make(176, 480, 3.7, 0.8, 0.95, 0.85);
@@ -51,17 +57,17 @@ export function createRain(count = 9000) {
   const base = new Float32Array(count * 2 * 3), end = new Float32Array(count * 2);
   for (let i = 0; i < count; i++) { const x = Math.random() * 140, y = Math.random() * 70, z = Math.random() * 140; for (let k = 0; k < 2; k++) { base.set([x, y, z], (i * 2 + k) * 3); end[i * 2 + k] = k; } }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(base, 3)); g.setAttribute('aEnd', new THREE.BufferAttribute(end, 1));
-  const U = { uTime: { value: 0 }, uCenter: { value: new THREE.Vector3() }, uWind: { value: new THREE.Vector2() }, uStorm: { value: new THREE.Vector2() }, uCell: { value: 120 }, uRain: { value: 0 } };
+  const U = { uTime: { value: 0 }, uCenter: { value: new THREE.Vector3() }, uWind: { value: new THREE.Vector2() }, uStorm: { value: new THREE.Vector2() }, uCell: { value: 120 }, uRain: { value: 0 }, uHole: { value: 0 } };
   const m = new THREE.LineSegments(g, new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, uniforms: U,
-    vertexShader: `attribute float aEnd; uniform float uTime, uCell; uniform vec3 uCenter; uniform vec2 uWind, uStorm; varying float vA;
+    vertexShader: `attribute float aEnd; uniform float uTime, uCell, uHole; uniform vec3 uCenter; uniform vec2 uWind, uStorm; varying float vA;
       void main(){
         vec3 vel = vec3(uWind.x * 1.1, -24.0, uWind.y * 1.1);
         vec3 w = mod(position + vel * uTime, vec3(140.0, 70.0, 140.0)) - vec3(70.0, 0.0, 70.0);
         w += vec3(uCenter.x, 0.0, uCenter.z);
         w -= vel * 0.026 * aEnd;                                                 // streak tail
         float d = length(w.xz - uStorm);
-        vA = (1.0 - smoothstep(uCell * 0.55, uCell, d)) * (1.0 - 0.6 * aEnd);
+        vA = (1.0 - smoothstep(uCell * 0.55, uCell, d)) * (1.0 - 0.6 * aEnd) * mix(1.0, smoothstep(uHole * 0.8, uHole * 1.2, d), step(0.5, uHole));
         gl_Position = projectionMatrix * viewMatrix * vec4(w, 1.0);
       }`,
     fragmentShader: 'uniform float uRain; varying float vA; void main(){ gl_FragColor = vec4(0.8, 0.86, 0.92, 0.5 * vA * uRain); }',
@@ -103,11 +109,11 @@ export function createLightning(scene) {
 
 // a low, dark shelf/roll cloud ringing the storm's gust front
 export function createShelf() {
-  const U = { uTime: { value: 0 }, uR: { value: 150 }, uH: { value: 70 }, uBase: { value: 55 }, uAmt: { value: 1 } };
+  const U = { uTime: { value: 0 }, uR: { value: 150 }, uH: { value: 70 }, uBase: { value: 55 }, uAmt: { value: 1 }, uF0: { value: 1.16 }, uF1: { value: -0.16 } };
   const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 96, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false, uniforms: U,
-    vertexShader: `uniform float uR, uH, uBase; varying float vT; varying float vAng;
-      void main(){ float ang = atan(position.z, position.x), t = uv.y; float r = uR * (1.0 + 0.16 * (1.0 - t)); vT = t; vAng = ang;
+    vertexShader: `uniform float uR, uH, uBase, uF0, uF1; varying float vT; varying float vAng;
+      void main(){ float ang = atan(position.z, position.x), t = uv.y; float r = uR * (uF0 + uF1 * t); vT = t; vAng = ang;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(cos(ang) * r, uBase + t * uH, sin(ang) * r, 1.0); }`,
     fragmentShader: `${NOISE}
       uniform float uTime, uAmt; varying float vT; varying float vAng;
