@@ -366,3 +366,6 @@ button, a { touch-action: manipulation; font: inherit; }
 .place-bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 6px; }
 .place-bar button { height: 52px; padding: 0 18px; border: 0; border-radius: 14px; background: #3b82f6; color: #fff; font-weight: 800; font-size: 1rem; }
 .place-out { width: min(92vw, 640px); white-space: pre-wrap; word-break: break-all; font-size: .8rem; background: #fff; border-radius: 12px; padding: 10px; }
+.actions.two { width: min(680px, 100%); justify-content: space-between; gap: 0; padding: 8px 22px calc(env(safe-area-inset-bottom) + 14px); box-sizing: border-box; }
+.big-btn.prev { background: linear-gradient(160deg, #5aa0ff, #2b59d9); }
+.stage { touch-action: manipulation; }
