@@ -26,7 +26,7 @@ const safeTop = () => parseFloat(getComputedStyle(root).paddingTop) || 0;
 function layout() {
   const r = stage.getBoundingClientRect(), w = r.width, h = r.height, top = safeTop() + 120, bot = 78, side = 16;
   sz = Math.max(120, Math.min(190, Math.min(w, h) * 0.28));
-  const bandH = (h - top - bot) * 0.62, area = { x: side, y: herdTop ? top : h - bot - bandH, w: w - 2 * side, h: bandH };       // the group fills a band across the screen
+  const bandH = (h - top - bot) * 0.5, area = { x: side, y: herdTop ? top : h - bot - bandH, w: w - 2 * side, h: bandH };       // the group fills a band across the screen
   let best = { cell: 0, cols: 1 };                                                                                              // the grid that gives the biggest animals that still fit
   for (let cols = 1; cols <= n; cols++) { const rows = Math.ceil(n / cols), cell = Math.min(area.w / cols, area.h / rows); if (cell > best.cell) best = { cell, cols }; }
   const cell = Math.min(best.cell, 250 / (1 + 0.12 * (n - 1)));   // the more animals, the smaller each one
@@ -35,9 +35,9 @@ function layout() {
   L = { w, h, herd: { x: gx, y: gy, w: gw, h: gh } };
   numEl.style.setProperty('--sz', `${sz}px`);
 }
-function placeNumber() {
-  const g = L.herd, top = safeTop() + 120, bot = 78, lo = herdTop ? Math.max(g.y + g.h + 24, top) : top, hi = herdTop ? L.h - bot - sz : g.y - sz - 24;     // the number goes where the animals are not
-  pos.nx = 16 + Math.random() * Math.max(0, L.w - 32 - sz); pos.ny = hi > lo ? lo + Math.random() * (hi - lo) : Math.max(top, Math.min(lo, L.h - bot - sz));
+function placeNumber() {   // the number waits at the OPPOSITE end of the screen, so it has to be dragged a good way to reach the animals
+  const top = safeTop() + 120, bot = 78, strip = 46, ny0 = herdTop ? L.h - bot - sz - strip : top, ny1 = herdTop ? L.h - bot - sz : top + strip;
+  pos.nx = 16 + Math.random() * Math.max(0, L.w - 32 - sz); pos.ny = ny0 + Math.random() * (ny1 - ny0);
   setNum(pos.nx, pos.ny);
 }
 const setNum = (x, y) => { numEl.style.transform = `translate(${x}px, ${y}px)`; };
@@ -61,7 +61,7 @@ function showHint() {   // a ghost hand shows the move — nothing is ever count
   handAnim = hand.animate([{ transform: `translate(${a.x}px, ${a.y}px)`, opacity: 0 }, { transform: `translate(${a.x}px, ${a.y}px)`, opacity: 1, offset: 0.15 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 1, offset: 0.8 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 0 }], { duration: 2200, iterations: Infinity, easing: 'ease-in-out' });
 }
 function startCount() {
-  phase = 'count'; clearTimers(); numEl.classList.remove('wiggle', 'in', 'drag'); numEl.classList.add('vanish'); pop();       // the number is "used up": it pops away, and the animals take over
+  phase = 'count'; clearTimers(); herd.style.setProperty('--grow', '1'); numEl.classList.remove('wiggle', 'in', 'drag'); numEl.classList.add('vanish'); pop();       // the number is "used up": it pops away, and the animals take over
   ans.forEach((a, i) => later(() => highlight(a, i + 1), 800 + i * STEP));                                                                         // count them, one by one
   const end = 800 + n * STEP;
   later(() => { phase = 'done'; ans.forEach((a, i) => later(() => { a.hi.classList.remove('jump'); void a.hi.offsetWidth; a.hi.classList.add('jump'); }, i * 50)); pop(); }, end);   // all together!
@@ -70,7 +70,7 @@ function startCount() {
 }
 function highlight(a, i) {
   ans.forEach((o) => o.el.classList.remove('hl')); a.el.classList.add('hl', 'counted'); a.badge.textContent = i; a.badge.style.background = COLORS[(i - 1) % COLORS.length];
-  a.hi.classList.remove('jump'); void a.hi.offsetWidth; a.hi.classList.add('jump'); say1(i); tick(i - 1);
+  say1(i); tick(i - 1);                                                                                                  // (the animal being counted grows smoothly, see the CSS)
 }
 function next() { if (!running) return; phase = 'between'; herd.classList.add('away'); later(() => { herd.classList.remove('away'); n = n >= MAX ? 1 : n + 1; startRound(); }, 700); }
 

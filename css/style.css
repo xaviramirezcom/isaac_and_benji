@@ -483,3 +483,7 @@ button, a { touch-action: manipulation; font: inherit; }
 .num-bubble.vanish { pointer-events: none; }
 /* the animals grow as the number comes closer (smooth, no blinking) */
 .herd-an .hi { transform: scale(var(--grow, 1)); transition: transform .18s ease-out; }
+/* while counting, the animal being counted grows smoothly and the ones already counted settle back (they keep their glow and badge) */
+.herd-an .hi { transition: transform .28s cubic-bezier(.3, 1.4, .5, 1); }
+.herd-an.hl .hi { transform: scale(1.24); }
+.herd-an.hl { z-index: 2; }
