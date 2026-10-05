@@ -76,6 +76,7 @@ function bind() {
   const unlockNow = () => unlock(); root.addEventListener('pointerdown', unlockNow, true); root.addEventListener('touchend', unlockNow, true); gridRoot.addEventListener('pointerdown', unlockNow, true);
   els.pic.addEventListener('click', announce);
   $('#btn-prev').addEventListener('click', () => step(-1));
+  $('#btn-name').addEventListener('click', () => { const my = ++token; clearTimers(); stopSound(); bounce(); playUrl(`sounds/names/${lang}/${animals[index].id}.mp3`, { gain: 1, stopPrev: true }); void my; });   // just the name, now
   $('#btn-next').addEventListener('click', () => step(1));
   document.querySelectorAll('#view-animals .lang button, #view-grid .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
   $('#btn-credits').addEventListener('click', () => { els.credits.hidden = false; });

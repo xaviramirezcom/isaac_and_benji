@@ -369,3 +369,4 @@ button, a { touch-action: manipulation; font: inherit; }
 .actions.two { width: min(680px, 100%); justify-content: space-between; gap: 0; padding: 8px 22px calc(env(safe-area-inset-bottom) + 14px); box-sizing: border-box; }
 .big-btn.prev { background: linear-gradient(160deg, #5aa0ff, #2b59d9); }
 .stage { touch-action: manipulation; }
+.actions.two .big-btn.name { background: linear-gradient(160deg, #37d39a, #13a06f); }
