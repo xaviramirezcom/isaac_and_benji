@@ -13,16 +13,16 @@ const $ = (s) => document.querySelector(s);
 const root = $('#view-storm'), canvas = $('#storm-canvas');
 const ui = { loading: $('#storm-loading'), card: $('#storm-card'), name: $('#stc-name'), stat: $('#stc-stat'), desc: $('#stc-desc'), chips: $('#storm-chips'), hud: $('#storm-hud'), title: $('#storm-title') };
 const T = {
-  en: { title: 'Tornadoes & Storms', tornado: 'Tornado', storm: 'Storm', say: 'Say it', winds: 'Winds', about: 'About', of: 'of tornadoes', hit: 'Houses hit', cars: 'Cars moved', debris: 'Flying', wind: 'Wind', speech: 'en-US', hail: 'Hail', mph: 'mph', kmh: 'km/h', slow: 'Slow motion', sound: 'Sound', follow: 'Follow', reset: 'Rebuild the neighborhood', look: 'One finger: move the storm', lookAlt: 'One finger: look around' },
-  es: { title: 'Tornados y tormentas', tornado: 'Tornado', storm: 'Tormenta', say: 'Escucha', winds: 'Vientos', about: 'Cerca del', of: 'de los tornados', hit: 'Casas dañadas', cars: 'Autos movidos', debris: 'Volando', wind: 'Viento', speech: 'es-ES', hail: 'Granizo', mph: 'mph', kmh: 'km/h', slow: 'Cámara lenta', sound: 'Sonido', follow: 'Seguir', reset: 'Reconstruir el barrio', look: 'Un dedo: mover la tormenta', lookAlt: 'Un dedo: mirar alrededor' },
+  en: { title: 'Tornadoes & Storms', tornado: 'Tornado', storm: 'Storm', say: 'Say it', winds: 'Winds', about: 'About', of: 'of tornadoes', hit: 'Houses hit', cars: 'Cars moved', debris: 'Flying', wind: 'Wind', speech: 'en-US', hail: 'Hail', mph: 'mph', kmh: 'km/h', slow: 'Slow motion', sound: 'Sound', follow: 'Follow', reset: 'Rebuild the neighborhood', look: 'One finger: move the storm', hint: 'Drag your finger on the ground to move the storm', lookAlt: 'One finger: look around' },
+  es: { title: 'Tornados y tormentas', tornado: 'Tornado', storm: 'Tormenta', say: 'Escucha', winds: 'Vientos', about: 'Cerca del', of: 'de los tornados', hit: 'Casas dañadas', cars: 'Autos movidos', debris: 'Volando', wind: 'Viento', speech: 'es-ES', hail: 'Granizo', mph: 'mph', kmh: 'km/h', slow: 'Cámara lenta', sound: 'Sonido', follow: 'Seguir', reset: 'Reconstruir el barrio', look: 'Un dedo: mover la tormenta', hint: 'Arrastra el dedo por el suelo para mover la tormenta', lookAlt: 'Un dedo: mirar alrededor' },
 };
 const MPH = 0.44704, FOV = 48, AREA = 134, CELL = 130, RING = 75, CLOUD_BASE = 162;
 const V = THREE.Vector3;
 
 let lang = 'en', mode = 'tornado', levelIdx = 2, ready = false, running = false, loadPromise = null, raf = 0, lastT = 0, simT = 0;
-let renderer, scene, camera, controls, hemi, sun, sky, clouds, rain, lightning, vortex, debris, ambient, world, hailMesh, ground, groundCtx, groundTex;
+let marker, renderer, scene, camera, controls, hemi, sun, sky, clouds, rain, lightning, vortex, debris, ambient, world, hailMesh, ground, groundCtx, groundTex;
 let cardTimer = 0, follow = true, steer = true, slowmo = false, soundOn = false, frameN = 0, hudT = 0, flash = 0, thunderQ = [];
-const S = { x: -105, z: 22, vx: 0, vz: 0, tx: 0, tz: 0, hasTarget: false, touch: 0, rc: 17, vmax: 55, lean: new THREE.Vector2(), lastStamp: new V(1e9, 0, 1e9) };
+const S = { finger: null, x: -105, z: 22, vx: 0, vz: 0, tx: 0, tz: 0, hasTarget: false, touch: 0, rc: 17, vmax: 55, lean: new THREE.Vector2(), lastStamp: new V(1e9, 0, 1e9) };
 const hail = { pos: null, vel: null, life: null, ptr: 0, N: 260 };
 
 const level = () => (mode === 'tornado' ? TORNADO : STORM)[levelIdx];
@@ -60,6 +60,7 @@ async function init() {
   rain = createRain(); scene.add(rain.mesh);
   lightning = createLightning(scene);
   vortex = createVortex(CLOUD_BASE - 6); scene.add(vortex.group);
+  marker = new THREE.Mesh(new THREE.RingGeometry(0.82, 1, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide })); marker.rotation.x = -Math.PI / 2; marker.visible = false; marker.renderOrder = 9; scene.add(marker);
 
   // ground: a repaintable canvas (grass + the scar the tornado leaves) in the middle, plain grass beyond
   const gc = document.createElement('canvas'); gc.width = gc.height = 1024; groundCtx = gc.getContext('2d'); paintGrass(groundCtx, 1024, 3);
@@ -230,9 +231,9 @@ function frame(now) {
   if (!running) return; raf = requestAnimationFrame(frame);
   const raw = Math.min(0.05, (now - lastT) / 1000); lastT = now; const dt = raw * (slowmo ? 0.22 : 1); simT += dt; frameN++;
   // move the storm toward the finger (it keeps coasting a little when you let go)
-  const vmaxSpeed = 18;
-  if (S.hasTarget) { dv.set(S.tx - S.x, 0, S.tz - S.z); const d = dv.length(); if (d > 0.5) { dv.multiplyScalar(Math.min(vmaxSpeed, d * 0.9) / d); S.vx += (dv.x - S.vx) * Math.min(1, dt * 1.6); S.vz += (dv.z - S.vz) * Math.min(1, dt * 1.6); } else { S.vx *= Math.exp(-dt * 2); S.vz *= Math.exp(-dt * 2); } }
-  else { S.vx *= Math.exp(-dt * 0.7); S.vz *= Math.exp(-dt * 0.7); }
+  const vmaxSpeed = 55; if (S.finger) { const p = groundPoint(S.finger); if (p) { S.tx = THREE.MathUtils.clamp(p.x, -AREA, AREA); S.tz = THREE.MathUtils.clamp(p.z, -AREA, AREA); S.hasTarget = true; } }
+  if (S.hasTarget) { dv.set(S.tx - S.x, 0, S.tz - S.z); const d = dv.length(); if (d > 0.4) { dv.multiplyScalar(Math.min(vmaxSpeed, d * 3.2) / d); const kk = Math.min(1, dt * 7); S.vx += (dv.x - S.vx) * kk; S.vz += (dv.z - S.vz) * kk; } else { S.vx *= Math.exp(-dt * 2); S.vz *= Math.exp(-dt * 2); } }
+  else { S.vx *= Math.exp(-dt * 1.4); S.vz *= Math.exp(-dt * 1.4); }
   S.x = THREE.MathUtils.clamp(S.x + S.vx * dt, -AREA, AREA); S.z = THREE.MathUtils.clamp(S.z + S.vz * dt, -AREA, AREA);
   const L = level();
   if (mode === 'tornado') { S.touch = Math.min(1, S.touch + dt / 4.5); S.rc += (L.rc - S.rc) * Math.min(1, dt * 0.9); S.vmax += (L.vmax * MPH - S.vmax) * Math.min(1, dt * 0.9); }
@@ -251,8 +252,10 @@ function frame(now) {
   sky.u.uFlash.value = flash * 0.7; hemi.intensity = (mode === 'tornado' ? 0.95 : 1.15 - 0.25 * (L.cloud ?? 1)) + flash * 2.2;
   rain.U.uTime.value = simT; rain.U.uCenter.value.set(controls.target.x, 0, controls.target.z); rain.U.uStorm.value.set(S.x, S.z); rain.U.uCell.value = mode === 'tornado' ? 150 : CELL * 1.1;
   const wm = mode === 'storm' ? S.vmax * 0.25 : S.vmax * 0.2; rain.U.uWind.value.set(S.vx * 0.4 + wm, wm * 0.3);
-  // camera follows the storm
-  if (follow) { dv.set(S.x, 30, S.z).sub(controls.target).multiplyScalar(Math.min(1, dt * 2.6 + 0.02)); controls.target.add(dv); camera.position.add(dv); }
+  // a ring on the ground shows where the finger is sending the storm
+  if (S.finger && S.hasTarget) { marker.visible = true; marker.position.set(S.tx, 0.4, S.tz); marker.scale.setScalar(4 + 1.2 * Math.sin(simT * 6) + (mode === 'tornado' ? S.rc * 0.5 : 8)); } else marker.visible = false;
+  // camera follows the storm (but stays put while a finger is steering, so the map doesn't slide under it)
+  if (follow && !S.finger) { dv.set(S.x, 30, S.z).sub(controls.target).multiplyScalar(Math.min(1, dt * 2.6 + 0.02)); controls.target.add(dv); camera.position.add(dv); }
   controls.update();
   if (camera.position.y < 3) camera.position.y = 3;
   if (frameN % 3 === 0) renderer.shadowMap.needsUpdate = true;
@@ -281,7 +284,7 @@ function refreshUI() {
   ui.stat.textContent = `${t.winds}: ${mph} ${t.mph} (${kmh} ${t.kmh})` + (isT ? ` · ${t.about} ${lang === 'es' ? L.shareEs ?? L.share : L.share} ${t.of}` : '');
   ui.desc.textContent = L.desc[lang]; ui.card.classList.add('open'); clearTimeout(cardTimer); cardTimer = setTimeout(() => ui.card.classList.add('mini'), 9000);
   document.querySelector('#storm-type [data-mode=tornado]').textContent = t.tornado; document.querySelector('#storm-type [data-mode=storm]').textContent = t.storm;
-  ui.title.textContent = t.title; $('#stc-speak-l').textContent = t.say;
+  $('#storm-hint').textContent = t.hint; ui.title.textContent = t.title; $('#stc-speak-l').textContent = t.say;
   $('#btn-slow').setAttribute('aria-label', t.slow); $('#btn-sound').setAttribute('aria-label', t.sound); $('#btn-follow').setAttribute('aria-label', t.follow); $('#btn-srebuild').setAttribute('aria-label', t.reset); $('#btn-steer').setAttribute('aria-label', steer ? t.look : t.lookAlt);
 }
 function buildChips() { refreshUI(); }
@@ -302,9 +305,9 @@ let bound = false;
 function bind() {
   if (bound) return; bound = true; const pointers = new Set();
   const setTarget = (e) => { const p = groundPoint(e); if (p) { S.tx = THREE.MathUtils.clamp(p.x, -AREA, AREA); S.tz = THREE.MathUtils.clamp(p.z, -AREA, AREA); S.hasTarget = true; } };
-  canvas.addEventListener('pointerdown', (e) => { pointers.add(e.pointerId); if (steer && pointers.size === 1 && (e.pointerType !== 'mouse' || e.button === 0)) { setTarget(e); ui.card.classList.add('mini'); } else S.hasTarget = false; });
-  canvas.addEventListener('pointermove', (e) => { if (steer && pointers.size === 1 && pointers.has(e.pointerId) && (e.pointerType !== 'mouse' || e.buttons & 1)) setTarget(e); });
-  const up = (e) => { pointers.delete(e.pointerId); if (!pointers.size) S.hasTarget = false; };
+  canvas.addEventListener('pointerdown', (e) => { $('#storm-hint').classList.add('gone'); pointers.add(e.pointerId); if (steer && pointers.size === 1 && (e.pointerType !== 'mouse' || e.button === 0)) { S.finger = { clientX: e.clientX, clientY: e.clientY }; setTarget(e); ui.card.classList.add('mini'); } else { S.hasTarget = false; S.finger = null; } });
+  canvas.addEventListener('pointermove', (e) => { if (steer && pointers.size === 1 && pointers.has(e.pointerId) && (e.pointerType !== 'mouse' || e.buttons & 1)) { S.finger = { clientX: e.clientX, clientY: e.clientY }; setTarget(e); } });
+  const up = (e) => { pointers.delete(e.pointerId); S.finger = null; if (!pointers.size) S.hasTarget = false; };
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   document.querySelectorAll('#storm-type button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.mode !== mode) { chooseLevel(b.dataset.mode, b.dataset.mode === 'tornado' ? 2 : 1); ui.card.classList.remove('mini'); } }));
   document.querySelectorAll('#view-storm .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));

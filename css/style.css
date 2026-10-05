@@ -291,3 +291,5 @@ button, a { touch-action: manipulation; font: inherit; }
 #storm-card.mini .ic-text h3 { margin: 0; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #storm-card.mini .ic-text p, #storm-card.mini .ic-actions { display: none; }
 #storm-card.mini::after { content: '⌃'; font-weight: 900; font-size: 1.3rem; line-height: 1; opacity: .55; }
+.storm-hint { position: absolute; z-index: 3; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 14px 22px; border-radius: 99px; background: rgba(255, 255, 255, .94); color: var(--ink); font-weight: 800; font-size: 1.15rem; box-shadow: var(--shadow); pointer-events: none; text-align: center; transition: opacity .4s; max-width: calc(100% - 40px); }
+.storm-hint.gone { opacity: 0; }
