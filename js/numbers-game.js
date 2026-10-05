@@ -64,7 +64,7 @@ function startCount() {
   phase = 'count'; clearTimers(); herd.style.setProperty('--grow', '1'); numEl.classList.remove('wiggle', 'in', 'drag'); numEl.classList.add('vanish'); pop();       // the number is "used up": it pops away, and the animals take over
   ans.forEach((a, i) => later(() => highlight(a, i + 1), 800 + i * STEP));                                                                         // count them, one by one
   const end = 800 + n * STEP;
-  later(() => { phase = 'done'; ans.forEach((a, i) => later(() => { a.hi.classList.remove('jump'); void a.hi.offsetWidth; a.hi.classList.add('jump'); }, i * 50)); pop(); }, end);   // all together!
+  later(() => { phase = 'done'; ans.forEach((o) => o.el.classList.remove('hl')); ans.forEach((a, i) => later(() => { a.hi.classList.remove('jump'); void a.hi.offsetWidth; a.hi.classList.add('jump'); }, i * 50)); pop(); }, end);   // all together!
   later(() => say1(n), end + 350);                                                                                                                 // …and the number once more
   later(next, end + 350 + 3300);
 }
