@@ -34,7 +34,7 @@ function speak() { say1(n); }
 // ---------------------------------------------------------------- one round
 function metrics() { const r = stage.getBoundingClientRect(), m = Math.min(r.width, r.height); sizes = { n: Math.max(120, Math.min(210, m * 0.28)), f: Math.max(170, Math.min(290, m * 0.4)) }; numEl.style.setProperty('--sz', `${sizes.n}px`); frog.style.setProperty('--sz', `${sizes.f}px`); return r; }
 function place() {
-  const r = metrics(), top = 96, bot = 78, side = 16, rnd = (a, b) => a + Math.random() * (b - a);
+  const r = metrics(), top = (parseFloat(getComputedStyle(root).paddingTop) || 0) + 120, bot = 78, side = 16, rnd = (a, b) => a + Math.random() * (b - a);
   const rangeX = (sz) => [side, Math.max(side, r.width - side - sz)], rangeY = (sz) => [top, Math.max(top, r.height - bot - sz)];
   const need = Math.min(r.width, r.height) * 0.45 + sizes.f * 0.25;         // we want them far apart, so the number has to be dragged
   let best = null, bestD = -1;

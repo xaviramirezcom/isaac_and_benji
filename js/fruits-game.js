@@ -31,9 +31,11 @@ const mouthPt = () => { const m = MOUTH[friend?.id] ?? MOUTH.teddy; return { x: 
 // ---------------------------------------------------------------- layout
 function metrics() {
   const r = stage.getBoundingClientRect(), w = r.width, h = r.height, n = Math.max(2, opts.length);
-  const T = Math.max(190, Math.min(w * 0.62, h * 0.4, 400)), tx = (w - T) / 2, ty = Math.max(84, h * 0.12), B = T * 0.5;
-  let bx = tx + T * 0.76, by = ty - B * 0.12; bx = Math.min(bx, w - B - 10); by = Math.max(by, 64);
-  const F = Math.max(112, Math.min(210, (w - 36) / (n + 0.3), h * 0.2)), fy = h - F - Math.max(36, h * 0.07);
+  const safeTop = parseFloat(getComputedStyle(root).paddingTop) || 0, topClear = safeTop + 126;          // the language and sound buttons share one row along the top: keep the fruit bubble and the animal below them
+  const F = Math.max(112, Math.min(210, (w - 36) / (n + 0.3), h * 0.2)), fy = h - F - Math.max(36, h * 0.07), tableTop = fy - F * 0.18;
+  let T = Math.max(150, Math.min(w * 0.62, h * 0.4, 400)), B = T * 0.5, ty = Math.max(84, h * 0.12, topClear + B * 0.12);
+  if (ty + T > tableTop - 8) { T = Math.max(150, tableTop - 8 - ty); B = T * 0.5; ty = Math.max(84, h * 0.12, topClear + B * 0.12); }
+  const tx = (w - T) / 2; let bx = tx + T * 0.76, by = ty - B * 0.12; bx = Math.min(bx, w - B - 10); by = Math.max(by, topClear);
   M = { w, h, T, tx, ty, B, bx, by, F, fy };
 }
 function place() {

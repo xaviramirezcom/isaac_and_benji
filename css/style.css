@@ -458,3 +458,5 @@ button, a { touch-action: manipulation; font: inherit; }
 .fr-prog i { width: 16px; height: 16px; border-radius: 50%; background: rgba(255, 255, 255, .8); box-shadow: 0 2px 0 rgba(0, 0, 0, .1); transition: background .3s, transform .3s; } .fr-prog i.on { background: #ff6b8f; transform: scale(1.2); }
 .fruits-view .round-btn.back, .fruits-view .insect-tools { z-index: 6; }
 @media (prefers-reduced-motion: reduce) { .fr-tbody, .fr-want .fr-bubble, .fr-item .fi { animation: none !important; } }
+/* in the number and fruit games the sound button sits beside the language switch, in one row along the top */
+#view-numbers .insect-tools, #view-fruits .insect-tools { flex-direction: row; align-items: center; gap: 10px; }
