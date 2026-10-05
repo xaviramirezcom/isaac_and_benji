@@ -469,7 +469,6 @@ button, a { touch-action: manipulation; font: inherit; }
 .herd-an .hi { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
 .herd-an .hi img { width: 92%; height: 92%; object-fit: contain; display: block; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, .18)); transition: filter .25s; }
 .herd-an.in .hi { animation: anIn .55s cubic-bezier(.2, 1.5, .4, 1); }
-.num-herd.near .herd-an .hi { animation: anNear .55s ease-in-out infinite alternate; }
 .herd-an.counted .hi img { filter: drop-shadow(0 0 10px rgba(255, 217, 77, .85)) drop-shadow(0 8px 6px rgba(0, 0, 0, .15)); }
 .herd-an.hl .hi img { filter: drop-shadow(0 0 16px #ffd94d) drop-shadow(0 0 30px #ffd94d) drop-shadow(0 8px 6px rgba(0, 0, 0, .15)); }
 .herd-an .hi.jump { animation: anJump .55s cubic-bezier(.3, 1.6, .5, 1); }
@@ -482,3 +481,5 @@ button, a { touch-action: manipulation; font: inherit; }
 @media (prefers-reduced-motion: reduce) { .herd-an .hi { animation: none !important; } }
 .num-bubble.vanish .nb { opacity: 0; scale: .1; transition: opacity .25s, scale .25s; }
 .num-bubble.vanish { pointer-events: none; }
+/* the animals grow as the number comes closer (smooth, no blinking) */
+.herd-an .hi { transform: scale(var(--grow, 1)); transition: transform .18s ease-out; }

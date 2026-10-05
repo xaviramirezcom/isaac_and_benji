@@ -51,7 +51,7 @@ function startRound() {
   if (!running || !animals.length) return; clearTimers(); numAnim?.cancel(); numAnim = null; phase = 'wait'; drag = null; pickKind();
   numVal.textContent = n; numEl.style.setProperty('--c', COLORS[(n - 1) % COLORS.length]); numEl.style.visibility = ''; numEl.classList.remove('drag', 'in', 'wiggle', 'big', 'vanish'); numEl.style.setProperty('--ds', '1.12');
   prog.innerHTML = Array.from({ length: MAX }, (_, i) => `<i class="${i < n - 1 ? 'done' : i === n - 1 ? 'now' : ''}"></i>`).join('');
-  herd.classList.remove('near'); herd.innerHTML = ''; herdTop = Math.random() < 0.5;
+  herd.style.setProperty('--grow', '1'); herd.innerHTML = ''; herdTop = Math.random() < 0.5;
   ans = Array.from({ length: n }, () => { const el = document.createElement('div'); el.className = 'herd-an'; el.innerHTML = `<div class="hi"><img src="images/animals/${kind.id}.png" alt="" draggable="false"><b class="badge"></b></div>`; herd.appendChild(el); return { el, hi: el.firstChild, badge: el.querySelector('.badge') }; });
   layout(); placeNumber(); ans.forEach((a, i) => later(() => a.el.classList.add('in'), 100 + i * 90));
   later(() => { numEl.classList.add('in'); pop(); }, 350 + n * 40); later(showHint, HINT_AFTER);
@@ -61,7 +61,7 @@ function showHint() {   // a ghost hand shows the move — nothing is ever count
   handAnim = hand.animate([{ transform: `translate(${a.x}px, ${a.y}px)`, opacity: 0 }, { transform: `translate(${a.x}px, ${a.y}px)`, opacity: 1, offset: 0.15 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 1, offset: 0.8 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 0 }], { duration: 2200, iterations: Infinity, easing: 'ease-in-out' });
 }
 function startCount() {
-  phase = 'count'; clearTimers(); herd.classList.remove('near'); numEl.classList.remove('wiggle', 'in', 'drag'); numEl.classList.add('vanish'); pop();       // the number is "used up": it pops away, and the animals take over
+  phase = 'count'; clearTimers(); numEl.classList.remove('wiggle', 'in', 'drag'); numEl.classList.add('vanish'); pop();       // the number is "used up": it pops away, and the animals take over
   ans.forEach((a, i) => later(() => highlight(a, i + 1), 800 + i * STEP));                                                                         // count them, one by one
   const end = 800 + n * STEP;
   later(() => { phase = 'done'; ans.forEach((a, i) => later(() => { a.hi.classList.remove('jump'); void a.hi.offsetWidth; a.hi.classList.add('jump'); }, i * 50)); pop(); }, end);   // all together!
@@ -85,12 +85,13 @@ function bind() {
   numEl.addEventListener('pointermove', (e) => {
     if (!drag || e.pointerId !== drag.id) return; const r = stage.getBoundingClientRect();
     pos.nx = Math.min(Math.max(e.clientX - r.left - drag.dx, -10), r.width - sz + 10); pos.ny = Math.min(Math.max(e.clientY - r.top - drag.dy, -10), r.height - sz + 10); setNum(pos.nx, pos.ny);
-    herd.classList.toggle('near', overHerd(sz * 0.4));                                                                               // the animals perk up as the number comes close
+    const c = numCenter(), hc = herdCenter(), prox = Math.max(0, Math.min(1, 1 - Math.hypot(c.x - hc.x, c.y - hc.y) / (Math.max(L.w, L.h) * 0.55)));
+    herd.style.setProperty('--grow', (1 + 0.3 * prox * prox).toFixed(3));                                                          // the closer the number, the bigger the animals get
   });
   const up = (e) => {
     if (!drag || e.pointerId !== drag.id) return; drag = null;
     if (overHerd()) startCount();
-    else { numEl.classList.remove('drag'); herd.classList.remove('near'); later(showHint, 6000); }                                      // dropped somewhere else: that's fine, try again
+    else { numEl.classList.remove('drag'); herd.style.setProperty('--grow', '1'); later(showHint, 6000); }                                      // dropped somewhere else: that's fine, try again
   };
   numEl.addEventListener('pointerup', up); numEl.addEventListener('pointercancel', up);
   document.querySelectorAll('#view-numbers .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
