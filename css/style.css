@@ -377,5 +377,30 @@ button, a { touch-action: manipulation; font: inherit; }
 /* the name button shows the animal's name itself (so the name is not written twice) */
 .animal-name { display: none; }
 .actions.two .big-btn.name { width: clamp(170px, 46vw, 320px); height: clamp(108px, 24vw, 160px); border-radius: 36px; padding: 0 10px; }
-#name-label { font-size: clamp(2rem, 9vw, 3.8rem); font-weight: 900; line-height: 1; letter-spacing: .01em; text-shadow: 0 4px 0 rgba(0, 0, 0, .15); white-space: nowrap; }
 @media (max-height: 520px) { .actions.two .big-btn.name { width: 220px; height: 84px; } #name-label { font-size: 2rem; } }
+
+/* the name sits INSIDE a soap bubble; pop the bubble and the name is set free */
+.name-wrap { --bubble: #2fb59a; position: relative; display: grid; place-items: center; padding: clamp(18px, 3.4vh, 34px) clamp(46px, 12vw, 96px); }
+.name-bubble { position: absolute; inset: 0; border-radius: 50%; border: 3px solid color-mix(in srgb, var(--bubble) 45%, #fff); cursor: pointer; padding: 0;
+  background: radial-gradient(ellipse at 28% 22%, rgba(255, 255, 255, .95) 0 5%, rgba(255, 255, 255, 0) 16%),
+    radial-gradient(ellipse at 72% 82%, rgba(255, 255, 255, .5) 0 4%, rgba(255, 255, 255, 0) 12%),
+    conic-gradient(from 20deg, rgba(120, 220, 255, .22), rgba(255, 140, 220, .2), rgba(255, 240, 140, .2), rgba(140, 255, 190, .22), rgba(120, 220, 255, .22)),
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, .14) 55%, color-mix(in srgb, var(--bubble) 42%, transparent) 86%, rgba(255, 255, 255, .6) 100%);
+  box-shadow: inset 0 0 26px rgba(255, 255, 255, .6), inset 0 -12px 26px color-mix(in srgb, var(--bubble) 38%, transparent), 0 12px 26px rgba(0, 0, 0, .14);
+  animation: bubbleFloat 3.4s ease-in-out infinite; transition: transform .1s; }
+.name-wrap:active .name-bubble { transform: scale(.97); }
+#name-label { position: relative; z-index: 1; pointer-events: none; font-size: clamp(2.6rem, 11vw, 5rem); font-weight: 900; line-height: 1.05; white-space: nowrap; color: color-mix(in srgb, var(--bubble) 78%, #000); text-shadow: 0 3px 0 rgba(255, 255, 255, .55), 0 6px 10px rgba(0, 0, 0, .12); animation: bubbleFloat 3.4s ease-in-out infinite; }
+#name-label.freed { animation: freed .7s cubic-bezier(.2, 1.6, .4, 1) both; }
+@keyframes bubbleFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes freed { 0% { transform: scale(.85); } 55% { transform: scale(1.34) rotate(-2deg); } 100% { transform: scale(1.14); } }
+.name-bubble.squash { animation: none; transform: scale(1.1, .86); transition: transform .12s; }
+.name-bubble.burst { animation: none; transform: scale(1.5); opacity: 0; pointer-events: none; transition: transform .2s ease-out, opacity .2s; }
+.name-bubble.regrow { animation: regrow .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes regrow { from { transform: scale(.35); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.name-wrap .spark { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff, color-mix(in srgb, var(--bubble) 55%, #fff)); border: 2px solid rgba(255, 255, 255, .85); pointer-events: none; animation: spark .65s ease-out forwards; }
+@keyframes spark { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(.25); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .name-bubble, #name-label { animation: none; } }
+@media (max-height: 520px) { #name-label { font-size: 2.2rem; } .name-wrap { padding: 10px 34px; } }
+.name-wrap .ring { position: absolute; left: 50%; top: 50%; width: 100%; height: 100%; border-radius: 50%; border: 5px solid color-mix(in srgb, var(--bubble) 50%, #fff); transform: translate(-50%, -50%) scale(.7); opacity: .9; pointer-events: none; animation: ring .45s ease-out forwards; }
+.name-wrap .ring.two { animation-delay: .08s; border-width: 3px; }
+@keyframes ring { to { transform: translate(-50%, -50%) scale(1.9, 2.3); opacity: 0; } }

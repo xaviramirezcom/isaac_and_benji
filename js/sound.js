@@ -46,6 +46,16 @@ export function tone(freq, dur = 0.16, vol = 0.16, type = 'sine', slideTo = 0) {
   o.type = type; o.frequency.setValueAtTime(freq, t); if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur * 0.65);
   g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.015); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g).connect(ctx.destination); o.start(t); o.stop(t + dur + 0.02);
 }
+// the sound of a soap bubble popping — super tiny: a very short, quiet wet "pip" (a 35 ms click of filtered noise plus a quick falling blip)
+let noiseBuf = null;
+export function bubblePop(vol = 0.35) {
+  if (muted) return; const ctx = audio(); if (!ctx) return; const t = ctx.currentTime;
+  if (!noiseBuf || noiseBuf.sampleRate !== ctx.sampleRate) { noiseBuf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.05), ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length) ** 3; }
+  const n = ctx.createBufferSource(), bp = ctx.createBiquadFilter(), ng = ctx.createGain(); n.buffer = noiseBuf; bp.type = 'bandpass'; bp.frequency.setValueAtTime(4200, t); bp.frequency.exponentialRampToValueAtTime(2200, t + 0.04); bp.Q.value = 1.2;
+  ng.gain.setValueAtTime(0.7 * vol, t); ng.gain.exponentialRampToValueAtTime(0.001, t + 0.045); n.connect(bp).connect(ng).connect(ctx.destination); n.start(t);
+  const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(2600, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.035);
+  og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.5 * vol, t + 0.002); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.045); o.connect(og).connect(ctx.destination); o.start(t); o.stop(t + 0.06);
+}
 // coming back to the app: wake the audio up again
 const wake = () => { if (!document.hidden && ac && ac.state !== 'running') ac.resume?.().catch(() => {}); try { if (silent && silent.paused) silent.play().catch(() => {}); } catch { /* ignore */ } };
 document.addEventListener('visibilitychange', wake); window.addEventListener('pageshow', wake); window.addEventListener('focus', wake);
