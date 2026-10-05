@@ -340,9 +340,9 @@ function refreshUI() {
   const mph = lang === 'es' ? L.mphEs ?? L.mph : L.mph, kmh = lang === 'es' ? L.kmhEs ?? L.kmh : L.kmh;
   ui.stat.textContent = `${t.winds}: ${mph} ${t.mph} (${kmh} ${t.kmh})` + (isT ? ` · ${t.about} ${lang === 'es' ? L.shareEs ?? L.share : L.share} ${t.of}` : '');
   ui.desc.textContent = L.desc[lang]; { const K = KINDS[mode]; $('#stc-kind').innerHTML = `<dt class="what">${K.name[lang]}: ${K.what[lang]}</dt><dt>${t.kSize}</dt><dd>${K.size[lang]}</dd><dt>${t.kLasts}</dt><dd>${K.lasts[lang]}</dd><dt>${t.kWind}</dt><dd>${K.wind[lang]}</dd><dt>${t.kDanger}</dt><dd>${K.danger[lang]}</dd><dd class="note">${t.kNote}</dd>`; } ui.card.classList.add('open'); clearTimeout(cardTimer); cardTimer = setTimeout(() => ui.card.classList.add('mini'), 14000);
-  document.querySelector('#storm-type [data-mode=tornado]').textContent = t.tornado; document.querySelector('#storm-type [data-mode=storm]').textContent = t.storm; document.querySelector('#storm-type [data-mode=hurricane]').textContent = t.hurricane;
+  for (const k of ['tornado', 'storm', 'hurricane']) document.querySelector(`#storm-type [data-mode=${k}]`).setAttribute('aria-label', t[k]);
   $('#storm-hint').textContent = t.hint; ui.title.textContent = t.title; $('#stc-speak-l').textContent = t.say;
-  $('#btn-slow').setAttribute('aria-label', t.slow); $('#btn-sound').setAttribute('aria-label', t.sound); $('#btn-follow').setAttribute('aria-label', t.follow); $('#btn-srebuild').setAttribute('aria-label', t.reset); $('#btn-steer').setAttribute('aria-label', steer ? t.look : t.lookAlt);
+  $('#btn-slow').setAttribute('aria-label', t.slow); $('#btn-sound').setAttribute('aria-label', t.sound); $('#btn-follow').setAttribute('aria-label', t.follow); $('#btn-srebuild').setAttribute('aria-label', t.reset);
 }
 function buildChips() { refreshUI(); }
 function setLang(l) { lang = l; document.querySelectorAll('#view-storm .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); refreshUI(); speechSynthesis?.cancel(); }
@@ -374,7 +374,6 @@ function bind() {
   const tog = (id, fn) => $(id).addEventListener('click', () => fn($(id)));
   tog('#btn-slow', (b) => { slowmo = !slowmo; b.classList.toggle('on', slowmo); });
   tog('#btn-follow', (b) => { follow = !follow; b.classList.toggle('on', follow); }); $('#btn-follow').classList.add('on');
-  tog('#btn-steer', (b) => { steer = !steer; b.classList.toggle('on', !steer); applySteer(); refreshUI(); });
   tog('#btn-srebuild', () => chooseLevel(mode, levelIdx));
   tog('#btn-sound', (b) => { soundOn = !soundOn; b.classList.toggle('on', soundOn); if (soundOn) startAudio(); else stopAudio(); });
   new ResizeObserver(resize).observe(root);

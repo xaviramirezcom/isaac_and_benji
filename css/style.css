@@ -311,3 +311,8 @@ button, a { touch-action: manipulation; font: inherit; }
 .storm-hud svg { width: 24px; height: 24px; flex: none; } .storm-hud span { display: inline-flex; align-items: center; gap: 6px; }
 .storm-hud .gauge { width: 62px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.25); overflow: hidden; } .storm-hud .gauge i { display: block; height: 100%; background: linear-gradient(90deg, #ffe04d, #ff4d3c); }
 @media (max-width: 560px) { .tiles { gap: 18px; padding: 90px 16px 40px; } .game-tile { width: min(42vw, 200px); border-radius: 28px; font-size: 1.3rem; } }
+.type-col { position: absolute; z-index: 5; left: calc(env(safe-area-inset-left) + 16px); top: calc(env(safe-area-inset-top) + 142px); display: flex; flex-direction: column; gap: 12px; }
+.storm-bar { bottom: calc(env(safe-area-inset-bottom) + 6px); }
+.storm-bar .chips { padding: 2px 12px 4px; gap: 8px; }
+.chip.lvl { height: 48px; padding: 0 14px; } .chip.lvl b { font-size: 1.1rem; } .chip.lvl span { font-size: .64rem; }
+#storm-card { bottom: calc(env(safe-area-inset-bottom) + 66px); }
