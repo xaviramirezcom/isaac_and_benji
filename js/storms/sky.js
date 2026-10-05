@@ -35,7 +35,7 @@ export function createClouds() {
           vec3 col = mix(vec3(0.05, 0.06, 0.07), vec3(0.48, 0.5, 0.5), clamp(n2 * (0.45 + 0.9 * r) * (1.0 - 0.6 * uDark) + 0.05 + 0.25 * n * r, 0.0, 1.0));
           col *= mix(vec3(1.0), vec3(0.86, 1.0, 0.9), uGreen);
           col += vec3(0.5, 0.55, 0.8) * uFlash * (1.0 - r);
-          float fade = 1.0 - smoothstep(uY - 70.0, uY - 6.0, uCamY);               // see-through when the camera rises into / above it
+          float fade = smoothstep(6.0, 46.0, abs(uCamY - uY)) * (uCamY > uY ? 0.8 : 1.0);   // see-through while the camera is inside the layer; seen from far above it shows the storm's swirl
           gl_FragColor = vec4(col, dens * uAlpha * fade);
         }`,
     });

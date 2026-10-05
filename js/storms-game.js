@@ -21,7 +21,7 @@ const V = THREE.Vector3;
 
 let lang = 'en', mode = 'tornado', levelIdx = 2, ready = false, running = false, loadPromise = null, raf = 0, lastT = 0, simT = 0;
 let shelf, gust, streaks, marker, renderer, scene, camera, controls, hemi, sun, sky, clouds, rain, lightning, vortex, debris, ambient, world, hailMesh, ground, groundCtx, groundTex;
-let scarDirty = false, scarT = 0, cardTimer = 0, follow = true, steer = true, slowmo = false, soundOn = false, frameN = 0, hudT = 0, flash = 0, thunderQ = [];
+let fogFar = 1500, scarDirty = false, scarT = 0, cardTimer = 0, follow = true, steer = true, slowmo = false, soundOn = false, frameN = 0, hudT = 0, flash = 0, thunderQ = [];
 const S = { finger: null, x: -105, z: 22, vx: 0, vz: 0, tx: 0, tz: 0, hasTarget: false, touch: 0, rc: 17, vmax: 55, lean: new THREE.Vector2(), lastStamp: new V(1e9, 0, 1e9) };
 const hail = { pos: null, vel: null, life: null, ptr: 0, N: 260 };
 
@@ -85,7 +85,7 @@ async function init() {
   const z0 = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < hail.N; i++) hg.setMatrixAt(i, z0);
 
   controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false; controls.minDistance = 16; controls.maxDistance = 560; controls.maxPolarAngle = 1.5; controls.rotateSpeed = 0.7;
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false; controls.minDistance = 16; controls.maxDistance = 1500; controls.maxPolarAngle = 1.5; controls.rotateSpeed = 0.7;
   applySteer(); controls.addEventListener('start', () => ui.card.classList.add('mini'));
   camera.position.set(S.x + 90, 95, S.z + 250); controls.target.set(S.x, 30, S.z); controls.update();
   buildChips(); bind(); resize(); chooseLevel(mode, levelIdx, true);
@@ -113,7 +113,7 @@ function chooseLevel(m, idx, first) {
   const dark = m === 'tornado' ? 1 : L.cloud; clouds.layers.forEach((l) => (l.U.uCover.value = m === 'tornado' ? 1 : 0.35 + 0.65 * L.cloud));
   clouds.layers.forEach((l) => (l.U.uGreen.value = m === 'tornado' || idx >= 2 ? 0.7 : 0));
   rain.U.uRain.value = m === 'tornado' ? 0.55 : L.rain; sky.u.uTop.value.set(m === 'tornado' ? 0x27322f : idx < 1 ? 0x4a5a68 : 0x1c2430); sky.u.uHor.value.set(m === 'tornado' ? 0x57665d : idx < 1 ? 0x93a3ae : 0x4c5a66);
-  scene.fog.color.copy(sky.u.uHor.value); scene.fog.far = m === 'storm' && idx < 1 ? 2000 : 1500;
+  scene.fog.color.copy(sky.u.uHor.value); fogFar = m === 'storm' && idx < 1 ? 2000 : 1500;
   hemi.intensity = m === 'tornado' ? 0.95 : 1.15 - 0.25 * L.cloud; sun.intensity = m === 'tornado' ? 0.55 : 1.0 - 0.7 * L.cloud;
   if (m === 'storm') { S.x = -95; S.z = 0; S.vx = S.vz = 0; S.touch = 1; } else { S.x = -105; S.z = 22; S.vx = S.vz = 0; }
   S.hasTarget = false; S.lean.set(0, 0); S.lastStamp.set(1e9, 0, 1e9);
@@ -285,6 +285,7 @@ function frame(now) {
   if (follow && !S.finger) { dv.set(S.x, 30, S.z).sub(controls.target).multiplyScalar(Math.min(1, dt * 2.6 + 0.02)); controls.target.add(dv); camera.position.add(dv); }
   controls.update();
   if (camera.position.y < 3) camera.position.y = 3;
+  { const cd = camera.position.distanceTo(controls.target); scene.fog.near = Math.max(320, cd * 0.9); scene.fog.far = fogFar + cd * 3; controls.rotateSpeed = THREE.MathUtils.clamp(cd / 250, 0.5, 1.1); }
   if (scarDirty && simT - scarT > 0.2) { groundTex.needsUpdate = true; scarDirty = false; scarT = simT; }
   sun.position.set(controls.target.x - 110, 170, controls.target.z + 80); sun.target.position.set(controls.target.x, 0, controls.target.z); sun.target.updateMatrixWorld();
   if (frameN % 3 === 0) renderer.shadowMap.needsUpdate = true;
