@@ -1,10 +1,14 @@
-// Benji's numbers 1–20: a number appears somewhere on the screen and a frog somewhere else. He drags the number to the frog;
+// Benji's numbers 1–20: a number appears somewhere on the screen and an animal (a different one each time, from the animals game) somewhere else. He drags the number to the frog;
 // the frog gobbles it, says the number out loud, and the little dots count up with soft notes. A few seconds later, with no
 // touching at all, the next number comes. Cause → effect, always the same, never a wrong answer. If he doesn't move the number,
 // a ghost hand shows him how, and later the number flies to the frog by itself so the round still ends the same way.
 const $ = (s) => document.querySelector(s);
 const root = $('#view-numbers'), stage = $('#num-stage'), numEl = $('#num-bubble'), numVal = $('#num-val'), frog = $('#frog'), say = $('#frog-say'), sayVal = $('#say-val'), sayDots = $('#say-dots'), hand = $('#num-hand'), prog = $('#num-prog');
 
+const tongue = $('#tongue');
+// where each animal's mouth is (centre x, y and size w, h as % of its picture)
+const MOUTH = { frog: [50, 69, 46, 27], dog: [14, 45, 13, 11], cat: [14, 47, 10, 9], cow: [12, 46, 12, 10], pig: [14, 49, 13, 10], sheep: [13, 56, 9, 8], horse: [11, 41, 9, 8], duck: [8, 34, 11, 9], rooster: [5, 33, 9, 8], chicken: [7, 60, 9, 9], goat: [8, 45, 9, 8], donkey: [6, 48, 8, 8], bird: [7, 34, 9, 8], bee: [10, 63, 9, 9], owl: [50, 60, 13, 12], lion: [50, 64, 22, 14], tiger: [6, 52, 9, 8] };
+let animals = [], animal = null, lastAnimal = '', snd = null;
 const WORDS = {
   en: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'],
   es: ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte'],
@@ -13,8 +17,8 @@ const SPEECH = { en: 'en-US', es: 'es-ES' };
 const COLORS = ['#ff6b6b', '#ff9f43', '#f7c531', '#5cc96b', '#2fb5b0', '#4a9df0', '#7a6cf0', '#c26bf0', '#f06ba8', '#8a9aa8'];
 const HINT_AFTER = 9000, ASSIST_AFTER = 22000, PAUSE_AFTER_COUNT = 2800;
 
-let lang = 'en', n = 1, phase = 'idle', running = false, bound = false, soundOn = true, ac = null, froggy = null;
-let timers = [], pos = { nx: 0, ny: 0, fx: 0, fy: 0 }, handAnim = null, drag = null, sizes = { n: 150, f: 200 };
+let lang = 'en', n = 1, phase = 'idle', running = false, bound = false, soundOn = true, ac = null;
+let numAnim = null, timers = [], pos = { nx: 0, ny: 0, fx: 0, fy: 0 }, handAnim = null, drag = null, sizes = { n: 150, f: 200 };
 
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
 const clearTimers = () => { timers.forEach(clearTimeout); timers = []; handAnim?.cancel(); handAnim = null; hand.classList.remove('on'); };
@@ -29,8 +33,9 @@ function note(freq, dur = 0.16, vol = 0.16, type = 'sine') {
 const PENTA = [0, 2, 4, 7, 9];
 const tick = (i) => note(261.63 * 2 ** ((PENTA[i % 5] + 12 * Math.floor(i / 5)) / 12), 0.18, 0.14);
 function pop() { if (!soundOn || !audio()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.09); g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.16); }
-function ribbit() {
-  if (!soundOn) return; try { froggy ??= new Audio('sounds/animals/frog.mp3'); froggy.currentTime = 0.3; froggy.volume = 0.8; froggy.play().catch(() => {}); later(() => { let v = 0.8; const f = setInterval(() => { v -= 0.16; if (v <= 0) { clearInterval(f); froggy.pause(); } else froggy.volume = v; }, 60); }, 1100); } catch { /* no sound */ }
+function ribbit() {     // the animal's own real sound, just a moment of it
+  if (!soundOn || !animal) return;
+  try { snd?.pause(); snd = new Audio(animal.sound); snd.volume = 0.85; snd.play().catch(() => {}); const me = snd; later(() => { let v = 0.85; const f = setInterval(() => { v -= 0.17; if (v <= 0 || me !== snd) { clearInterval(f); me.pause(); } else me.volume = v; }, 70); }, 1500); } catch { /* no sound */ }
 }
 function speak(text) {
   if (!soundOn || !('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = SPEECH[lang]; u.rate = 0.7; u.pitch = 1.25; u.volume = 1; speechSynthesis.speak(u);
@@ -50,13 +55,21 @@ function place() {
   setNum(pos.nx, pos.ny); frog.style.transform = `translate(${pos.fx}px, ${pos.fy}px)`;
 }
 const setNum = (x, y) => { numEl.style.transform = `translate(${x}px, ${y}px)`; };
-const frogCenter = () => ({ x: pos.fx + sizes.f / 2, y: pos.fy + sizes.f * 0.68 });   // the mouth
+const mouthPt = () => { const m = MOUTH[animal?.id] ?? MOUTH.frog; return { x: sizes.f * m[0] / 100, y: sizes.f * m[1] / 100 }; };
+const frogCenter = () => { const m = mouthPt(); return { x: pos.fx + m.x, y: pos.fy + m.y }; };   // the mouth
 const setOpen = (v) => frog.style.setProperty('--open', Math.max(0, Math.min(1, v)).toFixed(2));
 const numCenter = () => ({ x: pos.nx + sizes.n / 2, y: pos.ny + sizes.n / 2 });
 
+function pickAnimal() {
+  if (!animals.length) return; let a; do { a = animals[Math.floor(Math.random() * animals.length)]; } while (a.id === lastAnimal && animals.length > 1);
+  animal = a; lastAnimal = a.id; const img = frog.querySelector('img'), mo = frog.querySelector('.mouth'), m = MOUTH[a.id] ?? MOUTH.frog;
+  img.src = `images/animals/${a.id}.png`; mo.style.left = `${m[0] - m[2] / 2}%`; mo.style.top = `${m[1] - m[3] * 0.4}%`; mo.style.width = `${m[2]}%`; mo.style.height = `${m[3]}%`;
+  new Image().src = `images/animals/${a.id}.png`;
+}
 function startRound() {
   if (!running) return; clearTimers(); phase = 'wait';
   numVal.textContent = n; numEl.style.setProperty('--c', COLORS[(n - 1) % COLORS.length]);
+  pickAnimal(); numAnim?.cancel(); numAnim = null; numEl.style.visibility = ''; tongue.style.opacity = 0;
   say.classList.remove('show'); frog.classList.remove('chomp', 'near', 'out'); setOpen(0); numEl.classList.remove('gone', 'drag', 'fly');
   prog.innerHTML = Array.from({ length: 20 }, (_, i) => `<i class="${i < n - 1 ? 'done' : i === n - 1 ? 'now' : ''}"></i>`).join('');
   place(); frog.classList.remove('in'); numEl.classList.remove('in'); void frog.offsetWidth; frog.classList.add('in'); later(() => { numEl.classList.add('in'); pop(); }, 350);
@@ -68,11 +81,18 @@ function showHint() {
 }
 function eat(auto) {
   if (phase !== 'wait') return; phase = 'eat'; clearTimers(); numEl.classList.remove('wiggle', 'drag');
-  const f = frogCenter(), to = { x: f.x - sizes.n / 2, y: f.y - sizes.n / 2 }, go = auto ? 500 : 80;   // the frog opens wide first; then the number flies in
+  const go = auto ? 650 : 140;                                   // the frog opens wide first…
   setOpen(1); frog.classList.add('near');
-  later(() => { numEl.classList.add('fly'); setNum(to.x, to.y); numEl.classList.add('gone'); }, go);
-  later(() => { setOpen(0); frog.classList.remove('near'); frog.classList.add('chomp'); ribbit(); pop(); }, go + 400);
-  later(speakAndCount, go + 950);
+  later(() => {                                                  // …shoots its tongue out, sticks to the number and pulls it into its mouth
+    const m = mouthPt(), nc = numCenter(), dx = nc.x - pos.fx - m.x, dy = nc.y - pos.fy - m.y;
+    const L = Math.max(12, Math.hypot(dx, dy) - sizes.n * 0.3), ang = Math.atan2(dy, dx), th = tongue.offsetHeight || 16;
+    tongue.style.width = `${L}px`; tongue.style.left = `${m.x}px`; tongue.style.top = `${m.y - th / 2}px`;
+    tongue.animate([{ transform: `rotate(${ang}rad) scaleX(0)`, opacity: 1 }, { transform: `rotate(${ang}rad) scaleX(1)`, opacity: 1, offset: 0.42 }, { transform: `rotate(${ang}rad) scaleX(0.04)`, opacity: 1, offset: 0.97 }, { transform: `rotate(${ang}rad) scaleX(0)`, opacity: 0 }], { duration: 640, easing: 'ease-in-out' });
+    const to = { x: pos.fx + m.x - sizes.n / 2, y: pos.fy + m.y - sizes.n / 2 };
+    numAnim = numEl.animate([{ transform: `translate(${pos.nx}px, ${pos.ny}px) scale(1)`, opacity: 1 }, { transform: `translate(${to.x}px, ${to.y}px) scale(0.22)`, opacity: 1, offset: 0.92 }, { transform: `translate(${to.x}px, ${to.y}px) scale(0.1)`, opacity: 0 }], { duration: 460, delay: 260, easing: 'cubic-bezier(.45,0,.8,.5)', fill: 'forwards' });
+  }, go);
+  later(() => { numEl.style.visibility = 'hidden'; setOpen(0); frog.classList.remove('near'); frog.classList.add('chomp'); ribbit(); pop(); }, go + 760);   // …and swallows it
+  later(speakAndCount, go + 1300);
 }
 function speakAndCount() {
   const word = WORDS[lang][n - 1]; sayVal.textContent = n; sayVal.style.color = COLORS[(n - 1) % COLORS.length];
@@ -112,5 +132,5 @@ function bind() {
 }
 function setLang(l) { lang = l; document.querySelectorAll('#view-numbers .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); }
 
-export function enter() { running = true; bind(); setLang('en'); n = 1; startRound(); }   // English is always the default
-export function leave() { running = false; clearTimers(); speechSynthesis?.cancel(); froggy?.pause(); phase = 'idle'; }
+export async function enter() { running = true; bind(); setLang('en'); n = 1; if (!animals.length) animals = await fetch('data/animals.json').then((r) => r.json()).catch(() => []); if (!running) return; startRound(); }   // English is always the default
+export function leave() { running = false; clearTimers(); speechSynthesis?.cancel(); snd?.pause(); phase = 'idle'; }

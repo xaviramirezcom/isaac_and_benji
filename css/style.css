@@ -355,3 +355,4 @@ button, a { touch-action: manipulation; font: inherit; }
 .num-prog { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 14px); display: flex; gap: 6px; justify-content: center; pointer-events: none; z-index: 2; }
 .num-prog i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, .7); } .num-prog i.done { background: #ff9f43; } .num-prog i.now { background: #fff; box-shadow: 0 0 0 3px #ff9f43; }
 .numbers-view .round-btn.back, .numbers-view .insect-tools { z-index: 6; }
+.tongue2 { position: absolute; left: 0; top: 0; height: clamp(14px, 3.4vmin, 24px); border-radius: 0 999px 999px 0 / 0 50% 50% 0; background: linear-gradient(#f6a0b2, #ee7f98); box-shadow: 0 3px 0 rgba(0, 0, 0, .12); transform-origin: 0 50%; transform: scaleX(0); opacity: 0; pointer-events: none; z-index: 2; }
