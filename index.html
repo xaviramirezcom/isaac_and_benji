@@ -117,8 +117,9 @@
       </div>
       <div class="storm-hud" id="storm-hud" aria-live="off"></div>
       <div class="insect-card" id="storm-card" aria-live="polite">
-        <div class="ic-text"><h3 id="stc-name"></h3><p class="sc-stat" id="stc-stat"></p><p id="stc-desc"></p><dl class="kind" id="stc-kind"></dl></div>
+        <div class="ic-text"><h3 id="stc-name"></h3><div class="meter" id="stc-meter" aria-hidden="true"></div><p class="kidtext" id="stc-kid"></p><div class="adult-box"><p class="sc-stat" id="stc-stat"></p><p id="stc-desc"></p><dl class="kind" id="stc-kind"></dl></div></div>
         <div class="ic-actions">
+          <button type="button" class="ic-btn info" id="stc-info" aria-label="Facts for grown-ups"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M16 14v8" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="16" cy="9.6" r="1.9" fill="currentColor"/></svg></button>
           <button type="button" class="ic-btn" id="stc-speak"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg><span id="stc-speak-l">Say it</span></button>
           <button type="button" class="ic-btn remove" id="stc-close"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 20l8-8 8 8" stroke="currentColor" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>

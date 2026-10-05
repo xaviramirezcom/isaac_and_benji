@@ -321,17 +321,22 @@ function stats() {
   const hit = world.houses.filter((h) => h.damaged).length, moved = world.bodies.filter((b) => b.kind === 'car' && (b.dead || b.mesh.position.distanceToSquared(b.pos0) > 6)).length;
   return { hit, moved, total: world.houses.length };
 }
+const ICON_HOUSE = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 16L16 4l13 12M7 14v14h18V14" stroke="#fff" stroke-width="2.8" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+const ICON_CAR = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 21v-5l3-6h20l3 6v5z" fill="none" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/><circle cx="9" cy="22" r="3" fill="#fff"/><circle cx="23" cy="22" r="3" fill="#fff"/></svg>';
+const ICON_WIND = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 11h16a4 4 0 1 0-4-4M3 17h22a4 4 0 1 1-4 4M3 23h10" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>';
+const ICON_WAVE = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M2 12c3-3 5-3 7 0s5 3 7 0 5-3 7 0 4 3 7 0M2 21c3-3 5-3 7 0s5 3 7 0 5-3 7 0 4 3 7 0" stroke="#7fd0ff" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>';
 function updateHud() {
-  const t = T[lang], s = stats(), mph = Math.round(windMph(S.x + (mode === 'tornado' ? level().rc * 0.9 : 70), 4, S.z + 0.01, simT) / 5) * 5;
-  const peak = Math.round(S.vmax / MPH);
-  ui.hud.innerHTML = `<b>${t.wind}</b> ${peak} ${t.mph} · ${Math.round(peak * 1.609)} ${t.kmh}<br>${t.hit} <b>${s.hit}/${s.total}</b> · ${t.cars} <b>${s.moved}</b> · ${t.debris} <b>${debris.active}</b>${mode === 'hurricane' ? `<br>${t.flood} <b>${waterY.toFixed(1)} m</b>` : ''}`; void mph;
+  const s = stats(), peak = Math.round(S.vmax / MPH), pct = Math.min(100, (peak / 230) * 100);
+  ui.hud.innerHTML = `<span>${ICON_WIND}<span class="gauge"><i style="width:${pct}%"></i></span></span><span>${ICON_HOUSE}${s.hit}</span><span>${ICON_CAR}${s.moved}</span>${mode === 'hurricane' ? `<span>${ICON_WAVE}${waterY.toFixed(1)} m</span>` : ''}`;
 }
 function refreshUI() {
   const t = T[lang], L = level(), isT = mode === 'tornado', list = LEVELS[mode];
   document.querySelectorAll('#storm-type button').forEach((b) => b.classList.toggle('on', b.dataset.mode === mode));
-  ui.chips.innerHTML = list.map((l, i) => `<button type="button" class="chip lvl${i === levelIdx ? ' on' : ''}" data-i="${i}"><b>${l.short}</b><span>${l.label[lang]}</span></button>`).join('');
+  ui.chips.innerHTML = list.map((l, i) => `<button type="button" class="chip lvl${i === levelIdx ? ' on' : ''}" data-i="${i}"><b>${l.short}</b><span>${l.chip[lang]}</span></button>`).join('');
   ui.chips.querySelectorAll('.chip').forEach((el) => el.addEventListener('click', () => { const i = +el.dataset.i; if (i === levelIdx) { ui.card.classList.toggle('mini'); return; } chooseLevel(mode, i); ui.card.classList.remove('mini'); }));
-  ui.name.textContent = `${isT || mode === 'hurricane' ? L.short + ' · ' : ''}${L.label[lang]}`;
+  ui.name.textContent = `${KINDS[mode].name[lang]} · ${L.chip[lang]}`;
+  $('#stc-kid').textContent = `${KINDS[mode].kid[lang]} ${L.kid[lang]}`;
+  $('#stc-meter').innerHTML = list.map((_, i) => `<i class="${i <= levelIdx ? 'on' : ''}"></i>`).join('');
   const mph = lang === 'es' ? L.mphEs ?? L.mph : L.mph, kmh = lang === 'es' ? L.kmhEs ?? L.kmh : L.kmh;
   ui.stat.textContent = `${t.winds}: ${mph} ${t.mph} (${kmh} ${t.kmh})` + (isT ? ` · ${t.about} ${lang === 'es' ? L.shareEs ?? L.share : L.share} ${t.of}` : '');
   ui.desc.textContent = L.desc[lang]; { const K = KINDS[mode]; $('#stc-kind').innerHTML = `<dt class="what">${K.name[lang]}: ${K.what[lang]}</dt><dt>${t.kSize}</dt><dd>${K.size[lang]}</dd><dt>${t.kLasts}</dt><dd>${K.lasts[lang]}</dd><dt>${t.kWind}</dt><dd>${K.wind[lang]}</dd><dt>${t.kDanger}</dt><dd>${K.danger[lang]}</dd><dd class="note">${t.kNote}</dd>`; } ui.card.classList.add('open'); clearTimeout(cardTimer); cardTimer = setTimeout(() => ui.card.classList.add('mini'), 14000);
@@ -341,7 +346,7 @@ function refreshUI() {
 }
 function buildChips() { refreshUI(); }
 function setLang(l) { lang = l; document.querySelectorAll('#view-storm .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); refreshUI(); speechSynthesis?.cancel(); }
-function speak() { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const L = level(), K = KINDS[mode], u = new SpeechSynthesisUtterance(`${K.name[lang]}. ${K.what[lang]} ${L.short && mode !== 'storm' ? L.short + '. ' : ''}${L.label[lang]}. ${L.desc[lang]}`); u.lang = T[lang].speech; u.rate = 0.9; speechSynthesis.speak(u); }
+function speak() { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const L = level(), K = KINDS[mode], u = new SpeechSynthesisUtterance(`${K.kid[lang]} ${L.kid[lang]}`); u.lang = T[lang].speech; u.rate = 0.9; speechSynthesis.speak(u); }
 
 // ------------------------------------------------------------------ input
 const ray = new THREE.Raycaster(), plane = new THREE.Plane(new V(0, 1, 0), 0), ndc = new THREE.Vector2(), hit = new V();
@@ -363,6 +368,7 @@ function bind() {
   canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
   document.querySelectorAll('#storm-type button').forEach((b) => b.addEventListener('click', () => { if (b.dataset.mode !== mode) { chooseLevel(b.dataset.mode, b.dataset.mode === 'storm' ? 1 : 2); ui.card.classList.remove('mini'); } }));
   document.querySelectorAll('#view-storm .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
+  $('#stc-info').addEventListener('click', () => ui.card.classList.toggle('adult'));
   $('#stc-speak').addEventListener('click', speak); $('#stc-close').addEventListener('click', () => ui.card.classList.add('mini'));
   ui.card.addEventListener('click', (e) => { if (!e.target.closest('button') && ui.card.classList.contains('mini')) ui.card.classList.remove('mini'); });
   const tog = (id, fn) => $(id).addEventListener('click', () => fn($(id)));
