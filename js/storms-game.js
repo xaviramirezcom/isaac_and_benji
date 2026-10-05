@@ -207,6 +207,7 @@ function updateBodies(dt, t) {
 
 // the tornado also scoops up dirt and grass at its base, and hail rains down in storms
 function updateWindVisuals(dt, L) {
+  streaks.mesh.visible = mode === 'storm'; if (mode !== 'storm') { shelf.mesh.visible = false; gust.mesh.visible = false; return; }
   const ps = streaks.p, pos = streaks.geo.attributes.position.array, col = streaks.geo.attributes.color.array, cx = controls.target.x, cz = controls.target.z;
   for (let i = 0; i < streaks.N; i++) {
     const i3 = i * 3; let x = ps[i3], y = ps[i3 + 1], z = ps[i3 + 2];
