@@ -5,8 +5,12 @@
 const $ = (s) => document.querySelector(s);
 const root = $('#view-numbers'), stage = $('#num-stage'), numEl = $('#num-bubble'), numVal = $('#num-val'), frog = $('#frog'), say = $('#frog-say'), sayVal = $('#say-val'), sayDots = $('#say-dots'), hand = $('#num-hand'), prog = $('#num-prog');
 
-// where the head of each 3D animal is (x, y as % of its picture): the number shrinks into this spot when the animal gulps it
-const MOUTH = { frog: [50, 66], dog: [14, 45], cat: [14, 47], cow: [12, 46], pig: [14, 49], sheep: [13, 56], horse: [11, 41], duck: [8, 34], rooster: [5, 33], chicken: [7, 60], goat: [8, 45], donkey: [6, 48], bird: [7, 34], bee: [10, 63], owl: [50, 60], lion: [50, 64], tiger: [6, 52] };
+// where each 3D animal's mouth is: centre x, y, length, angle (degrees), height when wide open — all as % of its picture
+export const MOUTH = {
+  frog: [50, 61, 48, 0, 15], dog: [14, 42, 13, 8, 9], cat: [12, 43, 9, 5, 6], cow: [12, 39, 10, 0, 7], pig: [13, 58, 12, 3, 8], sheep: [13, 33, 8, 0, 6], horse: [10, 26, 7, -12, 5],
+  duck: [15, 26, 16, 4, 8], rooster: [14.5, 29, 8, 0, 5], chicken: [15, 58, 14, 4, 9], goat: [12, 40.5, 6, 8, 5], donkey: [13, 49, 8, -10, 6], bird: [10, 30, 6, 0, 4],
+  bee: [12, 60, 8, 0, 6], owl: [50, 41, 7, 0, 5], lion: [50, 63, 18, 0, 10], tiger: [13, 56, 9, 6, 6],
+};
 let animals = [], animal = null, lastAnimal = '', snd = null;
 const WORDS = {
   en: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'],
@@ -44,14 +48,16 @@ function speak(text) {
 function metrics() { const r = stage.getBoundingClientRect(), m = Math.min(r.width, r.height); sizes = { n: Math.max(120, Math.min(210, m * 0.28)), f: Math.max(170, Math.min(290, m * 0.4)) }; numEl.style.setProperty('--sz', `${sizes.n}px`); frog.style.setProperty('--sz', `${sizes.f}px`); return r; }
 function place() {
   const r = metrics(), top = 96, bot = 78, side = 16, rnd = (a, b) => a + Math.random() * (b - a);
-  const rangeX = (s) => [side, r.width - side - s], rangeY = (s) => [top, r.height - bot - s];
-  let tries = 0, ok = false;
-  while (!ok && tries++ < 60) {
-    pos.nx = rnd(...rangeX(sizes.n)); pos.ny = rnd(...rangeY(sizes.n)); pos.fx = rnd(...rangeX(sizes.f)); pos.fy = rnd(...rangeY(sizes.f));
-    const d = Math.hypot(pos.nx + sizes.n / 2 - pos.fx - sizes.f / 2, pos.ny + sizes.n / 2 - pos.fy - sizes.f / 2);
-    ok = d > Math.min(r.width, r.height) * 0.42 + sizes.f * 0.3;
+  const rangeX = (sz) => [side, Math.max(side, r.width - side - sz)], rangeY = (sz) => [top, Math.max(top, r.height - bot - sz)];
+  const need = Math.min(r.width, r.height) * 0.45 + sizes.f * 0.25;         // we want them far apart, so the number has to be dragged
+  let best = null, bestD = -1;
+  for (let t = 0; t < 120; t++) {
+    const c = { nx: rnd(...rangeX(sizes.n)), ny: rnd(...rangeY(sizes.n)), fx: rnd(...rangeX(sizes.f)), fy: rnd(...rangeY(sizes.f)) };
+    const d = Math.hypot(c.nx + sizes.n / 2 - c.fx - sizes.f / 2, c.ny + sizes.n / 2 - c.fy - sizes.f / 2);
+    if (d > bestD) { best = c; bestD = d; }
+    if (d >= need) break;
   }
-  setNum(pos.nx, pos.ny); frog.style.transform = `translate(${pos.fx}px, ${pos.fy}px)`;
+  pos = { ...best }; setNum(pos.nx, pos.ny); frog.style.transform = `translate(${pos.fx}px, ${pos.fy}px)`;
 }
 const setNum = (x, y) => { numEl.style.transform = `translate(${x}px, ${y}px)`; };
 const mouthPt = () => { const m = MOUTH[animal?.id] ?? MOUTH.frog; return { x: sizes.f * m[0] / 100, y: sizes.f * m[1] / 100 }; };
@@ -62,12 +68,13 @@ const numCenter = () => ({ x: pos.nx + sizes.n / 2, y: pos.ny + sizes.n / 2 });
 function pickAnimal() {
   if (!animals.length) return; let a; do { a = animals[Math.floor(Math.random() * animals.length)]; } while (a.id === lastAnimal && animals.length > 1);
   animal = a; lastAnimal = a.id; frog.querySelector('img').src = `images/animals/${a.id}.png`; new Image().src = `images/animals/${a.id}.png`;
+  const m = MOUTH[a.id] ?? MOUTH.frog, mo = frog.querySelector('.mouth'); mo.style.left = `${m[0]}%`; mo.style.top = `${m[1]}%`; mo.style.width = `${m[2]}%`; mo.style.height = `${m[4]}%`; mo.style.setProperty('--rot', `${m[3]}deg`);
 }
 function startRound() {
   if (!running) return; clearTimers(); phase = 'wait';
   numVal.textContent = n; numEl.style.setProperty('--c', COLORS[(n - 1) % COLORS.length]);
   pickAnimal(); numAnim?.cancel(); numAnim = null; numEl.style.visibility = '';
-  say.classList.remove('show'); frog.classList.remove('chomp', 'near', 'out'); setOpen(0); numEl.classList.remove('gone', 'drag', 'fly');
+  say.classList.remove('show'); frog.classList.remove('chomp', 'near', 'out'); setOpen(0); numEl.classList.remove('gone', 'drag', 'fly'); numEl.style.setProperty('--ds', '1.12');
   prog.innerHTML = Array.from({ length: 20 }, (_, i) => `<i class="${i < n - 1 ? 'done' : i === n - 1 ? 'now' : ''}"></i>`).join('');
   place(); frog.classList.remove('in'); numEl.classList.remove('in'); void frog.offsetWidth; frog.classList.add('in'); later(() => { numEl.classList.add('in'); pop(); }, 350);
   later(showHint, HINT_AFTER); later(() => eat(true), ASSIST_AFTER);
@@ -77,7 +84,7 @@ function showHint() {
   handAnim = hand.animate([{ transform: `translate(${a.x}px, ${a.y}px)`, opacity: 0 }, { transform: `translate(${a.x}px, ${a.y}px)`, opacity: 1, offset: 0.15 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 1, offset: 0.8 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 0 }], { duration: 2200, iterations: Infinity, easing: 'ease-in-out' });
 }
 function eat(auto) {
-  if (phase !== 'wait') return; phase = 'eat'; clearTimers(); numEl.classList.remove('wiggle', 'drag');
+  if (phase !== 'wait') return; phase = 'eat'; clearTimers(); numEl.classList.remove('wiggle');   // (keep the drag size so nothing jumps)
   const go = auto ? 650 : 140;                                                                   // the animal opens its mouth wide first…
   setOpen(1); frog.classList.add('near');
   later(() => {                                                                                  // …then the number goes into its mouth, getting smaller
@@ -102,6 +109,7 @@ function next() {
 }
 
 // ---------------------------------------------------------------- touch: drag the number to the frog
+const onAnimal = () => { const a = numCenter(), b = frogCenter(), c = { x: pos.fx + sizes.f / 2, y: pos.fy + sizes.f / 2 }; return Math.hypot(a.x - b.x, a.y - b.y) < sizes.f * 0.62 + sizes.n * 0.3 || Math.hypot(a.x - c.x, a.y - c.y) < sizes.f * 0.5 + sizes.n * 0.2; };
 function bind() {
   if (bound) return; bound = true;
   numEl.addEventListener('pointerdown', (e) => {
@@ -114,9 +122,9 @@ function bind() {
     const a = numCenter(), b = frogCenter(), d = Math.hypot(a.x - b.x, a.y - b.y), o = (sizes.f * 1.5 + sizes.n * 0.4 - d) / (sizes.f * 0.9); setOpen(o); frog.classList.toggle('near', o > 0.7); numEl.style.setProperty('--ds', (1.12 - 0.58 * Math.max(0, Math.min(1, o))).toFixed(2));   // the number shrinks as it nears the open mouth, so the face stays visible
   });
   const up = (e) => {
-    if (!drag || e.pointerId !== drag.id) return; drag = null; numEl.classList.remove('drag'); const a = numCenter(), b = frogCenter();
-    if (Math.hypot(a.x - b.x, a.y - b.y) < sizes.f * 0.62 + sizes.n * 0.3) { eat(false); }
-    else { frog.classList.remove('near'); setOpen(0); later(showHint, 6000); later(() => eat(true), 16000); }   // dropped somewhere else: that's fine, try again
+    if (!drag || e.pointerId !== drag.id) return; drag = null;
+    if (onAnimal()) { eat(false); }
+    else { numEl.classList.remove('drag'); numEl.style.setProperty('--ds', '1.12'); frog.classList.remove('near'); setOpen(0); later(showHint, 6000); later(() => eat(true), 16000); }   // dropped somewhere else: that's fine, try again
   };
   numEl.addEventListener('pointerup', up); numEl.addEventListener('pointercancel', up);
   frog.addEventListener('pointerdown', () => { audio(); if (phase === 'done' || phase === 'eat') { speak(WORDS[lang][n - 1]); ribbit(); } });   // tap the frog: hear it again

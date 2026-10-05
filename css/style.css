@@ -354,3 +354,16 @@ button, a { touch-action: manipulation; font: inherit; }
 .numbers-view .round-btn.back, .numbers-view .insect-tools { z-index: 6; }
 .frog { --open: 0; }
 .fbody img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .18)); }
+.mouth { position: absolute; border-radius: 50%; background: radial-gradient(ellipse at 50% 28%, #2e0812 0 50%, #7a1c30 100%); box-shadow: inset 0 3px 4px rgba(0, 0, 0, .45), 0 0 0 2px rgba(60, 10, 25, .35); transform: translate(-50%, -50%) rotate(var(--rot, 0deg)) scaleY(var(--open, 0)); opacity: calc(var(--open, 0) * 8); pointer-events: none; }
+.frog { --open: 0; } .frog .mouth { --open: inherit; }
+
+/* ---------- mouth placer helper ---------- */
+.place-view { background: #eaf4e6; display: flex; flex-direction: column; align-items: center; gap: 8px; overflow-y: auto; padding-top: 80px; }
+.place-top { font-size: 1.4rem; } .place-top b { font-weight: 900; } .place-help { margin: 0; font-size: 1rem; opacity: .75; text-align: center; padding: 0 16px; }
+.place-box { position: relative; width: min(92vw, 62vh); aspect-ratio: 1; background: #fff; border-radius: 20px; touch-action: none; flex: none; box-shadow: var(--shadow); }
+.place-box img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+.place-box .mouth { --open: 0; opacity: .75; }
+.place-box .pt { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: #3b82f6; border: 3px solid #fff; display: none; pointer-events: none; }
+.place-bar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; padding: 6px; }
+.place-bar button { height: 52px; padding: 0 18px; border: 0; border-radius: 14px; background: #3b82f6; color: #fff; font-weight: 800; font-size: 1rem; }
+.place-out { width: min(92vw, 640px); white-space: pre-wrap; word-break: break-all; font-size: .8rem; background: #fff; border-radius: 12px; padding: 10px; }

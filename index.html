@@ -139,7 +139,7 @@
     <section id="view-numbers" class="view numbers-view" hidden aria-label="Numbers with animals">
       <div class="num-stage" id="num-stage">
         <div class="frog" id="frog">
-          <div class="fbody"><img src="images/animals/frog.png" alt="" draggable="false"></div>
+          <div class="fbody"><img src="images/animals/frog.png" alt="" draggable="false"><div class="mouth"></div></div>
           <div class="frog-say" id="frog-say"><b id="say-val">1</b><div class="say-dots" id="say-dots"></div></div>
         </div>
         <div class="num-bubble" id="num-bubble"><b id="num-val">1</b></div>
@@ -154,6 +154,18 @@
         <button class="round-btn small on" id="btn-nsound" type="button" aria-label="Sound"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg></button>
       </div>
       <div class="num-prog" id="num-prog" aria-hidden="true"></div>
+    </section>
+
+    <!-- Mouth placer (a helper to mark where each animal's mouth is) -->
+    <section id="view-place" class="view place-view" hidden aria-label="Mouth placer">
+      <a class="round-btn back" href="#/benji/numbers" aria-label="Back">←</a>
+      <div class="place-top"><b id="pl-name">Frog</b> <span id="pl-count">1/17</span></div>
+      <p class="place-help" id="pl-help">Tap the two ends of the mouth</p>
+      <div class="place-box" id="pl-box"><img id="pl-img" alt="" draggable="false"><div class="mouth" id="pl-mouth"></div><i class="pt" id="pl-a"></i><i class="pt" id="pl-b"></i></div>
+      <div class="place-bar">
+        <button type="button" id="pl-prev">◀</button><button type="button" id="pl-short">Shorter</button><button type="button" id="pl-tall">Taller</button><button type="button" id="pl-next">Next ▶</button><button type="button" id="pl-copy">Copy all</button>
+      </div>
+      <pre class="place-out" id="pl-out" hidden></pre>
     </section>
 
     <!-- Benji's games -->

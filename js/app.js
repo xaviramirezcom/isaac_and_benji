@@ -1,7 +1,7 @@
 // Tiny hash router: #/ (home) · #/isaac · #/benji · #/isaac/map · #/benji/animals · #/isaac/insects[/<id>]
 const $ = (s) => document.querySelector(s);
-const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map'), grid: $('#view-grid'), animals: $('#view-animals'), insects: $('#view-insects'), insect: $('#view-insect'), space: $('#view-space'), storm: $('#view-storm'), numbers: $('#view-numbers') };
-const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map', 'benji/animals': 'grid', 'isaac/insects': 'insects', 'isaac/space': 'space', 'isaac/storms': 'storm', 'benji/numbers': 'numbers' };
+const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map'), grid: $('#view-grid'), animals: $('#view-animals'), insects: $('#view-insects'), insect: $('#view-insect'), space: $('#view-space'), storm: $('#view-storm'), numbers: $('#view-numbers'), place: $('#view-place') };
+const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map', 'benji/animals': 'grid', 'isaac/insects': 'insects', 'isaac/space': 'space', 'isaac/storms': 'storm', 'benji/numbers': 'numbers', 'benji/numbers/place': 'place' };
 const INSECT_PAGE = /^isaac\/insects\/([a-z]+)$/;
 const ANIMAL_PAGE = /^benji\/animals\/([a-z]+)$/;
 
@@ -12,6 +12,7 @@ let insectsModule = null;
 let spaceModule = null;
 let stormModule = null;
 let numbersModule = null;
+let placeModule = null;
 
 async function route() {
   const path = location.hash.replace(/^#\/?/, '');
@@ -27,6 +28,7 @@ async function route() {
   if (current === 'space' && name !== 'space') spaceModule?.leave();
   if (current === 'storm' && name !== 'storm') stormModule?.leave();
   if (current === 'numbers' && name !== 'numbers') numbersModule?.leave();
+  if (current === 'place' && name !== 'place') placeModule?.leave();
   if (current === 'insect' && name === 'insects') insectsModule?.leave();
   current = name;
   for (const [key, el] of Object.entries(views)) el.hidden = key !== name;
@@ -42,6 +44,10 @@ async function route() {
   if (name === 'space') {
     spaceModule ??= await import('./space-game.js');
     if (current === 'space') spaceModule.enter();
+  }
+  if (name === 'place') {
+    placeModule ??= await import('./mouth-place.js');
+    if (current === 'place') placeModule.enter();
   }
   if (name === 'numbers') {
     numbersModule ??= await import('./numbers-game.js');
