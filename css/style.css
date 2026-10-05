@@ -47,10 +47,10 @@ button, a { touch-action: manipulation; font: inherit; }
 }
 
 /* ---------- menus ---------- */
-.menu { display: grid; place-items: center; }
+.menu { display: flex; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 .isaac-bg { background: linear-gradient(160deg, #8fd0ff, #b9b2ff); }
 .benji-bg { background: linear-gradient(160deg, #ffe39a, #ffb58a); }
-.tiles { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; padding: 24px; }
+.tiles { display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; padding: 24px; margin: auto; }
 .game-tile {
   width: min(56vw, 300px); aspect-ratio: 1; border-radius: 36px; text-decoration: none; color: #fff;
   background: linear-gradient(160deg, #36c2a0, #1b8f9c);
@@ -310,3 +310,4 @@ button, a { touch-action: manipulation; font: inherit; }
 .storm-hud { display: flex; gap: 12px; align-items: center; padding: 8px 14px; font-weight: 800; font-size: 1.1rem; }
 .storm-hud svg { width: 24px; height: 24px; flex: none; } .storm-hud span { display: inline-flex; align-items: center; gap: 6px; }
 .storm-hud .gauge { width: 62px; height: 10px; border-radius: 5px; background: rgba(255,255,255,.25); overflow: hidden; } .storm-hud .gauge i { display: block; height: 100%; background: linear-gradient(90deg, #ffe04d, #ff4d3c); }
+@media (max-width: 560px) { .tiles { gap: 18px; padding: 90px 16px 40px; } .game-tile { width: min(42vw, 200px); border-radius: 28px; font-size: 1.3rem; } }
