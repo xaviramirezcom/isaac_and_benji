@@ -293,3 +293,9 @@ button, a { touch-action: manipulation; font: inherit; }
 #storm-card.mini::after { content: '⌃'; font-weight: 900; font-size: 1.3rem; line-height: 1; opacity: .55; }
 .storm-hint { position: absolute; z-index: 3; left: 50%; top: 42%; transform: translate(-50%, -50%); padding: 14px 22px; border-radius: 99px; background: rgba(255, 255, 255, .94); color: var(--ink); font-weight: 800; font-size: 1.15rem; box-shadow: var(--shadow); pointer-events: none; text-align: center; transition: opacity .4s; max-width: calc(100% - 40px); }
 .storm-hint.gone { opacity: 0; }
+.kind { margin: 10px 0 0; padding: 10px 12px; border-radius: 14px; background: #eef2f7; font-size: .9rem; line-height: 1.35; display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; }
+.kind dt { font-weight: 800; color: #3b5bd9; } .kind dd { margin: 0; } .kind .what { grid-column: 1 / -1; font-weight: 700; margin-bottom: 4px; }
+.kind .note { grid-column: 1 / -1; opacity: .6; font-size: .8rem; margin-top: 2px; }
+#storm-card { max-height: 62vh; overflow-y: auto; }
+#storm-card.mini { max-height: none; overflow: visible; }
+#storm-card.mini .kind { display: none; }

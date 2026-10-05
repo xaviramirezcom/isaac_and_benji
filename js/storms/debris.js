@@ -35,13 +35,14 @@ export function createDebris(scene, N = 1100) {
   }
   function clear() { state.fill(0); for (let i = 0; i < N; i++) mesh.setMatrixAt(i, zero); mesh.instanceMatrix.needsUpdate = true; ptr = 0; }
 
-  function update(dt, windAt, time) {
+  function update(dt, windAt, time, water = 0) {
     active = 0;
     for (let i = 0; i < N; i++) {
       const s = state[i]; if (!s) continue; const i3 = i * 3;
       const x = pos[i3], y = pos[i3 + 1], z = pos[i3 + 2]; windAt(x, y, z, w, time);
       const k = kk[i];
-      if (s === 2) { // lying on the ground: a strong enough wind picks it up again
+      if (s === 2) { // lying on the ground: a strong enough wind (or rising flood water) picks it up again
+        if (pos[i3 + 1] < water - 0.05) { state[i] = 1; continue; }
         const sp2 = w.x * w.x + w.z * w.z + w.y * w.y; if (k * sp2 < 6.0) continue;
         state[i] = 1; vel[i3 + 1] = 2 + Math.random() * 3; rate[i] = (Math.random() - 0.5) * 6;
       }
@@ -51,7 +52,7 @@ export function createDebris(scene, N = 1100) {
       vx += rx * rl * k * dt; vy += (ry * rl * k - 9.8) * dt; vz += rz * rl * k * dt;
       const sp = Math.hypot(vx, vy, vz); if (sp > 85) { const f = 85 / sp; vx *= f; vy *= f; vz *= f; }
       let nx = x + vx * dt, ny = y + vy * dt, nz = z + vz * dt;
-      const floor = Math.max(scl[i3 + 1], 0.05) * 0.6;
+      const floor = Math.max(scl[i3 + 1], 0.05) * 0.6 + water;
       if (ny < floor) {
         ny = floor; if (vy < -1.2) vy = -vy * 0.28; else vy = 0; vx *= 0.82; vz *= 0.82; rate[i] *= 0.7;
         if (Math.hypot(vx, vz) < 0.8 && Math.abs(vy) < 1.2) { state[i] = 2; vel[i3] = vel[i3 + 1] = vel[i3 + 2] = 0; quats[i].setFromAxisAngle(ax.set(0, 1, 0), yaw[i]); pos[i3] = nx; pos[i3 + 1] = floor; pos[i3 + 2] = nz; p3.set(nx, floor, nz); s3.set(scl[i3], scl[i3 + 1], scl[i3 + 2]); mesh.setMatrixAt(i, m4.compose(p3, quats[i], s3)); continue; }

@@ -3,7 +3,7 @@
 // and every house part, car, tree, fence and pole lets go at roughly the wind speed where it fails in real life.
 import * as THREE from '../vendor/three.module.min.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
-import { TORNADO, STORM, HURRICANE } from './storms/levels.js';
+import { TORNADO, STORM, HURRICANE, KINDS } from './storms/levels.js';
 import { buildWorld, MATERIAL } from './storms/world.js';
 import { createVortex } from './storms/vortex.js';
 import { createSky, createClouds, createRain, createLightning, createShelf, createGustDust } from './storms/sky.js';
@@ -13,21 +13,22 @@ const $ = (s) => document.querySelector(s);
 const root = $('#view-storm'), canvas = $('#storm-canvas');
 const ui = { loading: $('#storm-loading'), card: $('#storm-card'), name: $('#stc-name'), stat: $('#stc-stat'), desc: $('#stc-desc'), chips: $('#storm-chips'), hud: $('#storm-hud'), title: $('#storm-title') };
 const T = {
-  en: { title: 'Tornadoes & Storms', tornado: 'Tornado', storm: 'Storm', hurricane: 'Hurricane', say: 'Say it', winds: 'Winds', about: 'About', of: 'of tornadoes', hit: 'Buildings hit', cars: 'Cars moved', debris: 'Flying', wind: 'Wind', speech: 'en-US', hail: 'Hail', mph: 'mph', kmh: 'km/h', slow: 'Slow motion', sound: 'Sound', follow: 'Follow', reset: 'Rebuild the neighborhood', look: 'One finger: move the storm', hint: 'Drag your finger on the ground to move the storm', lookAlt: 'One finger: look around' },
-  es: { title: 'Tornados y tormentas', tornado: 'Tornado', storm: 'Tormenta', hurricane: 'Huracán', say: 'Escucha', winds: 'Vientos', about: 'Cerca del', of: 'de los tornados', hit: 'Edificios dañados', cars: 'Autos movidos', debris: 'Volando', wind: 'Viento', speech: 'es-ES', hail: 'Granizo', mph: 'mph', kmh: 'km/h', slow: 'Cámara lenta', sound: 'Sonido', follow: 'Seguir', reset: 'Reconstruir el barrio', look: 'Un dedo: mover la tormenta', hint: 'Arrastra el dedo por el suelo para mover la tormenta', lookAlt: 'Un dedo: mirar alrededor' },
+  en: { title: 'Tornadoes & Storms', tornado: 'Tornado', storm: 'Storm', hurricane: 'Hurricane', kWhat: 'What is it?', kSize: 'Size', kLasts: 'Lasts', kWind: 'Wind', kDanger: 'Danger', kNote: 'Not to scale: here every storm is shrunk so it fits over one town.', flood: 'Flood',  say: 'Say it', winds: 'Winds', about: 'About', of: 'of tornadoes', hit: 'Buildings hit', cars: 'Cars moved', debris: 'Flying', wind: 'Wind', speech: 'en-US', hail: 'Hail', mph: 'mph', kmh: 'km/h', slow: 'Slow motion', sound: 'Sound', follow: 'Follow', reset: 'Rebuild the neighborhood', look: 'One finger: move the storm', hint: 'Drag your finger on the ground to move the storm', lookAlt: 'One finger: look around' },
+  es: { title: 'Tornados y tormentas', tornado: 'Tornado', storm: 'Tormenta', hurricane: 'Huracán', kWhat: '¿Qué es?', kSize: 'Tamaño', kLasts: 'Dura', kWind: 'Viento', kDanger: 'Peligro', kNote: 'Sin escala: aquí cada tormenta se reduce para que quepa sobre un pueblo.', flood: 'Inundación',  say: 'Escucha', winds: 'Vientos', about: 'Cerca del', of: 'de los tornados', hit: 'Edificios dañados', cars: 'Autos movidos', debris: 'Volando', wind: 'Viento', speech: 'es-ES', hail: 'Granizo', mph: 'mph', kmh: 'km/h', slow: 'Cámara lenta', sound: 'Sonido', follow: 'Seguir', reset: 'Reconstruir el barrio', look: 'Un dedo: mover la tormenta', hint: 'Arrastra el dedo por el suelo para mover la tormenta', lookAlt: 'Un dedo: mirar alrededor' },
 };
 const GS = 2048, MPH = 0.44704, FOV = 48, AREA = 262, CELL = 130, RING = 75, CLOUD_BASE = 162;
 const V = THREE.Vector3;
 
 let lang = 'en', mode = 'tornado', levelIdx = 2, ready = false, running = false, loadPromise = null, raf = 0, lastT = 0, simT = 0;
 let shelf, gust, streaks, marker, renderer, scene, camera, controls, hemi, sun, sky, clouds, rain, lightning, vortex, debris, ambient, world, hailMesh, ground, groundCtx, groundTex;
-let sunBase = 0.9, fogFar = 1500, scarDirty = false, scarT = 0, cardTimer = 0, follow = true, steer = true, slowmo = false, soundOn = false, frameN = 0, hudT = 0, flash = 0, thunderQ = [];
+const skyTop0 = new THREE.Color(), skyHor0 = new THREE.Color(), EYE_TOP = new THREE.Color(0x3f78b8), EYE_HOR = new THREE.Color(0xa6bfd2);
+let water, waterY = 0, waterTex, sunBase = 0.9, fogFar = 1500, scarDirty = false, scarT = 0, cardTimer = 0, follow = true, steer = true, slowmo = false, soundOn = false, frameN = 0, hudT = 0, flash = 0, thunderQ = [];
 const S = { finger: null, x: -105, z: 22, vx: 0, vz: 0, tx: 0, tz: 0, hasTarget: false, touch: 0, rc: 17, vmax: 55, lean: new THREE.Vector2(), lastStamp: new V(1e9, 0, 1e9) };
 const hail = { pos: null, vel: null, life: null, ptr: 0, N: 260 };
 
 const LEVELS = { tornado: TORNADO, storm: STORM, hurricane: HURRICANE };
 const level = () => LEVELS[mode][levelIdx];
-const RM = 95; // hurricane eyewall radius (m): the calm eye lies inside it
+const RM = 210; // hurricane eyewall radius (m): the calm eye lies inside it
 
 // ------------------------------------------------------------------ the wind field
 const wk = new V();
@@ -72,6 +73,10 @@ async function init() {
   for (let i = 0; i < streaks.N; i++) streaks.p.set([(Math.random() - 0.5) * 220, 1 + Math.random() * 45, (Math.random() - 0.5) * 220], i * 3);
   lightning = createLightning(scene);
   vortex = createVortex(CLOUD_BASE - 6); scene.add(vortex.group);
+  { const wc = document.createElement('canvas'); wc.width = wc.height = 256; const x = wc.getContext('2d'); x.fillStyle = '#6a6552'; x.fillRect(0, 0, 256, 256);
+    for (let i = 0; i < 900; i++) { x.strokeStyle = `rgba(${Math.random() < 0.5 ? '255,255,255' : '40,36,28'},${0.05 + Math.random() * 0.1})`; x.lineWidth = 1 + Math.random() * 2; const a = Math.random() * 256, b = Math.random() * 256, l = 10 + Math.random() * 28; x.beginPath(); x.moveTo(a, b); x.lineTo(a + l, b + (Math.random() - 0.5) * 6); x.stroke(); }
+    waterTex = new THREE.CanvasTexture(wc); waterTex.wrapS = waterTex.wrapT = THREE.RepeatWrapping; waterTex.repeat.set(90, 90); waterTex.colorSpace = THREE.SRGBColorSpace;
+    water = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ map: waterTex, roughness: 0.28, metalness: 0.12, transparent: true, opacity: 0.88 })); water.rotation.x = -Math.PI / 2; water.visible = false; water.renderOrder = 1; scene.add(water); }
   marker = new THREE.Mesh(new THREE.RingGeometry(0.82, 1, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide })); marker.rotation.x = -Math.PI / 2; marker.visible = false; marker.renderOrder = 9; scene.add(marker);
 
   // ground: a repaintable canvas (grass + the scar the tornado leaves) in the middle, plain grass beyond
@@ -124,10 +129,10 @@ function chooseLevel(m, idx, first) {
   const dark = m === 'tornado' ? 1 : L.cloud; clouds.layers.forEach((l) => (l.U.uCover.value = m === 'tornado' ? 1 : 0.35 + 0.65 * L.cloud));
   clouds.layers.forEach((l) => (l.U.uGreen.value = m === 'tornado' || idx >= 2 ? 0.7 : 0));
   rain.U.uRain.value = m === 'tornado' ? 0.55 : L.rain; sky.u.uTop.value.set(m === 'tornado' ? 0x27322f : m === 'hurricane' ? 0x1a232c : idx < 1 ? 0x4a5a68 : 0x1c2430); sky.u.uHor.value.set(m === 'tornado' ? 0x57665d : idx < 1 ? 0x93a3ae : 0x4c5a66);
-  scene.fog.color.copy(sky.u.uHor.value); fogFar = m === 'storm' && idx < 1 ? 2000 : 1500;
+  skyTop0.copy(sky.u.uTop.value); skyHor0.copy(sky.u.uHor.value); scene.fog.color.copy(sky.u.uHor.value); fogFar = m === 'storm' && idx < 1 ? 2000 : 1500;
   hemi.intensity = m === 'tornado' ? 0.95 : 1.15 - 0.25 * L.cloud; sunBase = m === 'tornado' ? 0.55 : 1.0 - 0.7 * L.cloud; sun.intensity = sunBase;
   if (m === 'storm') { S.x = -95; S.z = 0; S.vx = S.vz = 0; S.touch = 1; } else if (m === 'hurricane') { S.x = -165; S.z = 10; S.vx = S.vz = 0; S.touch = 1; } else { S.x = -105; S.z = 22; S.vx = S.vz = 0; }
-  S.hasTarget = false; S.lean.set(0, 0); S.lastStamp.set(1e9, 0, 1e9);
+  S.hasTarget = false; S.lean.set(0, 0); S.lastStamp.set(1e9, 0, 1e9); waterY = 0;
   rain.U.uStorm.value.set(S.x, S.z);
   if (!first) { controls.target.set(S.x, 28, S.z); const k = m === 'hurricane' ? 2.6 : 1; camera.position.set(S.x + 90 * k, 95 * k, S.z + 250 * k); }
   refreshUI();
@@ -186,7 +191,8 @@ function updateBodies(dt, t) {
     const rx = wv.x - b.vel.x, ry = wv.y - b.vel.y, rz = wv.z - b.vel.z, rl = Math.hypot(rx, ry, rz);
     let a_x = b.k * rl * rx, a_y = b.k * rl * ry - 9.8, a_z = b.k * rl * rz;
     ax.copy(b.axisVec).applyQuaternion(m.quaternion); const c = Math.abs(ax.y), hy = b.rest * c + b.mid * Math.sqrt(Math.max(0, 1 - c * c));
-    const onGround = pos.y <= hy + 0.05, mu = b.friction ?? 0.5;
+    const sub = waterY - (pos.y - hy); if (sub > 0) { a_y += Math.min(1.6, sub) * 16; b.vel.y *= 1 - Math.min(1, dt * 1.6); b.vel.x *= 1 - dt * 0.35; b.vel.z *= 1 - dt * 0.35; }
+    const onGround = pos.y <= hy + 0.05 + Math.max(0, waterY), mu = sub > 0.2 ? 0.05 : b.friction ?? 0.5;
     if (onGround) {
       if (a_y < 0) { a_y = 0; if (b.vel.y < 0) b.vel.y = 0; }
       const vh = Math.hypot(b.vel.x, b.vel.z), ah = Math.hypot(a_x, a_z);
@@ -196,8 +202,8 @@ function updateBodies(dt, t) {
     b.vel.x += a_x * dt; b.vel.y += a_y * dt; b.vel.z += a_z * dt;
     const sp = b.vel.length(); if (sp > 85) b.vel.multiplyScalar(85 / sp);
     pos.x += b.vel.x * dt; pos.y += b.vel.y * dt; pos.z += b.vel.z * dt;
-    if (pos.y < hy) {
-      const impact = -b.vel.y; pos.y = hy;
+    if (pos.y < hy + Math.max(0, waterY - 0.4)) {
+      const impact = -b.vel.y; pos.y = hy + Math.max(0, waterY - 0.4);
       if (impact > 2.5) { b.vel.y = impact * 0.22; b.vel.x *= 0.85; b.vel.z *= 0.85; b.ang.multiplyScalar(0.6).add(ax.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).multiplyScalar(impact * 0.15)); } else b.vel.y = 0;
       if (b.shatter.length && b.age > 0.3 && impact > (b.kind === 'slab' ? 16 : 10)) { shatter(b); continue; }
     }
@@ -232,7 +238,7 @@ function updateWindVisuals(dt, L) {
   streaks.geo.attributes.position.needsUpdate = true; streaks.geo.attributes.color.needsUpdate = true;
   // roll cloud and ground dust around a storm's gust front
   const isStorm = mode !== 'tornado', hur = mode === 'hurricane', big = isStorm ? Math.min(1, Math.max(0, (L.vmax - 30) / 50)) : 0;
-  shelf.mesh.visible = isStorm && L.vmax >= 40; shelf.U.uF0.value = hur ? 1.0 : 1.16; shelf.U.uF1.value = hur ? 0.5 : -0.16; shelf.mesh.position.set(S.x, 0, S.z); shelf.U.uTime.value = simT; shelf.U.uAmt.value = 0.4 + 0.6 * big; shelf.U.uR.value = hur ? RM * 1.05 : RING * 2.0; shelf.U.uBase.value = hur ? 0 : 30 + 25 * (1 - big); shelf.U.uH.value = hur ? 200 : 60 + 30 * big;
+  shelf.mesh.visible = isStorm && L.vmax >= 40; shelf.U.uLo.value.set(...(hur ? [0.3, 0.32, 0.34] : [0.1, 0.11, 0.12])); shelf.U.uHi.value.set(...(hur ? [0.82, 0.84, 0.86] : [0.5, 0.52, 0.52])); shelf.U.uF0.value = hur ? 1.0 : 1.16; shelf.U.uF1.value = hur ? 0.5 : -0.16; shelf.mesh.position.set(S.x, 0, S.z); shelf.U.uTime.value = simT; shelf.U.uAmt.value = 0.4 + 0.6 * big; shelf.U.uR.value = hur ? RM * 1.05 : RING * 2.0; shelf.U.uBase.value = hur ? 0 : 30 + 25 * (1 - big); shelf.U.uH.value = hur ? 340 : 60 + 30 * big;
   gust.mesh.visible = isStorm && L.vmax >= 30; gust.mesh.position.set(S.x, 0, S.z); gust.U.uTime.value = simT; gust.U.uAmt.value = 0.18 + 0.6 * big; gust.U.uRing.value = hur ? RM * 1.1 : RING; gust.U.uPixel.value = canvas.height / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)));
 }
 function updateWeatherParticles(dt, t) {
@@ -275,7 +281,7 @@ function frame(now) {
   const L = level();
   if (mode === 'tornado') { S.touch = Math.min(1, S.touch + dt / 4.5); S.rc += (L.rc - S.rc) * Math.min(1, dt * 0.9); S.vmax += (L.vmax * MPH - S.vmax) * Math.min(1, dt * 0.9); }
   else { S.touch = 1; S.vmax += (L.vmax * MPH - S.vmax) * Math.min(1, dt * 0.9); S.rc = mode === 'hurricane' ? RM : S.rc; }
-  updateBodies(dt, simT); debris.update(dt, windAt, simT); ambient.update(dt, windAt, simT); updateWeatherParticles(dt, simT);
+  updateBodies(dt, simT); debris.update(dt, windAt, simT, waterY); ambient.update(dt, windAt, simT, waterY); updateWeatherParticles(dt, simT);
   // tornado path scar on the ground
   if (mode === 'tornado' && S.touch > 0.85 && Math.hypot(S.x - S.lastStamp.x, S.z - S.lastStamp.z) > S.rc * 0.35) { stampScar(S.x, S.z, S.rc * 1.5, Math.min(1, 0.4 + levelIdx * 0.15)); S.lastStamp.set(S.x, 0, S.z); }
   // visuals
@@ -288,9 +294,13 @@ function frame(now) {
   clouds.layers.forEach((l, i) => { l.m.material.uniforms.uAlpha.value = [0.8, 0.9, 0.95, 1][i] * (mode === 'tornado' ? 1 : 0.3 + 0.7 * L.cloud); });
   const eyeF = mode === 'hurricane' ? 1 - THREE.MathUtils.smoothstep(Math.hypot(controls.target.x - S.x, controls.target.z - S.z), RM * 0.5, RM * 1.1) : 0;
   sky.u.uFlash.value = flash * 0.7; hemi.intensity = (mode === 'tornado' ? 0.95 : 1.15 - 0.25 * (L.cloud ?? 1)) + flash * 2.2 + eyeF * 0.55; sun.intensity = sunBase + eyeF * 0.9;
+  if (mode === 'hurricane') { sky.u.uTop.value.copy(skyTop0).lerp(EYE_TOP, eyeF * 0.85); sky.u.uHor.value.copy(skyHor0).lerp(EYE_HOR, eyeF * 0.7); scene.fog.color.copy(sky.u.uHor.value); }
   rain.U.uTime.value = simT; rain.U.uCenter.value.set(controls.target.x, 0, controls.target.z); rain.U.uStorm.value.set(S.x, S.z); rain.U.uCell.value = mode === 'tornado' ? 150 : mode === 'hurricane' ? 560 : CELL * 1.1; rain.U.uHole.value = mode === 'hurricane' ? RM * 0.62 : 0;
   windAt(controls.target.x, 10, controls.target.z, wv, simT); rain.U.uWind.value.set(wv.x, wv.z);
   updateWindVisuals(dt, L);
+  // storm-surge flood: the sea rises over the town while a hurricane sits near it, and drains as it moves away
+  { const cat = mode === 'hurricane' ? [1.5, 2.1, 3.2, 4.8, 6.0][levelIdx] : 0, tgt = cat * (1 - THREE.MathUtils.smoothstep(Math.hypot(S.x, S.z), 260, 640));
+    waterY += THREE.MathUtils.clamp(tgt - waterY, -0.18 * dt, 0.25 * dt); water.visible = waterY > 0.05; water.position.y = waterY - 0.02; waterTex.offset.x = (simT * 0.004) % 1; waterTex.offset.y = (simT * 0.0025) % 1; }
   // a ring on the ground shows where the finger is sending the storm
   if (S.finger && S.hasTarget) { marker.visible = true; marker.position.set(S.tx, 0.4, S.tz); marker.scale.setScalar(4 + 1.2 * Math.sin(simT * 6) + (mode === 'tornado' ? S.rc * 0.5 : 8)); } else marker.visible = false;
   // camera follows the storm (but stays put while a finger is steering, so the map doesn't slide under it)
@@ -314,7 +324,7 @@ function stats() {
 function updateHud() {
   const t = T[lang], s = stats(), mph = Math.round(windMph(S.x + (mode === 'tornado' ? level().rc * 0.9 : 70), 4, S.z + 0.01, simT) / 5) * 5;
   const peak = Math.round(S.vmax / MPH);
-  ui.hud.innerHTML = `<b>${t.wind}</b> ${peak} ${t.mph} · ${Math.round(peak * 1.609)} ${t.kmh}<br>${t.hit} <b>${s.hit}/${s.total}</b> · ${t.cars} <b>${s.moved}</b> · ${t.debris} <b>${debris.active}</b>`; void mph;
+  ui.hud.innerHTML = `<b>${t.wind}</b> ${peak} ${t.mph} · ${Math.round(peak * 1.609)} ${t.kmh}<br>${t.hit} <b>${s.hit}/${s.total}</b> · ${t.cars} <b>${s.moved}</b> · ${t.debris} <b>${debris.active}</b>${mode === 'hurricane' ? `<br>${t.flood} <b>${waterY.toFixed(1)} m</b>` : ''}`; void mph;
 }
 function refreshUI() {
   const t = T[lang], L = level(), isT = mode === 'tornado', list = LEVELS[mode];
@@ -324,14 +334,14 @@ function refreshUI() {
   ui.name.textContent = `${isT || mode === 'hurricane' ? L.short + ' · ' : ''}${L.label[lang]}`;
   const mph = lang === 'es' ? L.mphEs ?? L.mph : L.mph, kmh = lang === 'es' ? L.kmhEs ?? L.kmh : L.kmh;
   ui.stat.textContent = `${t.winds}: ${mph} ${t.mph} (${kmh} ${t.kmh})` + (isT ? ` · ${t.about} ${lang === 'es' ? L.shareEs ?? L.share : L.share} ${t.of}` : '');
-  ui.desc.textContent = L.desc[lang]; ui.card.classList.add('open'); clearTimeout(cardTimer); cardTimer = setTimeout(() => ui.card.classList.add('mini'), 9000);
+  ui.desc.textContent = L.desc[lang]; { const K = KINDS[mode]; $('#stc-kind').innerHTML = `<dt class="what">${K.name[lang]}: ${K.what[lang]}</dt><dt>${t.kSize}</dt><dd>${K.size[lang]}</dd><dt>${t.kLasts}</dt><dd>${K.lasts[lang]}</dd><dt>${t.kWind}</dt><dd>${K.wind[lang]}</dd><dt>${t.kDanger}</dt><dd>${K.danger[lang]}</dd><dd class="note">${t.kNote}</dd>`; } ui.card.classList.add('open'); clearTimeout(cardTimer); cardTimer = setTimeout(() => ui.card.classList.add('mini'), 14000);
   document.querySelector('#storm-type [data-mode=tornado]').textContent = t.tornado; document.querySelector('#storm-type [data-mode=storm]').textContent = t.storm; document.querySelector('#storm-type [data-mode=hurricane]').textContent = t.hurricane;
   $('#storm-hint').textContent = t.hint; ui.title.textContent = t.title; $('#stc-speak-l').textContent = t.say;
   $('#btn-slow').setAttribute('aria-label', t.slow); $('#btn-sound').setAttribute('aria-label', t.sound); $('#btn-follow').setAttribute('aria-label', t.follow); $('#btn-srebuild').setAttribute('aria-label', t.reset); $('#btn-steer').setAttribute('aria-label', steer ? t.look : t.lookAlt);
 }
 function buildChips() { refreshUI(); }
 function setLang(l) { lang = l; document.querySelectorAll('#view-storm .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); refreshUI(); speechSynthesis?.cancel(); }
-function speak() { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const L = level(), u = new SpeechSynthesisUtterance(`${L.short && mode !== 'storm' ? L.short + '. ' : ''}${L.label[lang]}. ${L.desc[lang]}`); u.lang = T[lang].speech; u.rate = 0.9; speechSynthesis.speak(u); }
+function speak() { if (!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const L = level(), K = KINDS[mode], u = new SpeechSynthesisUtterance(`${K.name[lang]}. ${K.what[lang]} ${L.short && mode !== 'storm' ? L.short + '. ' : ''}${L.label[lang]}. ${L.desc[lang]}`); u.lang = T[lang].speech; u.rate = 0.9; speechSynthesis.speak(u); }
 
 // ------------------------------------------------------------------ input
 const ray = new THREE.Raycaster(), plane = new THREE.Plane(new V(0, 1, 0), 0), ndc = new THREE.Vector2(), hit = new V();

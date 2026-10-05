@@ -109,18 +109,18 @@ export function createLightning(scene) {
 
 // a low, dark shelf/roll cloud ringing the storm's gust front
 export function createShelf() {
-  const U = { uTime: { value: 0 }, uR: { value: 150 }, uH: { value: 70 }, uBase: { value: 55 }, uAmt: { value: 1 }, uF0: { value: 1.16 }, uF1: { value: -0.16 } };
+  const U = { uTime: { value: 0 }, uR: { value: 150 }, uH: { value: 70 }, uBase: { value: 55 }, uAmt: { value: 1 }, uF0: { value: 1.16 }, uF1: { value: -0.16 }, uLo: { value: new THREE.Vector3(0.1, 0.11, 0.12) }, uHi: { value: new THREE.Vector3(0.5, 0.52, 0.52) } };
   const m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 96, 1, true), new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false, uniforms: U,
     vertexShader: `uniform float uR, uH, uBase, uF0, uF1; varying float vT; varying float vAng;
       void main(){ float ang = atan(position.z, position.x), t = uv.y; float r = uR * (uF0 + uF1 * t); vT = t; vAng = ang;
         gl_Position = projectionMatrix * modelViewMatrix * vec4(cos(ang) * r, uBase + t * uH, sin(ang) * r, 1.0); }`,
     fragmentShader: `${NOISE}
-      uniform float uTime, uAmt; varying float vT; varying float vAng;
+      uniform float uTime, uAmt; uniform vec3 uLo, uHi; varying float vT; varying float vAng;
       void main(){
         float n = fbm(vec2(vAng * 7.0 + uTime * 0.2, vT * 4.0 - uTime * 0.3)), n2 = fbm(vec2(vAng * 19.0 - uTime * 0.35, vT * 9.0 + 3.0));
         float a = smoothstep(0.32, 0.8, n * 0.8 + n2 * 0.35) * smoothstep(0.0, 0.18, vT) * (1.0 - smoothstep(0.65, 1.0, vT)) * uAmt;
-        vec3 col = mix(vec3(0.1, 0.11, 0.12), vec3(0.5, 0.52, 0.52), n * (1.0 - vT) * 0.9 + n2 * 0.1);
+        vec3 col = mix(uLo, uHi, n * (1.0 - vT) * 0.9 + n2 * 0.1);
         gl_FragColor = vec4(col, a * 0.85);
       }`,
   }));

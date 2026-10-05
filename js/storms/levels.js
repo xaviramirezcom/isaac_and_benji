@@ -56,3 +56,31 @@ export const HURRICANE = [
     label: { en: 'Catastrophic', es: 'Catastrófico' },
     desc: { en: 'Category 5 is the strongest. Most houses are destroyed, with total roof failure and walls collapsing. Hurricanes this strong are rare.', es: 'La categoría 5 es la más fuerte. Casi todas las casas quedan destruidas, con techos y paredes que se derrumban. Huracanes así de fuertes son raros.' } },
 ];
+
+// What each kind of storm *is*, side by side (shown on the cards). In the app they are all shrunk so they fit over one town.
+export const KINDS = {
+  tornado: {
+    name: { en: 'Tornado', es: 'Tornado' },
+    what: { en: 'A narrow, violently spinning column of air that reaches from a storm cloud to the ground.', es: 'Una columna de aire estrecha que gira con violencia y llega desde una nube de tormenta hasta el suelo.' },
+    size: { en: 'Usually 50–500 m wide (widest ever: 4.2 km)', es: 'Normalmente 50–500 m de ancho (el más ancho: 4,2 km)' },
+    lasts: { en: 'A few minutes, up to about an hour', es: 'Unos minutos, hasta cerca de una hora' },
+    wind: { en: '65 to over 300 mph (105 to over 480 km/h)', es: '105 a más de 480 km/h (65 a más de 300 mph)' },
+    danger: { en: 'Violent wind and flying debris along a narrow path', es: 'Viento violento y escombros voladores en un camino estrecho' },
+  },
+  storm: {
+    name: { en: 'Thunderstorm', es: 'Tormenta eléctrica' },
+    what: { en: 'A cloud that makes rain, thunder and lightning. Strong ones can make hail, straight-line wind, and sometimes tornadoes.', es: 'Una nube que hace lluvia, truenos y relámpagos. Las fuertes pueden hacer granizo, viento recto y, a veces, tornados.' },
+    size: { en: 'About 10–30 km across', es: 'Unos 10–30 km de ancho' },
+    lasts: { en: '30 minutes to a few hours', es: 'De 30 minutos a unas horas' },
+    wind: { en: 'Gusts of 25 to 110 mph (40 to 180 km/h)', es: 'Ráfagas de 40 a 180 km/h (25 a 110 mph)' },
+    danger: { en: 'Lightning, hail, heavy rain and straight-line wind', es: 'Rayos, granizo, lluvia fuerte y viento recto' },
+  },
+  hurricane: {
+    name: { en: 'Hurricane', es: 'Huracán' },
+    what: { en: 'A giant storm that spins over warm ocean water, with a calm eye in the middle, a wall of storm around it, and long bands of rain.', es: 'Una tormenta gigante que gira sobre el mar cálido, con un ojo en calma en el centro, una pared de tormenta alrededor y largas bandas de lluvia.' },
+    size: { en: '300–800 km across; the eye is 30–65 km wide', es: '300–800 km de ancho; el ojo mide 30–65 km' },
+    lasts: { en: 'Days to weeks', es: 'De días a semanas' },
+    wind: { en: '74 to over 200 mph (119 to over 320 km/h)', es: '119 a más de 320 km/h (74 a más de 200 mph)' },
+    danger: { en: 'Storm surge (sea water flooding the land), huge rain and wind', es: 'Marejada ciclónica (el mar inunda la tierra), lluvia enorme y viento' },
+  },
+};
