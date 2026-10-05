@@ -340,13 +340,12 @@ button, a { touch-action: manipulation; font: inherit; }
 .say-dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; max-width: 70vw; }
 .say-dots i { width: clamp(11px, 2.6vmin, 18px); aspect-ratio: 1; border-radius: 50%; background: #dfe6ee; transition: background .2s, transform .2s; }
 .say-dots i.lit { background: #ff9f43; transform: scale(1.18); }
-.num-bubble { --sz: 150px; --c: #ff6b6b; position: absolute; left: 0; top: 0; width: var(--sz); height: var(--sz); border-radius: 50%; background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--c) 70%, #fff), var(--c) 62%); border: 6px solid #fff; box-shadow: 0 10px 0 rgba(0, 0, 0, .14), 0 20px 30px rgba(0, 0, 0, .18); display: grid; place-items: center; color: #fff; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; opacity: 0; scale: .2; will-change: transform; }
+.num-bubble { --sz: 150px; --c: #ff6b6b; position: absolute; left: 0; top: 0; width: var(--sz); height: var(--sz); touch-action: none; user-select: none; -webkit-user-select: none; will-change: transform; }
+.num-bubble .nb { width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--c) 70%, #fff), var(--c) 62%); border: 6px solid #fff; box-shadow: 0 10px 0 rgba(0, 0, 0, .14), 0 20px 30px rgba(0, 0, 0, .18); display: grid; place-items: center; color: #fff; cursor: grab; opacity: 0; scale: .2; }
 .num-bubble b { font-size: calc(var(--sz) * .56); line-height: 1; font-weight: 900; text-shadow: 0 4px 0 rgba(0, 0, 0, .16); pointer-events: none; }
-.num-bubble.in { opacity: 1; scale: 1; transition: opacity .3s, scale .45s cubic-bezier(.2, 1.5, .4, 1); }
-.num-bubble.drag { scale: var(--ds, 1.12); cursor: grabbing; transition: scale .12s; box-shadow: 0 16px 0 rgba(0, 0, 0, .12), 0 30px 40px rgba(0, 0, 0, .2); }
-.num-bubble.fly { transition: transform .38s cubic-bezier(.5, 0, .7, .4), scale .38s, opacity .3s .1s; }
-.num-bubble.gone { opacity: 0; scale: .15; }
-.num-bubble.wiggle { animation: nwiggle .9s ease-in-out infinite; }
+.num-bubble.in .nb { opacity: 1; scale: 1; transition: opacity .3s, scale .45s cubic-bezier(.2, 1.5, .4, 1); }
+.num-bubble.drag .nb { scale: var(--ds, 1.12); cursor: grabbing; transition: scale .12s; box-shadow: 0 16px 0 rgba(0, 0, 0, .12), 0 30px 40px rgba(0, 0, 0, .2); }
+.num-bubble.wiggle .nb { animation: nwiggle .9s ease-in-out infinite; }
 @keyframes nwiggle { 0%, 100% { rotate: 0deg; } 25% { rotate: -7deg; } 75% { rotate: 7deg; } }
 .num-hand { position: absolute; left: 0; top: 0; width: 64px; height: 64px; margin: -8px 0 0 -22px; opacity: 0; pointer-events: none; z-index: 3; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .25)); }
 .num-prog { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 14px); display: flex; gap: 6px; justify-content: center; pointer-events: none; z-index: 2; }
