@@ -56,6 +56,20 @@ export function bubblePop(vol = 0.35) {
   const o = ctx.createOscillator(), og = ctx.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(2600, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.035);
   og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(0.5 * vol, t + 0.002); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.045); o.connect(og).connect(ctx.destination); o.start(t); o.stop(t + 0.06);
 }
+// soft eating sounds for pretend play: a muffled "munch", a happy "mmm", a gentle "uh-uh", a little chime
+export function munch(vol = 0.3) {
+  if (muted) return; const ctx = audio(); if (!ctx) return; const t = ctx.currentTime;
+  const len = Math.floor(ctx.sampleRate * 0.12), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 1.5;
+  const n = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), g = ctx.createGain(); n.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 900; g.gain.setValueAtTime(vol * 1.4, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12); n.connect(lp).connect(g).connect(ctx.destination); n.start(t);
+  tone(150, 0.09, vol, 'sine', 90);
+}
+export function yum(vol = 0.22) {
+  if (muted) return; const ctx = audio(); if (!ctx) return; const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(), l = ctx.createOscillator(), lg = ctx.createGain();
+  o.type = 'triangle'; o.frequency.setValueAtTime(250, t); o.frequency.linearRampToValueAtTime(340, t + 0.45); l.frequency.value = 6; lg.gain.value = 9; l.connect(lg).connect(o.frequency);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.55); o.connect(g).connect(ctx.destination); o.start(t); l.start(t); o.stop(t + 0.6); l.stop(t + 0.6);
+}
+export function nope(vol = 0.16) { tone(330, 0.12, vol, 'triangle', 290); setTimeout(() => tone(300, 0.14, vol, 'triangle', 250), 150); }
+export function chime(vol = 0.16) { [523.25, 659.25, 783.99, 1046.5].forEach((f, i) => setTimeout(() => tone(f, 0.35, vol), i * 120)); }
 // coming back to the app: wake the audio up again
 const wake = () => { if (!document.hidden && ac && ac.state !== 'running') ac.resume?.().catch(() => {}); try { if (silent && silent.paused) silent.play().catch(() => {}); } catch { /* ignore */ } };
 document.addEventListener('visibilitychange', wake); window.addEventListener('pageshow', wake); window.addEventListener('focus', wake);

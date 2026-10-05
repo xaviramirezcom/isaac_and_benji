@@ -1,5 +1,5 @@
 // A little helper page (#/benji/numbers/place): tap the two ends of each animal's mouth, see it open and close, copy the numbers.
-import { MOUTH } from './numbers-game.js';
+import { MOUTH } from './mouths.js';
 const $ = (s) => document.querySelector(s);
 let animals = [], i = 0, a = null, b = null, tmr = 0;
 const res = JSON.parse(localStorage.getItem('mouths2') || 'null') ?? JSON.parse(JSON.stringify(MOUTH));
