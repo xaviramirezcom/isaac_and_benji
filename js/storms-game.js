@@ -6,22 +6,22 @@ import { OrbitControls } from '../vendor/OrbitControls.js';
 import { TORNADO, STORM } from './storms/levels.js';
 import { buildWorld, MATERIAL } from './storms/world.js';
 import { createVortex } from './storms/vortex.js';
-import { createSky, createClouds, createRain, createLightning } from './storms/sky.js';
+import { createSky, createClouds, createRain, createLightning, createShelf, createGustDust } from './storms/sky.js';
 import { createDebris } from './storms/debris.js';
 
 const $ = (s) => document.querySelector(s);
 const root = $('#view-storm'), canvas = $('#storm-canvas');
 const ui = { loading: $('#storm-loading'), card: $('#storm-card'), name: $('#stc-name'), stat: $('#stc-stat'), desc: $('#stc-desc'), chips: $('#storm-chips'), hud: $('#storm-hud'), title: $('#storm-title') };
 const T = {
-  en: { title: 'Tornadoes & Storms', tornado: 'Tornado', storm: 'Storm', say: 'Say it', winds: 'Winds', about: 'About', of: 'of tornadoes', hit: 'Houses hit', cars: 'Cars moved', debris: 'Flying', wind: 'Wind', speech: 'en-US', hail: 'Hail', mph: 'mph', kmh: 'km/h', slow: 'Slow motion', sound: 'Sound', follow: 'Follow', reset: 'Rebuild the neighborhood', look: 'One finger: move the storm', hint: 'Drag your finger on the ground to move the storm', lookAlt: 'One finger: look around' },
-  es: { title: 'Tornados y tormentas', tornado: 'Tornado', storm: 'Tormenta', say: 'Escucha', winds: 'Vientos', about: 'Cerca del', of: 'de los tornados', hit: 'Casas dañadas', cars: 'Autos movidos', debris: 'Volando', wind: 'Viento', speech: 'es-ES', hail: 'Granizo', mph: 'mph', kmh: 'km/h', slow: 'Cámara lenta', sound: 'Sonido', follow: 'Seguir', reset: 'Reconstruir el barrio', look: 'Un dedo: mover la tormenta', hint: 'Arrastra el dedo por el suelo para mover la tormenta', lookAlt: 'Un dedo: mirar alrededor' },
+  en: { title: 'Tornadoes & Storms', tornado: 'Tornado', storm: 'Storm', say: 'Say it', winds: 'Winds', about: 'About', of: 'of tornadoes', hit: 'Buildings hit', cars: 'Cars moved', debris: 'Flying', wind: 'Wind', speech: 'en-US', hail: 'Hail', mph: 'mph', kmh: 'km/h', slow: 'Slow motion', sound: 'Sound', follow: 'Follow', reset: 'Rebuild the neighborhood', look: 'One finger: move the storm', hint: 'Drag your finger on the ground to move the storm', lookAlt: 'One finger: look around' },
+  es: { title: 'Tornados y tormentas', tornado: 'Tornado', storm: 'Tormenta', say: 'Escucha', winds: 'Vientos', about: 'Cerca del', of: 'de los tornados', hit: 'Edificios dañados', cars: 'Autos movidos', debris: 'Volando', wind: 'Viento', speech: 'es-ES', hail: 'Granizo', mph: 'mph', kmh: 'km/h', slow: 'Cámara lenta', sound: 'Sonido', follow: 'Seguir', reset: 'Reconstruir el barrio', look: 'Un dedo: mover la tormenta', hint: 'Arrastra el dedo por el suelo para mover la tormenta', lookAlt: 'Un dedo: mirar alrededor' },
 };
-const MPH = 0.44704, FOV = 48, AREA = 134, CELL = 130, RING = 75, CLOUD_BASE = 162;
+const GS = 2048, MPH = 0.44704, FOV = 48, AREA = 262, CELL = 130, RING = 75, CLOUD_BASE = 162;
 const V = THREE.Vector3;
 
 let lang = 'en', mode = 'tornado', levelIdx = 2, ready = false, running = false, loadPromise = null, raf = 0, lastT = 0, simT = 0;
-let marker, renderer, scene, camera, controls, hemi, sun, sky, clouds, rain, lightning, vortex, debris, ambient, world, hailMesh, ground, groundCtx, groundTex;
-let cardTimer = 0, follow = true, steer = true, slowmo = false, soundOn = false, frameN = 0, hudT = 0, flash = 0, thunderQ = [];
+let shelf, gust, streaks, marker, renderer, scene, camera, controls, hemi, sun, sky, clouds, rain, lightning, vortex, debris, ambient, world, hailMesh, ground, groundCtx, groundTex;
+let scarDirty = false, scarT = 0, cardTimer = 0, follow = true, steer = true, slowmo = false, soundOn = false, frameN = 0, hudT = 0, flash = 0, thunderQ = [];
 const S = { finger: null, x: -105, z: 22, vx: 0, vz: 0, tx: 0, tz: 0, hasTarget: false, touch: 0, rc: 17, vmax: 55, lean: new THREE.Vector2(), lastStamp: new V(1e9, 0, 1e9) };
 const hail = { pos: null, vel: null, life: null, ptr: 0, N: 260 };
 
@@ -49,21 +49,26 @@ const windMph = (x, y, z, t) => windAt(x, y, z, wk, t).length() / MPH;
 async function init() {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6)); renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false;
-  scene = new THREE.Scene(); scene.fog = new THREE.Fog(0x56635d, 260, 1100);
+  scene = new THREE.Scene(); scene.fog = new THREE.Fog(0x56635d, 320, 1500);
   camera = new THREE.PerspectiveCamera(FOV, 1, 1, 3400);
   hemi = new THREE.HemisphereLight(0xaab4b8, 0x3f4a34, 0.95); scene.add(hemi);
-  sun = new THREE.DirectionalLight(0xfff0d8, 0.9); sun.position.set(-110, 170, 80); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, { left: -175, right: 175, top: 175, bottom: -175, near: 20, far: 480 }); sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.4; scene.add(sun);
+  sun = new THREE.DirectionalLight(0xfff0d8, 0.9); sun.position.set(-110, 170, 80); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); scene.add(sun.target);
+  Object.assign(sun.shadow.camera, { left: -150, right: 150, top: 150, bottom: -150, near: 20, far: 480 }); sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.4; scene.add(sun);
 
   sky = createSky(); scene.add(sky.mesh);
   clouds = createClouds(); scene.add(clouds.group);
   rain = createRain(); scene.add(rain.mesh);
+  shelf = createShelf(); scene.add(shelf.mesh); gust = createGustDust(); scene.add(gust.mesh);
+  streaks = { N: 1400, p: new Float32Array(1400 * 3), geo: new THREE.BufferGeometry(), v: new Float32Array(1400 * 3) };
+  streaks.geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(1400 * 6), 3)); streaks.geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(1400 * 6), 3));
+  streaks.mesh = new THREE.LineSegments(streaks.geo, new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); streaks.mesh.frustumCulled = false; streaks.mesh.renderOrder = 7; scene.add(streaks.mesh);
+  for (let i = 0; i < streaks.N; i++) streaks.p.set([(Math.random() - 0.5) * 220, 1 + Math.random() * 45, (Math.random() - 0.5) * 220], i * 3);
   lightning = createLightning(scene);
   vortex = createVortex(CLOUD_BASE - 6); scene.add(vortex.group);
   marker = new THREE.Mesh(new THREE.RingGeometry(0.82, 1, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false, side: THREE.DoubleSide })); marker.rotation.x = -Math.PI / 2; marker.visible = false; marker.renderOrder = 9; scene.add(marker);
 
   // ground: a repaintable canvas (grass + the scar the tornado leaves) in the middle, plain grass beyond
-  const gc = document.createElement('canvas'); gc.width = gc.height = 1024; groundCtx = gc.getContext('2d'); paintGrass(groundCtx, 1024, 3);
+  const gc = document.createElement('canvas'); gc.width = gc.height = GS; groundCtx = gc.getContext('2d'); paintGrass(groundCtx, GS, 3);
   groundTex = new THREE.CanvasTexture(gc); groundTex.colorSpace = THREE.SRGBColorSpace; groundTex.anisotropy = 4;
   ground = new THREE.Mesh(new THREE.PlaneGeometry(AREA * 2, AREA * 2), new THREE.MeshStandardMaterial({ map: groundTex, roughness: 1 })); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
   const fc = document.createElement('canvas'); fc.width = fc.height = 512; paintGrass(fc.getContext('2d'), 512, 5);
@@ -80,9 +85,9 @@ async function init() {
   const z0 = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < hail.N; i++) hg.setMatrixAt(i, z0);
 
   controls = new OrbitControls(camera, canvas);
-  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false; controls.minDistance = 16; controls.maxDistance = 380; controls.maxPolarAngle = 1.5; controls.rotateSpeed = 0.7;
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false; controls.minDistance = 16; controls.maxDistance = 560; controls.maxPolarAngle = 1.5; controls.rotateSpeed = 0.7;
   applySteer(); controls.addEventListener('start', () => ui.card.classList.add('mini'));
-  camera.position.set(S.x + 70, 85, S.z + 215); controls.target.set(S.x, 30, S.z); controls.update();
+  camera.position.set(S.x + 90, 95, S.z + 250); controls.target.set(S.x, 30, S.z); controls.update();
   buildChips(); bind(); resize(); chooseLevel(mode, levelIdx, true);
   if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__storm = { get S() { return S; }, get world() { return world; }, get debris() { return debris; }, get camera() { return camera; }, get controls() { return controls; }, windAt, chooseLevel, get hail() { return hail; }, windMph, reset: resetWorld };
   ready = true; ui.loading.classList.add('done');
@@ -94,9 +99,9 @@ function paintGrass(c, n, seed) {
   for (let i = 0; i < 9000 * (n / 1024) ** 2; i++) { const x = rnd() * n, y = rnd() * n, l = 6 + rnd() * 18, a = rnd() * 6.28; c.strokeStyle = `hsla(${88 + rnd() * 24}, ${30 + rnd() * 25}%, ${24 + rnd() * 22}%, .22)`; c.lineWidth = 1 + rnd() * 3; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l); c.stroke(); }
 }
 function stampScar(x, z, r, strength) {
-  if (!groundCtx) return; const px = ((x + AREA) / (AREA * 2)) * 1024, py = ((z + AREA) / (AREA * 2)) * 1024, pr = (r / (AREA * 2)) * 1024;
+  if (!groundCtx) return; const px = ((x + AREA) / (AREA * 2)) * GS, py = ((z + AREA) / (AREA * 2)) * GS, pr = (r / (AREA * 2)) * GS;
   const g = groundCtx.createRadialGradient(px, py, pr * 0.2, px, py, pr); g.addColorStop(0, `rgba(78,56,34,${0.42 * strength})`); g.addColorStop(0.7, `rgba(88,66,40,${0.26 * strength})`); g.addColorStop(1, 'rgba(88,66,40,0)');
-  groundCtx.fillStyle = g; groundCtx.beginPath(); groundCtx.arc(px, py, pr, 0, 7); groundCtx.fill(); groundTex.needsUpdate = true;
+  groundCtx.fillStyle = g; groundCtx.beginPath(); groundCtx.arc(px, py, pr, 0, 7); groundCtx.fill(); scarDirty = true;
 }
 
 // ------------------------------------------------------------------ levels
@@ -108,7 +113,7 @@ function chooseLevel(m, idx, first) {
   const dark = m === 'tornado' ? 1 : L.cloud; clouds.layers.forEach((l) => (l.U.uCover.value = m === 'tornado' ? 1 : 0.35 + 0.65 * L.cloud));
   clouds.layers.forEach((l) => (l.U.uGreen.value = m === 'tornado' || idx >= 2 ? 0.7 : 0));
   rain.U.uRain.value = m === 'tornado' ? 0.55 : L.rain; sky.u.uTop.value.set(m === 'tornado' ? 0x27322f : idx < 1 ? 0x4a5a68 : 0x1c2430); sky.u.uHor.value.set(m === 'tornado' ? 0x57665d : idx < 1 ? 0x93a3ae : 0x4c5a66);
-  scene.fog.color.copy(sky.u.uHor.value); scene.fog.far = m === 'storm' && idx < 1 ? 1500 : 1100;
+  scene.fog.color.copy(sky.u.uHor.value); scene.fog.far = m === 'storm' && idx < 1 ? 2000 : 1500;
   hemi.intensity = m === 'tornado' ? 0.95 : 1.15 - 0.25 * L.cloud; sun.intensity = m === 'tornado' ? 0.55 : 1.0 - 0.7 * L.cloud;
   if (m === 'storm') { S.x = -95; S.z = 0; S.vx = S.vz = 0; S.touch = 1; } else { S.x = -105; S.z = 22; S.vx = S.vz = 0; }
   S.hasTarget = false; S.lean.set(0, 0); S.lastStamp.set(1e9, 0, 1e9);
@@ -122,7 +127,7 @@ function resetWorld() {
   }
   for (const h of world.houses) { h.damaged = h.roofGone = h.wallGone = false; h.acc = 0; }
   debris?.clear(); ambient?.clear(); lightning?.clear(); if (hail.life) { hail.life.fill(0); const z0 = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < hail.N; i++) hailMesh.setMatrixAt(i, z0); hailMesh.instanceMatrix.needsUpdate = true; }
-  if (groundCtx) { paintGrass(groundCtx, 1024, 3); groundTex.needsUpdate = true; }
+  if (groundCtx) { paintGrass(groundCtx, GS, 3); groundTex.needsUpdate = true; }
 }
 
 // ------------------------------------------------------------------ physics of the neighbourhood
@@ -144,11 +149,11 @@ function release(b, t) {
 }
 function shatter(b) { burst(b, b.shatter); b.dead = true; b.mesh.visible = false; }
 function updateBodies(dt, t) {
-  spawnBudget = 90; const wh = Math.max(0.02, dt);
+  spawnBudget = 90; const farR = mode === 'tornado' ? 9 * S.rc + 100 : 380, farR2 = farR * farR; const wh = Math.max(0.02, dt);
   for (const b of world.bodies) {
     if (b.dead) continue; const m = b.mesh;
     if (!b.loose) {
-      const ph = b.pos0, h = b.house;
+      const ph = b.pos0, h = b.house, fdx = ph.x - S.x, fdz = ph.z - S.z; if (fdx * fdx + fdz * fdz > farR2) continue;
       windAt(ph.x, b.base ? 5 : Math.min(ph.y, 8), ph.z, wv, t); const ms = wv.length(), mph = ms / MPH;
       if (b.fail) {
         let ok = true; if (h) { if (b.kind === 'furn') ok = h.wallGone; if (b.kind === 'slab') ok = h.wallGone && h.roofGone; }
@@ -156,7 +161,7 @@ function updateBodies(dt, t) {
         if (ok && mph > b.fail * hf) { release(b, t); continue; }
       }
       if (b.base) { // trees and poles bend in the wind
-        const sw = Math.min(0.55, ms * (b.kind === 'pole' ? 0.0035 : 0.0075)) * (0.65 + 0.35 * Math.sin(t * 2.3 + (b.phase ?? 0)));
+        const sw = Math.min(0.6, ms * (b.kind === 'pole' ? 0.0035 : 0.0125)) * (0.6 + 0.4 * Math.sin(t * 2.3 + (b.phase ?? 0))) + (b.kind === 'pole' ? 0 : Math.min(0.08, ms * 0.0022) * Math.sin(t * 8 + (b.phase ?? 0) * 3));
         const hl = Math.hypot(wv.x, wv.z) || 1; ax.set(-wv.z / hl, 0, wv.x / hl); qa.setFromAxisAngle(ax, sw); m.quaternion.copy(qa); dv.copy(b.pivot).applyQuaternion(qa); m.position.copy(b.base).add(dv);
       }
       // shingles peel off roofs, leaves and twigs tear off trees well before anything breaks
@@ -201,10 +206,30 @@ function updateBodies(dt, t) {
 }
 
 // the tornado also scoops up dirt and grass at its base, and hail rains down in storms
+function updateWindVisuals(dt, L) {
+  const ps = streaks.p, pos = streaks.geo.attributes.position.array, col = streaks.geo.attributes.color.array, cx = controls.target.x, cz = controls.target.z;
+  for (let i = 0; i < streaks.N; i++) {
+    const i3 = i * 3; let x = ps[i3], y = ps[i3 + 1], z = ps[i3 + 2];
+    if (Math.abs(x - cx) > 115 || Math.abs(z - cz) > 115 || Math.random() < dt * 0.15) { x = cx + (Math.random() - 0.5) * 220; z = cz + (Math.random() - 0.5) * 220; y = 1 + Math.random() * 45; }
+    windAt(x, y, z, wv, simT); const sp = wv.length(), len = Math.min(0.2, 0.05 + sp * 0.003);
+    x += wv.x * dt * 0.9; y += wv.y * dt * 0.9; z += wv.z * dt * 0.9; if (y < 0.5) y = 0.5 + Math.random() * 30; ps[i3] = x; ps[i3 + 1] = y; ps[i3 + 2] = z;
+    const o = i * 6, c = Math.min(0.32, Math.max(0, (sp - 8) / 90));
+    pos[o] = x; pos[o + 1] = y; pos[o + 2] = z; pos[o + 3] = x - wv.x * len; pos[o + 4] = y - wv.y * len; pos[o + 5] = z - wv.z * len;
+    col[o] = col[o + 1] = col[o + 2] = c; col[o + 3] = col[o + 4] = col[o + 5] = 0;
+  }
+  streaks.geo.attributes.position.needsUpdate = true; streaks.geo.attributes.color.needsUpdate = true;
+  // roll cloud and ground dust around a storm's gust front
+  const isStorm = mode === 'storm', big = isStorm ? Math.min(1, Math.max(0, (L.vmax - 30) / 50)) : 0;
+  shelf.mesh.visible = isStorm && L.vmax >= 40; shelf.mesh.position.set(S.x, 0, S.z); shelf.U.uTime.value = simT; shelf.U.uAmt.value = 0.4 + 0.6 * big; shelf.U.uR.value = RING * 2.0; shelf.U.uBase.value = 30 + 25 * (1 - big); shelf.U.uH.value = 60 + 30 * big;
+  gust.mesh.visible = isStorm && L.vmax >= 30; gust.mesh.position.set(S.x, 0, S.z); gust.U.uTime.value = simT; gust.U.uAmt.value = 0.18 + 0.6 * big; gust.U.uPixel.value = canvas.height / (2 * Math.tan(THREE.MathUtils.degToRad(FOV / 2)));
+}
 function updateWeatherParticles(dt, t) {
   const L = level();
   if (mode === 'tornado' && S.touch > 0.6) {
     const n = (levelIdx + 1) * 5 * dt * 1.2 + Math.random() * 0.6; for (let i = 0; i < n && i < 14; i++) { const a = Math.random() * 6.28, r = S.rc * (0.4 + Math.random() * 1.4); emit(Math.random() < 0.7 ? 5 : 4, S.x + Math.cos(a) * r, 0.3, S.z + Math.sin(a) * r, 0, 3 + Math.random() * 4, 0); }
+  }
+  if (mode === 'storm' && L.vmax > 18) {
+    let n = (L.vmax - 18) * 0.4 * dt; while (n > 0 && (n >= 1 || Math.random() < n)) { n--; const a = Math.random() * 6.28, r = Math.random() * CELL; ambient.spawn(Math.random() < 0.85 ? 4 : 5, S.x + Math.cos(a) * r, 1 + Math.random() * 6, S.z + Math.sin(a) * r, 0, 1.5, 0); }
   }
   if (mode === 'storm' && L.hail > 0) {
     const sz = Math.max(0.1, (L.hailSize ?? 0.02) * 4), rate = 130 * L.hail;
@@ -251,13 +276,16 @@ function frame(now) {
   clouds.layers.forEach((l, i) => { l.m.material.uniforms.uAlpha.value = [0.8, 0.9, 0.95, 1][i] * (mode === 'tornado' ? 1 : 0.3 + 0.7 * L.cloud); });
   sky.u.uFlash.value = flash * 0.7; hemi.intensity = (mode === 'tornado' ? 0.95 : 1.15 - 0.25 * (L.cloud ?? 1)) + flash * 2.2;
   rain.U.uTime.value = simT; rain.U.uCenter.value.set(controls.target.x, 0, controls.target.z); rain.U.uStorm.value.set(S.x, S.z); rain.U.uCell.value = mode === 'tornado' ? 150 : CELL * 1.1;
-  const wm = mode === 'storm' ? S.vmax * 0.25 : S.vmax * 0.2; rain.U.uWind.value.set(S.vx * 0.4 + wm, wm * 0.3);
+  windAt(controls.target.x, 10, controls.target.z, wv, simT); rain.U.uWind.value.set(wv.x, wv.z);
+  updateWindVisuals(dt, L);
   // a ring on the ground shows where the finger is sending the storm
   if (S.finger && S.hasTarget) { marker.visible = true; marker.position.set(S.tx, 0.4, S.tz); marker.scale.setScalar(4 + 1.2 * Math.sin(simT * 6) + (mode === 'tornado' ? S.rc * 0.5 : 8)); } else marker.visible = false;
   // camera follows the storm (but stays put while a finger is steering, so the map doesn't slide under it)
   if (follow && !S.finger) { dv.set(S.x, 30, S.z).sub(controls.target).multiplyScalar(Math.min(1, dt * 2.6 + 0.02)); controls.target.add(dv); camera.position.add(dv); }
   controls.update();
   if (camera.position.y < 3) camera.position.y = 3;
+  if (scarDirty && simT - scarT > 0.2) { groundTex.needsUpdate = true; scarDirty = false; scarT = simT; }
+  sun.position.set(controls.target.x - 110, 170, controls.target.z + 80); sun.target.position.set(controls.target.x, 0, controls.target.z); sun.target.updateMatrixWorld();
   if (frameN % 3 === 0) renderer.shadowMap.needsUpdate = true;
   renderer.render(scene, camera);
   audioFrame(); thunderFrame();
