@@ -316,3 +316,42 @@ button, a { touch-action: manipulation; font: inherit; }
 .storm-bar .chips { padding: 2px 12px 4px; gap: 8px; }
 .chip.lvl { height: 48px; padding: 0 14px; } .chip.lvl b { font-size: 1.1rem; } .chip.lvl span { font-size: .64rem; }
 #storm-card { bottom: calc(env(safe-area-inset-bottom) + 66px); }
+
+/* ---------- numbers with the frog (Benji) ---------- */
+.game-tile.numbers-tile { background: linear-gradient(160deg, #6fd36f, #2f9e6a); }
+.numbers-view { background: linear-gradient(180deg, #cdeeff 0%, #e4f7d6 55%, #9bdba0 100%); overflow: hidden; }
+.numbers-view::before { content: ''; z-index: 0; position: absolute; left: -10%; right: -10%; bottom: -8%; height: 26%; border-radius: 50% 50% 0 0; background: #86cf8f; opacity: .55; pointer-events: none; }
+.num-stage { position: absolute; inset: 0; z-index: 1; touch-action: none; overflow: hidden; }
+.frog { --sz: 200px; position: absolute; left: 0; top: 0; width: var(--sz); height: var(--sz); opacity: 0; transition: opacity .5s; will-change: transform; user-select: none; -webkit-user-select: none; }
+.fbody { position: relative; width: 100%; height: 100%; transform-origin: 50% 90%; animation: frogIdle 3.4s ease-in-out infinite; }
+.fbody img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; filter: drop-shadow(0 10px 8px rgba(0, 0, 0, .18)); }
+.mouth { --open: 0; position: absolute; left: 27%; width: 46%; top: 56%; height: 27%; border-radius: 50% 50% 58% 58% / 30% 30% 70% 70%; background: radial-gradient(ellipse at 50% 85%, #f0708a 0 26%, #7d1d31 29% 100%); box-shadow: inset 0 6px 8px rgba(0, 0, 0, .35); transform-origin: 50% 0; transform: scaleY(var(--open)); opacity: calc(var(--open) * 3); pointer-events: none; overflow: hidden; }
+.mouth .tongue { position: absolute; left: 22%; right: 22%; bottom: -10%; height: 55%; border-radius: 50%; background: #f48aa0; }
+.frog { --open: 0; } .frog .mouth { --open: inherit; }
+.frog.in { opacity: 1; animation: none; } .frog.in .fbody { animation: frogIn .6s cubic-bezier(.2, 1.4, .4, 1) both, frogIdle 3.4s ease-in-out .6s infinite; }
+.frog.out { opacity: 0; transition: opacity .6s; } .frog.out .fbody { animation: frogOut .6s ease-in both; }
+.frog.near .fbody { animation: frogNear .5s ease-in-out infinite; }
+.frog.chomp .fbody { animation: frogChomp .7s ease-out both; }
+@keyframes frogIdle { 0%, 100% { transform: translateY(0) scale(1, 1); } 50% { transform: translateY(-3%) scale(1.02, .98); } }
+@keyframes frogIn { 0% { transform: translateY(60%) scale(.4); } 100% { transform: translateY(0) scale(1); } }
+@keyframes frogOut { to { transform: translateY(-30%) scale(.5); } }
+@keyframes frogNear { 0%, 100% { transform: scale(1.04, .98); } 50% { transform: scale(1.1, 1.06); } }
+@keyframes frogChomp { 0% { transform: scale(1.1, .9); } 30% { transform: scale(.92, 1.14); } 60% { transform: scale(1.08, .94); } 100% { transform: scale(1, 1); } }
+.frog-say { position: absolute; left: 50%; bottom: 96%; transform: translate(-50%, 8px) scale(.85); padding: 8px 16px 12px; border-radius: 28px; background: #fff; box-shadow: 0 8px 0 rgba(0, 0, 0, .1), 0 14px 26px rgba(0, 0, 0, .15); display: flex; flex-direction: column; align-items: center; gap: 6px; opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s cubic-bezier(.2, 1.4, .4, 1); white-space: nowrap; }
+.frog-say.show { opacity: 1; transform: translate(-50%, 0) scale(1); } .frog-say.below { bottom: auto; top: 90%; }
+.frog-say b { font-size: clamp(3.2rem, 11vmin, 5.6rem); line-height: 1; font-weight: 900; }
+.say-dots { display: grid; grid-template-columns: repeat(10, 1fr); gap: 5px; max-width: 70vw; }
+.say-dots i { width: clamp(11px, 2.6vmin, 18px); aspect-ratio: 1; border-radius: 50%; background: #dfe6ee; transition: background .2s, transform .2s; }
+.say-dots i.lit { background: #ff9f43; transform: scale(1.18); }
+.num-bubble { --sz: 150px; --c: #ff6b6b; position: absolute; left: 0; top: 0; width: var(--sz); height: var(--sz); border-radius: 50%; background: radial-gradient(circle at 32% 28%, color-mix(in srgb, var(--c) 70%, #fff), var(--c) 62%); border: 6px solid #fff; box-shadow: 0 10px 0 rgba(0, 0, 0, .14), 0 20px 30px rgba(0, 0, 0, .18); display: grid; place-items: center; color: #fff; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; opacity: 0; scale: .2; will-change: transform; }
+.num-bubble b { font-size: calc(var(--sz) * .56); line-height: 1; font-weight: 900; text-shadow: 0 4px 0 rgba(0, 0, 0, .16); pointer-events: none; }
+.num-bubble.in { opacity: 1; scale: 1; transition: opacity .3s, scale .45s cubic-bezier(.2, 1.5, .4, 1); }
+.num-bubble.drag { scale: 1.12; cursor: grabbing; transition: scale .12s; box-shadow: 0 16px 0 rgba(0, 0, 0, .12), 0 30px 40px rgba(0, 0, 0, .2); }
+.num-bubble.fly { transition: transform .38s cubic-bezier(.5, 0, .7, .4), scale .38s, opacity .3s .1s; }
+.num-bubble.gone { opacity: 0; scale: .15; }
+.num-bubble.wiggle { animation: nwiggle .9s ease-in-out infinite; }
+@keyframes nwiggle { 0%, 100% { rotate: 0deg; } 25% { rotate: -7deg; } 75% { rotate: 7deg; } }
+.num-hand { position: absolute; left: 0; top: 0; width: 64px; height: 64px; margin: -8px 0 0 -22px; opacity: 0; pointer-events: none; z-index: 3; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .25)); }
+.num-prog { position: absolute; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 14px); display: flex; gap: 6px; justify-content: center; pointer-events: none; z-index: 2; }
+.num-prog i { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, .7); } .num-prog i.done { background: #ff9f43; } .num-prog i.now { background: #fff; box-shadow: 0 0 0 3px #ff9f43; }
+.numbers-view .round-btn.back, .numbers-view .insect-tools { z-index: 6; }
