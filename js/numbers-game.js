@@ -18,7 +18,7 @@ const WORDS = {
 };
 const SPEECH = { en: 'en-US', es: 'es-ES' };
 const COLORS = ['#ff6b6b', '#ff9f43', '#f7c531', '#5cc96b', '#2fb5b0', '#4a9df0', '#7a6cf0', '#c26bf0', '#f06ba8', '#8a9aa8'];
-const HINT_AFTER = 9000, ASSIST_AFTER = 22000, PAUSE_AFTER_COUNT = 2800;
+const HINT_AFTER = 9000, PAUSE_AFTER_COUNT = 2800;
 
 let lang = 'en', n = 1, phase = 'idle', running = false, bound = false, soundOn = true, ac = null;
 let numAnim = null, timers = [], pos = { nx: 0, ny: 0, fx: 0, fy: 0 }, handAnim = null, drag = null, sizes = { n: 150, f: 200 };
@@ -54,7 +54,7 @@ function note(freq, dur = 0.16, vol = 0.16, type = 'sine') {
 const PENTA = [0, 2, 4, 7, 9];
 const tick = (i) => note(261.63 * 2 ** ((PENTA[i % 5] + 12 * Math.floor(i / 5)) / 12), 0.18, 0.14);
 function pop() { if (!soundOn || !audio()) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(); o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(900, t + 0.09); g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14); o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.16); }
-function ribbit() { if (animal) playUrl(animal.sound, { gain: 0.9, max: 1.9, stopPrev: true }); }   // the animal's own real sound, just a moment of it
+function ribbit() { if (animal) playUrl(animal.sound, { gain: 0.8, max: 1.9, stopPrev: true }); }   // the animal's own real sound, just a moment of it
 const say1 = (k) => playUrl(`sounds/numbers/${lang}/${k}.mp3`, { gain: 1, stopPrev: true });
 function speak() { say1(n); }
 
@@ -91,7 +91,7 @@ function startRound() {
   say.classList.remove('show'); frog.classList.remove('chomp', 'near', 'out'); setOpen(0); numEl.classList.remove('gone', 'drag', 'fly'); numEl.style.setProperty('--ds', '1.12');
   prog.innerHTML = Array.from({ length: 20 }, (_, i) => `<i class="${i < n - 1 ? 'done' : i === n - 1 ? 'now' : ''}"></i>`).join('');
   place(); frog.classList.remove('in'); numEl.classList.remove('in'); void frog.offsetWidth; frog.classList.add('in'); later(() => { numEl.classList.add('in'); pop(); }, 350);
-  later(showHint, HINT_AFTER); later(() => eat(true), ASSIST_AFTER);
+  later(showHint, HINT_AFTER);                      // only a ghost hand shows the move — the number is never eaten unless the child drags it
 }
 function showHint() {
   if (phase !== 'wait' || drag) return; const a = numCenter(), b = frogCenter(); hand.classList.add('on'); numEl.classList.add('wiggle');
@@ -139,7 +139,7 @@ function bind() {
   const up = (e) => {
     if (!drag || e.pointerId !== drag.id) return; drag = null;
     if (onAnimal()) { eat(false); }
-    else { numEl.classList.remove('drag'); numEl.style.setProperty('--ds', '1.12'); frog.classList.remove('near'); setOpen(0); later(showHint, 6000); later(() => eat(true), 16000); }   // dropped somewhere else: that's fine, try again
+    else { numEl.classList.remove('drag'); numEl.style.setProperty('--ds', '1.12'); frog.classList.remove('near'); setOpen(0); later(showHint, 6000); }   // dropped somewhere else: that's fine, try again
   };
   numEl.addEventListener('pointerup', up); numEl.addEventListener('pointercancel', up);
   frog.addEventListener('pointerdown', () => { audio(); if (phase === 'done' || phase === 'eat') { ribbit(); later(speak, animalMs + 500); } });   // tap the frog: hear it again
