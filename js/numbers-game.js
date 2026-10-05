@@ -1,129 +1,108 @@
-// Benji's numbers 1–20: a number appears somewhere on the screen and an animal (a different one each time, from the animals game) somewhere else. He drags the number to the frog;
-// the frog gobbles it, says the number out loud, and the little dots count up with soft notes. A few seconds later, with no
-// touching at all, the next number comes. Cause → effect, always the same, never a wrong answer. If he doesn't move the number,
-// a ghost hand shows him how, and later the number flies to the frog by itself so the round still ends the same way.
+// Benji's numbers 1–10 — "count the animals".
+// A number bubble appears, and a group of that many animals (all the same kind, a different kind each round) stands on the other side of the screen.
+// Benji drags the number to the animals; then the app counts them out loud, one by one, lighting each animal up with its own number
+// ("one, two, three…") until the whole group is counted and the number is said once more. A few seconds later the next number comes.
+// Nothing happens unless he drags the number; if he waits, a ghost hand shows how. Never a wrong answer.
 import { audio, unlock, loadBuf, playUrl, tone, setMuted, stop as stopSound } from './sound.js';
 const $ = (s) => document.querySelector(s);
-const root = $('#view-numbers'), stage = $('#num-stage'), numEl = $('#num-bubble'), numVal = $('#num-val'), frog = $('#frog'), say = $('#frog-say'), sayVal = $('#say-val'), sayDots = $('#say-dots'), hand = $('#num-hand'), prog = $('#num-prog');
+const root = $('#view-numbers'), stage = $('#num-stage'), numEl = $('#num-bubble'), numVal = $('#num-val'), herd = $('#num-herd'), hand = $('#num-hand'), prog = $('#num-prog');
 
-import { MOUTH } from './mouths.js';
-export { MOUTH };
-let animals = [], animal = null, lastAnimal = '', animalMs = 1900;
-const WORDS = {
-  en: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'],
-  es: ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte'],
-};
-const SPEECH = { en: 'en-US', es: 'es-ES' };
 const COLORS = ['#ff6b6b', '#ff9f43', '#f7c531', '#5cc96b', '#2fb5b0', '#4a9df0', '#7a6cf0', '#c26bf0', '#f06ba8', '#8a9aa8'];
-const HINT_AFTER = 9000, PAUSE_AFTER_COUNT = 2800;
+const HINT_AFTER = 9000, MAX = 10, STEP = 900;
 
-let lang = 'en', n = 1, phase = 'idle', running = false, bound = false, soundOn = true;
-let numAnim = null, timers = [], pos = { nx: 0, ny: 0, fx: 0, fy: 0 }, handAnim = null, drag = null, sizes = { n: 150, f: 200 };
+let animals = [], kind = null, lastKind = '', lang = 'en', n = 1, phase = 'idle', running = false, bound = false, soundOn = true;
+let timers = [], handAnim = null, drag = null, numAnim = null;
+let pos = { nx: 0, ny: 0 }, sz = 150, ans = [], herdTop = true, L = { w: 0, h: 0, herd: { x: 0, y: 0, w: 0, h: 0 } };
 
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
 const clearTimers = () => { timers.forEach(clearTimeout); timers = []; handAnim?.cancel(); handAnim = null; hand.classList.remove('on'); };
-
-// ---------------------------------------------------------------- sound (shared, phone-proof: see js/sound.js)
-const PENTA = [0, 2, 4, 7, 9];
-const tick = (i) => tone(261.63 * 2 ** ((PENTA[i % 5] + 12 * Math.floor(i / 5)) / 12), 0.18, 0.14);
 const pop = () => tone(420, 0.14, 0.18, 'sine', 900);
-function ribbit() { if (animal) playUrl(animal.sound, { gain: 0.8, max: 1.9, stopPrev: true }); }   // the animal's own real sound, just a moment of it
 const say1 = (k) => playUrl(`sounds/numbers/${lang}/${k}.mp3`, { gain: 1, stopPrev: true });
-function speak() { say1(n); }
+const PENTA = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21];
+const tick = (i) => tone(261.63 * 2 ** (PENTA[i] / 12), 0.2, 0.12);
+const safeTop = () => parseFloat(getComputedStyle(root).paddingTop) || 0;
 
-// ---------------------------------------------------------------- one round
-function metrics() { const r = stage.getBoundingClientRect(), m = Math.min(r.width, r.height); sizes = { n: Math.max(120, Math.min(210, m * 0.28)), f: Math.max(170, Math.min(290, m * 0.4)) }; numEl.style.setProperty('--sz', `${sizes.n}px`); frog.style.setProperty('--sz', `${sizes.f}px`); return r; }
-function place() {
-  const r = metrics(), top = (parseFloat(getComputedStyle(root).paddingTop) || 0) + 120, bot = 78, side = 16, rnd = (a, b) => a + Math.random() * (b - a);
-  const rangeX = (sz) => [side, Math.max(side, r.width - side - sz)], rangeY = (sz) => [top, Math.max(top, r.height - bot - sz)];
-  const need = Math.min(r.width, r.height) * 0.45 + sizes.f * 0.25;         // we want them far apart, so the number has to be dragged
-  let best = null, bestD = -1;
-  for (let t = 0; t < 120; t++) {
-    const c = { nx: rnd(...rangeX(sizes.n)), ny: rnd(...rangeY(sizes.n)), fx: rnd(...rangeX(sizes.f)), fy: rnd(...rangeY(sizes.f)) };
-    const d = Math.hypot(c.nx + sizes.n / 2 - c.fx - sizes.f / 2, c.ny + sizes.n / 2 - c.fy - sizes.f / 2);
-    if (d > bestD) { best = c; bestD = d; }
-    if (d >= need) break;
-  }
-  pos = { ...best }; setNum(pos.nx, pos.ny); frog.style.transform = `translate(${pos.fx}px, ${pos.fy}px)`;
+// ---------------------------------------------------------------- layout: the group on one side, the number on the other
+function layout() {
+  const r = stage.getBoundingClientRect(), w = r.width, h = r.height, top = safeTop() + 120, bot = 78, side = 16;
+  sz = Math.max(120, Math.min(190, Math.min(w, h) * 0.28));
+  const bandH = (h - top - bot) * 0.62, area = { x: side, y: herdTop ? top : h - bot - bandH, w: w - 2 * side, h: bandH };       // the group fills a band across the screen
+  let best = { cell: 0, cols: 1 };                                                                                              // the grid that gives the biggest animals that still fit
+  for (let cols = 1; cols <= n; cols++) { const rows = Math.ceil(n / cols), cell = Math.min(area.w / cols, area.h / rows); if (cell > best.cell) best = { cell, cols }; }
+  const cell = Math.min(best.cell, 250 / (1 + 0.12 * (n - 1)));   // the more animals, the smaller each one
+  const cols = best.cols, rows = Math.ceil(n / cols), gw = cols * cell, gh = rows * cell, gx = area.x + (area.w - gw) / 2, gy = area.y + (area.h - gh) / 2;
+  ans.forEach((a, i) => { const row = Math.floor(i / cols), inRow = row === rows - 1 ? n - cols * (rows - 1) : cols, col = i - row * cols, off = (cols - inRow) * cell / 2; a.el.style.width = a.el.style.height = `${cell}px`; a.el.style.setProperty('--cell', `${cell}px`); a.el.style.transform = `translate(${gx + off + col * cell}px, ${gy + row * cell}px)`; });
+  L = { w, h, herd: { x: gx, y: gy, w: gw, h: gh } };
+  numEl.style.setProperty('--sz', `${sz}px`);
+}
+function placeNumber() {
+  const g = L.herd, top = safeTop() + 120, bot = 78, lo = herdTop ? Math.max(g.y + g.h + 24, top) : top, hi = herdTop ? L.h - bot - sz : g.y - sz - 24;     // the number goes where the animals are not
+  pos.nx = 16 + Math.random() * Math.max(0, L.w - 32 - sz); pos.ny = hi > lo ? lo + Math.random() * (hi - lo) : Math.max(top, Math.min(lo, L.h - bot - sz));
+  setNum(pos.nx, pos.ny);
 }
 const setNum = (x, y) => { numEl.style.transform = `translate(${x}px, ${y}px)`; };
-const mouthPt = () => { const m = MOUTH[animal?.id] ?? MOUTH.frog; return { x: sizes.f * m[0] / 100, y: sizes.f * m[1] / 100 }; };
-const frogCenter = () => { const m = mouthPt(); return { x: pos.fx + m.x, y: pos.fy + m.y }; };   // the mouth
-const setOpen = (v) => frog.style.setProperty('--open', Math.max(0, Math.min(1, v)).toFixed(2));   // (kept for the wiggle when the number is close)
-const numCenter = () => ({ x: pos.nx + sizes.n / 2, y: pos.ny + sizes.n / 2 });
+const numCenter = () => ({ x: pos.nx + sz / 2, y: pos.ny + sz / 2 });
+const herdCenter = () => ({ x: L.herd.x + L.herd.w / 2, y: L.herd.y + L.herd.h / 2 });
+const overHerd = (m = 0) => { const c = numCenter(), g = L.herd, mx = g.w * 0.12 + sz * 0.3 + m, my = g.h * 0.12 + sz * 0.3 + m; return c.x > g.x - mx && c.x < g.x + g.w + mx && c.y > g.y - my && c.y < g.y + g.h + my; };
 
-function pickAnimal() {
-  if (!animals.length) return; let a; do { a = animals[Math.floor(Math.random() * animals.length)]; } while (a.id === lastAnimal && animals.length > 1);
-  animal = a; lastAnimal = a.id; loadBuf(a.sound).then((b) => { if (b && animal === a) animalMs = Math.min(1900, b.duration * 1000); }); loadBuf(`sounds/numbers/${lang}/${n}.mp3`); if (n < 20) loadBuf(`sounds/numbers/${lang}/${n + 1}.mp3`); frog.querySelector('img').src = `images/animals/${a.id}.png`; new Image().src = `images/animals/${a.id}.png`;
-  const m = MOUTH[a.id] ?? MOUTH.frog, mo = frog.querySelector('.mouth'); mo.style.left = `${m[0]}%`; mo.style.top = `${m[1]}%`; mo.style.width = `${m[2]}%`; mo.style.height = `${m[4]}%`; mo.style.setProperty('--rot', `${m[3]}deg`);
-}
+// ---------------------------------------------------------------- one round
+function pickKind() { let a; do { a = animals[Math.floor(Math.random() * animals.length)]; } while (a.id === lastKind && animals.length > 1); kind = a; lastKind = a.id; loadBuf(`sounds/numbers/${lang}/${n}.mp3`); if (n < MAX) loadBuf(`sounds/numbers/${lang}/${n + 1}.mp3`); new Image().src = `images/animals/${a.id}.png`; }
 function startRound() {
-  if (!running) return; clearTimers(); phase = 'wait';
-  numVal.textContent = n; numEl.style.setProperty('--c', COLORS[(n - 1) % COLORS.length]);
-  pickAnimal(); numAnim?.cancel(); numAnim = null; numEl.style.visibility = '';
-  say.classList.remove('show'); frog.classList.remove('chomp', 'near', 'out'); setOpen(0); numEl.classList.remove('gone', 'drag', 'fly'); numEl.style.setProperty('--ds', '1.12');
-  prog.innerHTML = Array.from({ length: 20 }, (_, i) => `<i class="${i < n - 1 ? 'done' : i === n - 1 ? 'now' : ''}"></i>`).join('');
-  place(); frog.classList.remove('in'); numEl.classList.remove('in'); void frog.offsetWidth; frog.classList.add('in'); later(() => { numEl.classList.add('in'); pop(); }, 350);
-  later(showHint, HINT_AFTER);                      // only a ghost hand shows the move — the number is never eaten unless the child drags it
+  if (!running || !animals.length) return; clearTimers(); numAnim?.cancel(); numAnim = null; phase = 'wait'; drag = null; pickKind();
+  numVal.textContent = n; numEl.style.setProperty('--c', COLORS[(n - 1) % COLORS.length]); numEl.style.visibility = ''; numEl.classList.remove('drag', 'in', 'wiggle', 'big', 'vanish'); numEl.style.setProperty('--ds', '1.12');
+  prog.innerHTML = Array.from({ length: MAX }, (_, i) => `<i class="${i < n - 1 ? 'done' : i === n - 1 ? 'now' : ''}"></i>`).join('');
+  herd.classList.remove('near'); herd.innerHTML = ''; herdTop = Math.random() < 0.5;
+  ans = Array.from({ length: n }, () => { const el = document.createElement('div'); el.className = 'herd-an'; el.innerHTML = `<div class="hi"><img src="images/animals/${kind.id}.png" alt="" draggable="false"><b class="badge"></b></div>`; herd.appendChild(el); return { el, hi: el.firstChild, badge: el.querySelector('.badge') }; });
+  layout(); placeNumber(); ans.forEach((a, i) => later(() => a.el.classList.add('in'), 100 + i * 90));
+  later(() => { numEl.classList.add('in'); pop(); }, 350 + n * 40); later(showHint, HINT_AFTER);
 }
-function showHint() {
-  if (phase !== 'wait' || drag) return; const a = numCenter(), b = frogCenter(); hand.classList.add('on'); numEl.classList.add('wiggle');
+function showHint() {   // a ghost hand shows the move — nothing is ever counted for him
+  if (phase !== 'wait' || drag) return; const a = numCenter(), b = herdCenter(); hand.classList.add('on'); numEl.classList.add('wiggle');
   handAnim = hand.animate([{ transform: `translate(${a.x}px, ${a.y}px)`, opacity: 0 }, { transform: `translate(${a.x}px, ${a.y}px)`, opacity: 1, offset: 0.15 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 1, offset: 0.8 }, { transform: `translate(${b.x}px, ${b.y}px)`, opacity: 0 }], { duration: 2200, iterations: Infinity, easing: 'ease-in-out' });
 }
-function eat(auto) {
-  if (phase !== 'wait') return; phase = 'eat'; clearTimers(); numEl.classList.remove('wiggle');   // (keep the drag size so nothing jumps)
-  const go = auto ? 650 : 140;                                                                   // the animal opens its mouth wide first…
-  setOpen(1); frog.classList.add('near');
-  later(() => {                                                                                  // …then the number goes into its mouth, getting smaller
-    const m = mouthPt(), to = { x: pos.fx + m.x - sizes.n / 2, y: pos.fy + m.y - sizes.n / 2 };
-    numAnim = numEl.animate([{ transform: `translate(${pos.nx}px, ${pos.ny}px) scale(1)`, opacity: 1 }, { transform: `translate(${to.x}px, ${to.y}px) scale(0.22)`, opacity: 1, offset: 0.92 }, { transform: `translate(${to.x}px, ${to.y}px) scale(0.1)`, opacity: 0 }], { duration: 480, easing: 'cubic-bezier(.45,0,.8,.5)', fill: 'forwards' });
-  }, go);
-  const done = go + 540;
-  later(() => { numEl.style.visibility = 'hidden'; setOpen(0); frog.classList.remove('near'); frog.classList.add('chomp'); ribbit(); pop(); }, done);   // …and closes its mouth (gulp!)
-  later(speakAndCount, done + (soundOn ? animalMs + 500 : 540));   // the animal's sound first, then half a second of quiet, then the number
+function startCount() {
+  phase = 'count'; clearTimers(); herd.classList.remove('near'); numEl.classList.remove('wiggle', 'in', 'drag'); numEl.classList.add('vanish'); pop();       // the number is "used up": it pops away, and the animals take over
+  ans.forEach((a, i) => later(() => highlight(a, i + 1), 800 + i * STEP));                                                                         // count them, one by one
+  const end = 800 + n * STEP;
+  later(() => { phase = 'done'; ans.forEach((a, i) => later(() => { a.hi.classList.remove('jump'); void a.hi.offsetWidth; a.hi.classList.add('jump'); }, i * 50)); pop(); }, end);   // all together!
+  later(() => say1(n), end + 350);                                                                                                                 // …and the number once more
+  later(next, end + 350 + 3300);
 }
-function fitCard() {   // keep the (big) number card fully on the screen, whatever side the animal is on
-  requestAnimationFrame(() => { const r = say.getBoundingClientRect(), sr = stage.getBoundingClientRect(); let dx = 0; if (r.left < sr.left + 10) dx = sr.left + 10 - r.left; else if (r.right > sr.right - 10) dx = sr.right - 10 - r.right; say.style.setProperty('--shift', `${Math.round(dx)}px`); });
+function highlight(a, i) {
+  ans.forEach((o) => o.el.classList.remove('hl')); a.el.classList.add('hl', 'counted'); a.badge.textContent = i; a.badge.style.background = COLORS[(i - 1) % COLORS.length];
+  a.hi.classList.remove('jump'); void a.hi.offsetWidth; a.hi.classList.add('jump'); say1(i); tick(i - 1);
 }
-function speakAndCount() {
-  const word = WORDS[lang][n - 1]; sayVal.textContent = n; sayVal.style.color = COLORS[(n - 1) % COLORS.length];
-  sayDots.innerHTML = Array.from({ length: n }, () => '<i></i>').join(''); say.style.setProperty('--shift', '0px'); say.classList.toggle('below', pos.fy < Math.min(360, stage.clientHeight * 0.42)); say.classList.add('show'); fitCard(); speak();
-  const gap = n > 10 ? 110 : 160, dots = sayDots.children;
-  for (let i = 0; i < n; i++) later(() => { dots[i].classList.add('lit'); tick(i); }, 700 + i * gap);
-  later(() => { phase = 'done'; }, 700 + n * gap);
-  later(next, 700 + n * gap + PAUSE_AFTER_COUNT);
-}
-function next() {
-  if (!running) return; frog.classList.add('out'); say.classList.remove('show');
-  later(() => { n = n >= 20 ? 1 : n + 1; startRound(); }, 700);
-}
+function next() { if (!running) return; phase = 'between'; herd.classList.add('away'); later(() => { herd.classList.remove('away'); n = n >= MAX ? 1 : n + 1; startRound(); }, 700); }
 
-// ---------------------------------------------------------------- touch: drag the number to the frog
-const onAnimal = () => { const a = numCenter(), b = frogCenter(), c = { x: pos.fx + sizes.f / 2, y: pos.fy + sizes.f / 2 }; return Math.hypot(a.x - b.x, a.y - b.y) < sizes.f * 0.62 + sizes.n * 0.3 || Math.hypot(a.x - c.x, a.y - c.y) < sizes.f * 0.5 + sizes.n * 0.2; };
+// ---------------------------------------------------------------- touch: drag the number to the animals
 function bind() {
   if (bound) return; bound = true;
   const unlockNow = () => unlock(); stage.addEventListener('pointerdown', unlockNow, true); root.addEventListener('pointerdown', unlockNow, true); root.addEventListener('touchend', unlockNow, true);
   numEl.addEventListener('pointerdown', (e) => {
-    if (phase !== 'wait') return; audio(); e.preventDefault(); try { numEl.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ } clearTimers(); numEl.classList.remove('wiggle'); numEl.classList.add('drag');
+    if (phase !== 'wait') return; unlock(); e.preventDefault(); try { numEl.setPointerCapture(e.pointerId); } catch { /* synthetic pointer */ } clearTimers(); numEl.classList.remove('wiggle'); numEl.classList.add('drag');
     const r = stage.getBoundingClientRect(); drag = { id: e.pointerId, dx: e.clientX - r.left - pos.nx, dy: e.clientY - r.top - pos.ny };
   });
   numEl.addEventListener('pointermove', (e) => {
     if (!drag || e.pointerId !== drag.id) return; const r = stage.getBoundingClientRect();
-    pos.nx = Math.min(Math.max(e.clientX - r.left - drag.dx, -10), r.width - sizes.n + 10); pos.ny = Math.min(Math.max(e.clientY - r.top - drag.dy, -10), r.height - sizes.n + 10); setNum(pos.nx, pos.ny);
-    const a = numCenter(), b = frogCenter(), d = Math.hypot(a.x - b.x, a.y - b.y), o = (sizes.f * 1.5 + sizes.n * 0.4 - d) / (sizes.f * 0.9); setOpen(o); frog.classList.toggle('near', o > 0.7); numEl.style.setProperty('--ds', (1.12 - 0.58 * Math.max(0, Math.min(1, o))).toFixed(2));   // the number shrinks as it nears the open mouth, so the face stays visible
+    pos.nx = Math.min(Math.max(e.clientX - r.left - drag.dx, -10), r.width - sz + 10); pos.ny = Math.min(Math.max(e.clientY - r.top - drag.dy, -10), r.height - sz + 10); setNum(pos.nx, pos.ny);
+    herd.classList.toggle('near', overHerd(sz * 0.4));                                                                               // the animals perk up as the number comes close
   });
   const up = (e) => {
     if (!drag || e.pointerId !== drag.id) return; drag = null;
-    if (onAnimal()) { eat(false); }
-    else { numEl.classList.remove('drag'); numEl.style.setProperty('--ds', '1.12'); frog.classList.remove('near'); setOpen(0); later(showHint, 6000); }   // dropped somewhere else: that's fine, try again
+    if (overHerd()) startCount();
+    else { numEl.classList.remove('drag'); herd.classList.remove('near'); later(showHint, 6000); }                                      // dropped somewhere else: that's fine, try again
   };
   numEl.addEventListener('pointerup', up); numEl.addEventListener('pointercancel', up);
-  frog.addEventListener('pointerdown', () => { audio(); if (phase === 'done' || phase === 'eat') { ribbit(); later(speak, animalMs + 500); } });   // tap the frog: hear it again
   document.querySelectorAll('#view-numbers .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
   $('#btn-nsound').addEventListener('click', () => { soundOn = !soundOn; $('#btn-nsound').classList.toggle('on', soundOn); setMuted(!soundOn); if (soundOn) unlock(); });
-  new ResizeObserver(() => { if (running && phase === 'wait' && !drag) { place(); } }).observe(stage);
+  new ResizeObserver(() => { if (running && phase === 'wait' && !drag && ans.length) { layout(); placeNumber(); } }).observe(stage);
 }
-function setLang(l) { lang = l; loadBuf(`sounds/numbers/${l}/${n}.mp3`); document.querySelectorAll('#view-numbers .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); }
+function setLang(l) { lang = l; document.querySelectorAll('#view-numbers .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); for (let i = 1; i <= MAX; i++) loadBuf(`sounds/numbers/${l}/${i}.mp3`); }
 
-export async function enter() { running = true; setMuted(!soundOn); audio(); bind(); setLang('en'); n = 1; if (!animals.length) animals = await fetch('data/animals.json').then((r) => r.json()).catch(() => []); if (!running) return; startRound(); }   // English is always the default
+export async function enter() {
+  running = true; setMuted(!soundOn); audio(); bind(); setLang('en'); n = 1;
+  if (!animals.length) animals = await fetch('data/animals.json').then((r) => r.json()).catch(() => []);
+  if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__numbers = { goto(k) { n = k; startRound(); } };   // dev helper
+  if (!running) return; startRound();
+}
 export function leave() { running = false; clearTimers(); stopSound(); phase = 'idle'; }

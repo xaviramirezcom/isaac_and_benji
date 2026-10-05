@@ -460,3 +460,25 @@ button, a { touch-action: manipulation; font: inherit; }
 @media (prefers-reduced-motion: reduce) { .fr-tbody, .fr-want .fr-bubble, .fr-item .fi { animation: none !important; } }
 /* in the number and fruit games the sound button sits beside the language switch, in one row along the top */
 #view-numbers .insect-tools, #view-fruits .insect-tools { flex-direction: row; align-items: center; gap: 10px; }
+
+/* ---------- numbers: count the animals ---------- */
+.num-herd { position: absolute; inset: 0; pointer-events: none; transition: opacity .6s; }
+.num-herd.away { opacity: 0; }
+.herd-an { position: absolute; left: 0; top: 0; opacity: 0; will-change: transform; transition: opacity .4s; }
+.herd-an.in { opacity: 1; }
+.herd-an .hi { position: relative; width: 100%; height: 100%; display: grid; place-items: center; }
+.herd-an .hi img { width: 92%; height: 92%; object-fit: contain; display: block; filter: drop-shadow(0 8px 6px rgba(0, 0, 0, .18)); transition: filter .25s; }
+.herd-an.in .hi { animation: anIn .55s cubic-bezier(.2, 1.5, .4, 1); }
+.num-herd.near .herd-an .hi { animation: anNear .55s ease-in-out infinite alternate; }
+.herd-an.counted .hi img { filter: drop-shadow(0 0 10px rgba(255, 217, 77, .85)) drop-shadow(0 8px 6px rgba(0, 0, 0, .15)); }
+.herd-an.hl .hi img { filter: drop-shadow(0 0 16px #ffd94d) drop-shadow(0 0 30px #ffd94d) drop-shadow(0 8px 6px rgba(0, 0, 0, .15)); }
+.herd-an .hi.jump { animation: anJump .55s cubic-bezier(.3, 1.6, .5, 1); }
+.herd-an .badge { position: absolute; left: 50%; top: -3%; width: calc(var(--cell, 120px) * .36); height: calc(var(--cell, 120px) * .36); border-radius: 50%; background: #ff6b6b; color: #fff; font-size: calc(var(--cell, 120px) * .24); font-weight: 900; line-height: 1; display: grid; place-items: center; border: 3px solid #fff; box-shadow: 0 4px 0 rgba(0, 0, 0, .12), 0 8px 14px rgba(0, 0, 0, .18); transform: translate(-50%, 0) scale(0); transition: transform .28s cubic-bezier(.2, 1.7, .4, 1); pointer-events: none; }
+.herd-an.counted .badge { transform: translate(-50%, 0) scale(1); }
+.num-bubble.big .nb { scale: 1.3; transition: scale .4s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes anIn { from { transform: translateY(50%) scale(.3); } to { transform: none; } }
+@keyframes anNear { from { transform: scale(1) rotate(-2deg); } to { transform: scale(1.07) rotate(2deg); } }
+@keyframes anJump { 0% { transform: translateY(0) scale(1); } 40% { transform: translateY(-14%) scale(1.14); } 100% { transform: translateY(0) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .herd-an .hi { animation: none !important; } }
+.num-bubble.vanish .nb { opacity: 0; scale: .1; transition: opacity .25s, scale .25s; }
+.num-bubble.vanish { pointer-events: none; }
