@@ -370,3 +370,7 @@ button, a { touch-action: manipulation; font: inherit; }
 .big-btn.prev { background: linear-gradient(160deg, #5aa0ff, #2b59d9); }
 .stage { touch-action: manipulation; }
 .actions.two .big-btn.name { background: linear-gradient(160deg, #37d39a, #13a06f); }
+.actions.two { align-items: center; }
+.actions.two .big-btn.name { width: clamp(124px, 34vw, 200px); height: clamp(124px, 34vw, 200px); border-radius: 32%; }
+.actions.two .big-btn.name svg { width: 62%; height: 62%; }
+@media (max-height: 520px) { .actions.two .big-btn.name { width: 104px; height: 104px; } }
