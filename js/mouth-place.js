@@ -2,7 +2,7 @@
 import { MOUTH } from './numbers-game.js';
 const $ = (s) => document.querySelector(s);
 let animals = [], i = 0, a = null, b = null, tmr = 0;
-const res = JSON.parse(localStorage.getItem('mouths') || 'null') ?? JSON.parse(JSON.stringify(MOUTH));
+const res = JSON.parse(localStorage.getItem('mouths2') || 'null') ?? JSON.parse(JSON.stringify(MOUTH));
 const box = $('#pl-box'), mo = $('#pl-mouth');
 
 function apply(id) {
@@ -12,7 +12,7 @@ function show() {
   const an = animals[i]; $('#pl-name').textContent = an.en; $('#pl-count').textContent = `${i + 1}/${animals.length}`; $('#pl-img').src = `images/animals/${an.id}.png`; apply(an.id); a = b = null; $('#pl-a').style.display = $('#pl-b').style.display = 'none';
   $('#pl-help').textContent = 'Tap the two ends of the mouth (the red shape is the current guess)';
 }
-function save() { localStorage.setItem('mouths', JSON.stringify(res)); $('#pl-out').textContent = JSON.stringify(res); }
+function save() { localStorage.setItem('mouths2', JSON.stringify(res)); $('#pl-out').textContent = JSON.stringify(res); }
 function pct(e) { const r = box.getBoundingClientRect(); return [((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100]; }
 
 function bind() {
