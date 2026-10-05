@@ -86,9 +86,12 @@ function eat(auto) {
   later(() => { numEl.style.visibility = 'hidden'; setOpen(0); frog.classList.remove('near'); frog.classList.add('chomp'); ribbit(); pop(); }, done);   // …and closes its mouth (gulp!)
   later(speakAndCount, done + (soundOn ? animalMs + 500 : 540));   // the animal's sound first, then half a second of quiet, then the number
 }
+function fitCard() {   // keep the (big) number card fully on the screen, whatever side the animal is on
+  requestAnimationFrame(() => { const r = say.getBoundingClientRect(), sr = stage.getBoundingClientRect(); let dx = 0; if (r.left < sr.left + 10) dx = sr.left + 10 - r.left; else if (r.right > sr.right - 10) dx = sr.right - 10 - r.right; say.style.setProperty('--shift', `${Math.round(dx)}px`); });
+}
 function speakAndCount() {
   const word = WORDS[lang][n - 1]; sayVal.textContent = n; sayVal.style.color = COLORS[(n - 1) % COLORS.length];
-  sayDots.innerHTML = Array.from({ length: n }, () => '<i></i>').join(''); say.classList.toggle('below', pos.fy < 210); say.classList.add('show'); speak();
+  sayDots.innerHTML = Array.from({ length: n }, () => '<i></i>').join(''); say.style.setProperty('--shift', '0px'); say.classList.toggle('below', pos.fy < Math.min(360, stage.clientHeight * 0.42)); say.classList.add('show'); fitCard(); speak();
   const gap = n > 10 ? 110 : 160, dots = sayDots.children;
   for (let i = 0; i < n; i++) later(() => { dots[i].classList.add('lit'); tick(i); }, 700 + i * gap);
   later(() => { phase = 'done'; }, 700 + n * gap);
