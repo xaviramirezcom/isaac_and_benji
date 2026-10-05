@@ -11,7 +11,7 @@ export const MOUTH = {
   horse: [10.2, 27.2, 5.2, 0, 4.5], duck: [14.2, 29.4, 6.5, 0, 5.5], rooster: [13.5, 28.4, 5.5, 0, 4.8], chicken: [16.2, 64.7, 11, 0, 10], goat: [12.3, 38.7, 5.2, 0, 4.5],
   donkey: [25.1, 54.4, 5.5, 0, 4.8], bird: [13.4, 32.3, 7.6, 0, 6.6], bee: [15.4, 64.8, 8.5, 0, 7.4], owl: [50.5, 43.6, 9, 0, 9], lion: [50.9, 74.8, 18, 0, 14], tiger: [11.5, 51.4, 6.5, 0, 5.5],
 };
-let animals = [], animal = null, lastAnimal = '';
+let animals = [], animal = null, lastAnimal = '', animalMs = 1900;
 const WORDS = {
   en: ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty'],
   es: ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho', 'nueve', 'diez', 'once', 'doce', 'trece', 'catorce', 'quince', 'dieciséis', 'diecisiete', 'dieciocho', 'diecinueve', 'veinte'],
@@ -81,7 +81,7 @@ const numCenter = () => ({ x: pos.nx + sizes.n / 2, y: pos.ny + sizes.n / 2 });
 
 function pickAnimal() {
   if (!animals.length) return; let a; do { a = animals[Math.floor(Math.random() * animals.length)]; } while (a.id === lastAnimal && animals.length > 1);
-  animal = a; lastAnimal = a.id; loadBuf(a.sound); loadBuf(`sounds/numbers/${lang}/${n}.mp3`); if (n < 20) loadBuf(`sounds/numbers/${lang}/${n + 1}.mp3`); frog.querySelector('img').src = `images/animals/${a.id}.png`; new Image().src = `images/animals/${a.id}.png`;
+  animal = a; lastAnimal = a.id; loadBuf(a.sound).then((b) => { if (b && animal === a) animalMs = Math.min(1900, b.duration * 1000); }); loadBuf(`sounds/numbers/${lang}/${n}.mp3`); if (n < 20) loadBuf(`sounds/numbers/${lang}/${n + 1}.mp3`); frog.querySelector('img').src = `images/animals/${a.id}.png`; new Image().src = `images/animals/${a.id}.png`;
   const m = MOUTH[a.id] ?? MOUTH.frog, mo = frog.querySelector('.mouth'); mo.style.left = `${m[0]}%`; mo.style.top = `${m[1]}%`; mo.style.width = `${m[2]}%`; mo.style.height = `${m[4]}%`; mo.style.setProperty('--rot', `${m[3]}deg`);
 }
 function startRound() {
@@ -107,7 +107,7 @@ function eat(auto) {
   }, go);
   const done = go + 540;
   later(() => { numEl.style.visibility = 'hidden'; setOpen(0); frog.classList.remove('near'); frog.classList.add('chomp'); ribbit(); pop(); }, done);   // …and closes its mouth (gulp!)
-  later(speakAndCount, done + 540);
+  later(speakAndCount, done + (soundOn ? animalMs + 500 : 540));   // the animal's sound first, then half a second of quiet, then the number
 }
 function speakAndCount() {
   const word = WORDS[lang][n - 1]; sayVal.textContent = n; sayVal.style.color = COLORS[(n - 1) % COLORS.length];
@@ -142,7 +142,7 @@ function bind() {
     else { numEl.classList.remove('drag'); numEl.style.setProperty('--ds', '1.12'); frog.classList.remove('near'); setOpen(0); later(showHint, 6000); later(() => eat(true), 16000); }   // dropped somewhere else: that's fine, try again
   };
   numEl.addEventListener('pointerup', up); numEl.addEventListener('pointercancel', up);
-  frog.addEventListener('pointerdown', () => { audio(); if (phase === 'done' || phase === 'eat') { speak(); later(ribbit, 900); } });   // tap the frog: hear it again
+  frog.addEventListener('pointerdown', () => { audio(); if (phase === 'done' || phase === 'eat') { ribbit(); later(speak, animalMs + 500); } });   // tap the frog: hear it again
   document.querySelectorAll('#view-numbers .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
   $('#btn-nsound').addEventListener('click', () => { soundOn = !soundOn; $('#btn-nsound').classList.toggle('on', soundOn); if (!soundOn) { try { curSrc?.stop(); } catch { /* already stopped */ } } });
   new ResizeObserver(() => { if (running && phase === 'wait' && !drag) { place(); } }).observe(stage);
