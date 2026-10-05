@@ -34,6 +34,7 @@
         <a class="game-tile" href="#/isaac/map"><span class="emoji" aria-hidden="true">🗺️</span><span>World Map</span></a>
         <a class="game-tile insects-tile" href="#/isaac/insects"><span class="emoji" aria-hidden="true">🐞</span><span>Insects</span></a>
         <a class="game-tile space-tile" href="#/isaac/space"><span class="emoji" aria-hidden="true">🪐</span><span>Space</span></a>
+        <a class="game-tile storm-tile" href="#/isaac/storms"><span class="emoji" aria-hidden="true">🌪️</span><span>Storms</span></a>
       </div>
     </section>
 
@@ -96,6 +97,37 @@
       </div>
       <div class="chips" id="space-chips" role="group" aria-label="Planets"></div>
       <div class="loading" id="space-loading"><div class="spinner" aria-hidden="true">🪐</div><div class="bar"><i id="space-bar"></i></div><p>Waking up the planets…</p></div>
+    </section>
+
+    <!-- Tornadoes & storms -->
+    <section id="view-storm" class="view storm-view" hidden aria-label="Tornadoes and storms">
+      <canvas id="storm-canvas" aria-label="3D neighborhood with a storm"></canvas>
+      <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
+      <div class="insect-title"><b id="storm-title">Tornadoes &amp; Storms</b></div>
+      <div class="insect-tools">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="on">EN</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
+        <button class="round-btn small" id="btn-sound" type="button" aria-label="Sound"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg></button>
+        <button class="round-btn small" id="btn-slow" type="button" aria-label="Slow motion"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 4h14M9 28h14M10 4c0 7 6 8 6 12s-6 5-6 12M22 4c0 7-6 8-6 12s6 5 6 12" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg></button>
+        <button class="round-btn small" id="btn-follow" type="button" aria-label="Follow the storm"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="7" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M16 3v6M16 23v6M3 16h6M23 16h6" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></button>
+        <button class="round-btn small" id="btn-steer" type="button" aria-label="One finger: move the storm"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M12 15V6a2.2 2.2 0 0 1 4.4 0v8l5.2 1.4c1.6.4 2.6 1.9 2.4 3.5L23 25c-.3 2-2 3.4-4 3.4h-4.2c-1.200 0-2.300-.600-3-1.600L6 20.600a2.200 2.200 0 0 1 3.500-2.600z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></button>
+        <button class="round-btn small" id="btn-srebuild" type="button" aria-label="Rebuild the neighborhood"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16L16 5l12 11M8 14v13h16V14M13 27v-8h6v8" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
+      </div>
+      <div class="storm-hud" id="storm-hud" aria-live="off"></div>
+      <div class="insect-card" id="storm-card" aria-live="polite">
+        <div class="ic-text"><h3 id="stc-name"></h3><p class="sc-stat" id="stc-stat"></p><p id="stc-desc"></p></div>
+        <div class="ic-actions">
+          <button type="button" class="ic-btn" id="stc-speak"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg><span id="stc-speak-l">Say it</span></button>
+          <button type="button" class="ic-btn remove" id="stc-close"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 20l8-8 8 8" stroke="currentColor" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="storm-bar">
+        <div class="seg" id="storm-type" role="group" aria-label="Type"><button type="button" data-mode="tornado" class="on">Tornado</button><button type="button" data-mode="storm">Storm</button></div>
+        <div class="chips" id="storm-chips" role="group" aria-label="Levels"></div>
+      </div>
+      <div class="loading" id="storm-loading"><div class="spinner" aria-hidden="true">🌪️</div><p>Building the neighborhood…</p></div>
     </section>
 
     <!-- Benji's games -->

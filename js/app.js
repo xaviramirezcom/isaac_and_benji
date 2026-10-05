@@ -1,7 +1,7 @@
 // Tiny hash router: #/ (home) · #/isaac · #/benji · #/isaac/map · #/benji/animals · #/isaac/insects[/<id>]
 const $ = (s) => document.querySelector(s);
-const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map'), grid: $('#view-grid'), animals: $('#view-animals'), insects: $('#view-insects'), insect: $('#view-insect'), space: $('#view-space') };
-const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map', 'benji/animals': 'grid', 'isaac/insects': 'insects', 'isaac/space': 'space' };
+const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map'), grid: $('#view-grid'), animals: $('#view-animals'), insects: $('#view-insects'), insect: $('#view-insect'), space: $('#view-space'), storm: $('#view-storm') };
+const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map', 'benji/animals': 'grid', 'isaac/insects': 'insects', 'isaac/space': 'space', 'isaac/storms': 'storm' };
 const INSECT_PAGE = /^isaac\/insects\/([a-z]+)$/;
 const ANIMAL_PAGE = /^benji\/animals\/([a-z]+)$/;
 
@@ -10,6 +10,7 @@ let mapModule = null;
 let animalsModule = null;
 let insectsModule = null;
 let spaceModule = null;
+let stormModule = null;
 
 async function route() {
   const path = location.hash.replace(/^#\/?/, '');
@@ -23,6 +24,7 @@ async function route() {
   if (current === 'animals' && name === 'grid') animalsModule?.leave();
   if (inInsects(current) && !inInsects(name)) insectsModule?.leave();
   if (current === 'space' && name !== 'space') spaceModule?.leave();
+  if (current === 'storm' && name !== 'storm') stormModule?.leave();
   if (current === 'insect' && name === 'insects') insectsModule?.leave();
   current = name;
   for (const [key, el] of Object.entries(views)) el.hidden = key !== name;
@@ -38,6 +40,10 @@ async function route() {
   if (name === 'space') {
     spaceModule ??= await import('./space-game.js');
     if (current === 'space') spaceModule.enter();
+  }
+  if (name === 'storm') {
+    stormModule ??= await import('./storms-game.js');
+    if (current === 'storm') stormModule.enter();
   }
   if (inInsects(name)) {
     insectsModule ??= await import('./insects-game.js');
