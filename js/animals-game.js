@@ -42,7 +42,7 @@ function show(i, direction = 0) {
   token++; clearTimers(); stopSound();
   els.img.src = `images/animals/${a.id}.png`;
   els.img.alt = a[lang];
-  els.name.textContent = a[lang];
+  els.name.textContent = a[lang]; $('#name-label').textContent = a[lang];
   root.style.setProperty('--animal-bg', BACKGROUNDS[index % BACKGROUNDS.length]);
   for (const k of [index, index + 1, index - 1]) { const b = animals[(k + animals.length) % animals.length]; loadBuf(b.sound); loadBuf(`sounds/names/${lang}/${b.id}.mp3`); }
   // keep the URL in step, so "back" always returns to the matrix
@@ -67,7 +67,7 @@ function setLang(l) {
   lang = l; // English is the default every time; the choice only lasts for this visit
   document.querySelectorAll('#view-animals .lang button, #view-grid .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
   els.grid.querySelectorAll('span[data-id]').forEach((sp) => { sp.textContent = animals.find((a) => a.id === sp.dataset.id)[l]; });
-  if (animals.length) { const a = animals[index]; els.name.textContent = a[l]; els.img.alt = a[l]; }
+  if (animals.length) { const a = animals[index]; els.name.textContent = a[l]; $('#name-label').textContent = a[l]; els.img.alt = a[l]; }
   loadBuf && animals.length && loadBuf(`sounds/names/${l}/${animals[index].id}.mp3`);
 }
 
