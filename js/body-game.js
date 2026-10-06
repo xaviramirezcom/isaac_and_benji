@@ -2,7 +2,7 @@
 // Drag an organ from the tray onto the body and it settles in its right place (its outline shows where while you hold it — it can never be
 // "wrong", an organ dropped anywhere on the body glides home). Drag one out, or tap it and press the arrow, to take it out again. Tap an organ for
 // what it does (the heart beats, the lungs breathe). Sound only follows a touch: the name when you pick one up, a soft "bloop" when it lands.
-import { SHAPES, LAYERS, BODY_PARTS, insideBody } from './body/shapes.js';
+import { SHAPES, LAYERS, BODY_PARTS, DEFS, BONES_BACK, BONES_FRONT, SKIN_SHADE, insideBody } from './body/shapes.js';
 import { audio, unlock, loadBuf, playUrl, tone, setMuted, stop as stopSound, bubblePop, chime } from './sound.js';
 
 const $ = (s) => document.querySelector(s);
@@ -24,11 +24,11 @@ const land = (id) => { tone(330, 0.16, 0.2, 'sine', 520); setTimeout(() => tone(
 // ---------------------------------------------------------------- the flat body
 function build2D() {
   const slot = (id) => { const s = SHAPES[id].slot; return `translate(${s.x}px, ${s.y}px) scale(${s.s})`; };
+  if (!$('#body-defs')) { const d = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); d.id = 'body-defs'; d.setAttribute('width', '0'); d.setAttribute('height', '0'); d.style.cssText = 'position:absolute;pointer-events:none'; d.innerHTML = DEFS; document.body.appendChild(d); }
   svg.innerHTML = `<defs><g id="bparts">${BODY_PARTS}</g></defs>
-    <use href="#bparts" class="b-out"/><use href="#bparts" class="b-fill"/>
-    <g class="b-face"><circle cx="134" cy="90" r="4.4"/><circle cx="166" cy="90" r="4.4"/><path d="M137 106Q150 117 163 106" fill="none" stroke-width="3.4" stroke-linecap="round"/></g>
+    <use href="#bparts" class="b-out"/><use href="#bparts" class="b-fill"/>${SKIN_SHADE}${BONES_BACK}
     <g class="slots">${LAYERS.map((id) => `<g class="slot" data-id="${id}" style="transform:${slot(id)}">${SHAPES[id].svg}</g>`).join('')}</g>
-    <g class="orgs">${LAYERS.map((id) => `<g class="org" data-id="${id}" style="transform:${slot(id)}"><g class="${SHAPES[id].anim || ''}">${SHAPES[id].svg}</g></g>`).join('')}</g>`;
+    <g class="orgs">${LAYERS.map((id) => `<g class="org" data-id="${id}" style="transform:${slot(id)}"><g class="${SHAPES[id].anim || ''}">${SHAPES[id].svg}</g></g>`).join('')}</g>${BONES_FRONT}`;
 }
 const orgEl = (id) => svg.querySelector(`.org[data-id="${id}"]`);
 const slotEl = (id) => svg.querySelector(`.slot[data-id="${id}"]`);
@@ -163,7 +163,7 @@ async function init3D() {
 // ---------------------------------------------------------------- mode, language, sound
 async function setMode(m) {
   if (m === '3d') { try { await init3D(); } catch (err) { console.error(err); loading.hidden = true; return; } }
-  mode = m; deselect(); svg.hidden = m !== '2d'; canvas.hidden = m !== '3d';
+  mode = m; deselect(); svg.toggleAttribute('hidden', m !== '2d'); canvas.toggleAttribute('hidden', m !== '3d');   // (SVG elements have no .hidden property)
   document.querySelectorAll('#body-mode button').forEach((b) => b.classList.toggle('on', b.dataset.mode === m)); root.dataset.mode = m;
   if (m === '3d') { ig.fit(); ig.reset(); }
 }
@@ -187,7 +187,7 @@ function bind() {
 export async function enter() {
   running = true; setMuted(!soundOn); audio(); bind();
   if (!data.length) { data = await fetch('data/body.json').then((r) => r.json()).catch(() => []); by = Object.fromEntries(data.map((o) => [o.id, o])); }
-  if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__body = { all() { TRAY_ORDER.forEach((id) => put(id, null)); }, put: (id) => put(id, null), mode: setMode, select };   // dev helper
+  if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__body = { get ig() { return ig; }, all() { TRAY_ORDER.forEach((id) => put(id, null)); }, put: (id) => put(id, null), mode: setMode, select };   // dev helper
   if (!running) return; clearAll(true); setLang('en'); setMode('2d'); refreshChips(); ready = true;
 }
 export function leave() { running = false; timers.forEach(clearTimeout); timers = []; stopSound(); deselect(); dr?.g.remove(); dr = null; pending = null; stage.classList.remove('over'); document.querySelectorAll('.body-ghost').forEach((g) => g.remove()); }

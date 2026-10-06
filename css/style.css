@@ -490,7 +490,7 @@ button, a { touch-action: manipulation; font: inherit; }
 
 /* ---------- the human body (Isaac) ---------- */
 .game-tile.body-tile { background: linear-gradient(160deg, #ff8fa3, #c2457a); }
-.body-view { background: linear-gradient(#d9eefa, #f2f9fd); overflow: hidden; }
+.body-view { background: linear-gradient(#e3f0f7, #f7fbfd); overflow: hidden; }
 .body-view .round-btn.back, .body-view .insect-tools { z-index: 6; }
 #view-body .insect-tools { flex-direction: row; align-items: center; gap: 10px; }
 .body-mode { position: absolute; z-index: 6; top: calc(env(safe-area-inset-top) + 82px); left: 50%; transform: translateX(-50%); display: flex; padding: 4px; gap: 2px; background: #fff; border-radius: 99px; box-shadow: 0 4px 0 rgba(0, 0, 0, .15), 0 8px 16px rgba(0, 0, 0, .18); }
@@ -499,10 +499,10 @@ button, a { touch-action: manipulation; font: inherit; }
 .body-layout { position: absolute; inset: 0; padding: calc(env(safe-area-inset-top) + 140px) 12px calc(env(safe-area-inset-bottom) + 10px); display: flex; flex-direction: column; gap: 8px; }
 .body-stage { position: relative; flex: 1; min-height: 0; }
 #body-svg, #body-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
-.b-out { fill: #7fb6d3; stroke: #7fb6d3; stroke-width: 9; stroke-linejoin: round; }
-.b-fill { fill: #d6ecf7; transition: fill .2s; }
-.b-face { fill: #2f5d7a; stroke: #2f5d7a; }
-.body-stage.over .b-fill { fill: #eaf8ff; }
+.b-out { fill: #c48a6d; stroke: #c48a6d; stroke-width: 4; stroke-linejoin: round; }
+.b-fill { fill: url(#gSkin); transition: filter .2s; }
+#body-svg .bones { pointer-events: none; }
+.body-stage.over .b-fill { filter: brightness(1.08); }
 .body-stage.over #body-canvas { filter: drop-shadow(0 0 16px #ffe27a); }
 .slot { opacity: 0; pointer-events: none; transition: opacity .2s; }
 .slot.target { opacity: 1; animation: slotPulse 1s ease-in-out infinite; }
