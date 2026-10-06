@@ -54,7 +54,7 @@ async function route() {
     if (current === 'fruits') fruitsModule.enter();
   }
   if (name === 'body') {
-    bodyModule ??= await import('./body-game.js');
+    bodyModule ??= await import('./body-game.js?v=3');
     if (current === 'body') bodyModule.enter();
   }
   if (name === 'place') {

@@ -124,7 +124,7 @@ function tap({ id, src }) {
 // ---------------------------------------------------------------- 3D (loaded the first time it is chosen)
 async function init3D() {
   if (ig) return; loading.classList.remove('gone'); loading.hidden = false;
-  const [THREE, { OrbitControls }, M] = await Promise.all([import('../vendor/three.module.min.js'), import('../vendor/OrbitControls.js'), import('./body/model3d.js')]);
+  const [THREE, { OrbitControls }, M] = await Promise.all([import('../vendor/three.module.min.js'), import('../vendor/OrbitControls.js'), import('./body/model3d.js?v=3')]);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100); scene.add(camera);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xb9d5e6, 1.5)); const key = new THREE.DirectionalLight(0xffffff, 2.2); key.position.set(3, 4, 6); camera.add(key); const fill = new THREE.DirectionalLight(0xbfe0ff, 0.8); fill.position.set(-4, -1, 3); camera.add(fill);
