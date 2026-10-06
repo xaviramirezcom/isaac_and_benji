@@ -117,6 +117,9 @@ export function buildBody() {
   const dark = new THREE.MeshBasicMaterial({ color: 0x2f5d7a });
   for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.045, 14, 10), dark); e.position.set(s * 0.16, 2.3, 0.4); e.scale.z = 0.5; shell.add(e); }
   const mo = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.014, 8, 24, Math.PI), dark); mo.rotation.z = Math.PI; mo.position.set(0, 2.26, 0.385); shell.add(mo);
+  // draw only the outermost skin: a depth-only copy first, so overlapping parts (hips, shoulders, legs) don't show through each other
+  const depthMat = new THREE.MeshBasicMaterial({ colorWrite: false });
+  [...shell.children].filter((m) => m.material === shellMat).forEach((m) => { const d = new THREE.Mesh(m.geometry, depthMat); d.position.copy(m.position); d.rotation.copy(m.rotation); d.scale.copy(m.scale); d.renderOrder = 4; shell.add(d); });
   root.add(shell);
 
   const ghostMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, depthWrite: false, blending: THREE.NormalBlending });
