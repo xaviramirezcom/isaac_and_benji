@@ -4,7 +4,7 @@
 // Everything is built in metres around the middle of the body, then turned into scene units (SCALE).
 // Every organ is built around its own centre, so it sits exactly where it lives and can be lifted out and put back.
 import * as THREE from '../../vendor/three.module.min.js';
-import { noise, fbm, ridged, smooth, gauss, hex, mix3, sweep, blob, ellipsoid, merge, solid, interpRows, surfaceNets } from './gen.js';
+import { noise, fbm, ridged, smooth, gauss, hex, mix3, sweep, blob, ellipsoid, merge, solid, interpRows, surfaceNets, meshSDF } from './gen.js';
 
 export const SCALE = 3.35;
 export const ORGANS = ['brain', 'heart', 'lungs', 'stomach', 'pancreas', 'liver', 'kidneys', 'smallint', 'largeint', 'bladder'];
@@ -19,6 +19,8 @@ const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; retu
 const seg = (px, py, pz, a, b) => { const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2], ax = px - a[0], ay = py - a[1], az = pz - a[2], t = Math.min(1, Math.max(0, (ax * bx + ay * by + az * bz) / (bx * bx + by * by + bz * bz))); return Math.hypot(ax - bx * t, ay - by * t, az - bz * t) - (a[3] + (b[3] - a[3]) * t); };
 const chain = (px, py, pz, pts) => { let d = 1e9; for (let i = 0; i < pts.length - 1; i++) d = Math.min(d, seg(px, py, pz, pts[i], pts[i + 1])); return d; };
 const ell = (px, py, pz, c, r) => { const x = (px - c[0]) / r[0], y = (py - c[1]) / r[1], z = (pz - c[2]) / r[2]; return (Math.hypot(x, y, z) - 1) * Math.min(r[0], r[1], r[2]); };
+const smax = (a, b, k) => -smin(-a, -b, k);
+const ellZ = (px, py, pz, c, r, a) => { const x = px - c[0], y = py - c[1], co = Math.cos(a), si = Math.sin(a); return ((Math.hypot((co * x + si * y) / r[0], (-si * x + co * y) / r[1], (pz - c[2]) / r[2]) - 1) * Math.min(r[0], r[1], r[2])); };
 const ARM = [[0.165, 0.655, 0, 0.064], [0.212, 0.585, 0, 0.058], [0.243, 0.46, 0.002, 0.048], [0.262, 0.34, 0.004, 0.041], [0.28, 0.22, 0.012, 0.043], [0.298, 0.11, 0.02, 0.029], [0.306, 0.07, 0.022, 0.024]];
 const LEG = [[0.095, 0.04, 0, 0.102], [0.093, -0.1, 0.005, 0.092], [0.087, -0.28, 0.008, 0.08], [0.076, -0.46, 0.01, 0.057], [0.07, -0.55, 0, 0.06], [0.068, -0.64, -0.012, 0.066], [0.058, -0.76, -0.005, 0.041], [0.047, -0.84, -0.004, 0.033], [0.047, -0.875, -0.004, 0.032]];
 const FOOT = [[0.05, -0.872, -0.02, 0.034], [0.054, -0.892, 0.1, 0.021]];
@@ -49,7 +51,7 @@ function skeleton() {
   const parts = [];
   for (let k = 0; k < 12; k++) for (const s of [-1, 1]) {
     const y0 = 0.625 - k * 0.0345, hw = 0.135 - Math.abs(k - 3) * 0.004 - (k > 8 ? 0.012 : 0), hd = 0.085, pts = [], len = k < 10 ? 1 : 0.55 - (k - 10) * 0.12;
-    for (let j = 0; j <= 10; j++) { const th = 0.12 + (Math.PI * 0.72) * (j / 10) * len; pts.push([s * hw * Math.sin(th), y0 - 0.075 * (th / Math.PI) * (k + 3) / 8, 0.012 - hd * Math.cos(th)]); }
+    for (let j = 0; j <= 10; j++) { const th = 0.12 + (Math.PI * 0.72) * (j / 10) * len; pts.push([s * hw * Math.sin(th), y0 - 0.15 * (th / Math.PI) * (k + 5) / 10, 0.012 - hd * Math.cos(th)]); }
     if (k < 10) pts.push([s * 0.012, pts[pts.length - 1][1] - 0.02, 0.1]);
     parts.push(sweep(pts, [0.0048, 0.0036], { n: 40, ring: 6, colorFn: (p, t) => (t > 0.8 && k < 10 ? CART : BONE) }));
   }
@@ -71,75 +73,111 @@ function skeleton() {
 // ================================================================= the organs
 const fat = hex('#e6b76a');
 function brain() {
-  const base = hex('#dba9a4'), dark = hex('#b0706e'), c = [0, 0.855, 0];
-  const cortex = blob((u, out) => {
-    const rx = 0.067, ry = 0.052, rz = 0.086; let y = u.y * ry; if (u.y < -0.3) y = -0.3 * ry + (u.y + 0.3) * ry * 0.4;
-    const px = u.x * rx, pz = u.z * rz, n = ridged(px * 150 + noise(px * 60, y * 60, pz * 60) * 1.4, y * 150, pz * 150, 2);
-    const d = 0.0042 * (n - 0.6) - 0.011 * gauss(u.x, 0.045) * smooth(-0.1, 0.4, u.y);   // folds, and the groove between the two halves
-    const nv = V(u.x / rx, u.y / ry, u.z / rz).normalize(); out.set(px, y, pz).addScaledVector(nv, d).add(V(c[0], c[1], c[2]));
-  }, (p) => { const n = ridged(p.x * 150 + noise(p.x * 60, p.y * 60, p.z * 60) * 1.4, p.y * 150, p.z * 150, 2); return mix3(dark, base, smooth(0.28, 0.72, n)); }, 96, 72);
-  const cb = blob((u, o) => { const px = u.x * 0.05, py = u.y * 0.026, pz = u.z * 0.036; o.set(px, py + 0.0016 * Math.sin(py * 460 + u.x * 2), pz).add(V(0, 0.824, -0.062)); }, (p) => mix3(hex('#c4857c'), hex('#d89a90'), 0.5 + 0.5 * Math.sin(p.y * 460)), 48, 36);
-  const stem = sweep([[0, 0.83, -0.02], [0, 0.795, -0.024], [0, 0.762, -0.026]], (t) => 0.0105 - 0.0015 * t, { n: 16, ring: 12, colorFn: () => hex('#e3c2b4') });
-  return merge([cortex, cb, stem]);
+  const base = hex('#e2b1ab'), dark = hex('#c58a85'), cy = 0.855;
+  const folds = (x, y, z) => ridged(x * 85 + noise(x * 45, y * 45, z * 45) * 2.2, y * 85 + 7, z * 85, 2);
+  const sdf = (px, py, pz) => {
+    const x = Math.abs(px), y = py - cy, z = pz;
+    let d = ell(x, y, z, [0.036, 0, 0], [0.037, 0.053, 0.087]);
+    d = smax(d, -(y + 0.035), 0.01);                                             // the flat-ish underside
+    d = smin(d, ell(x, y, z, [0.047, -0.031, 0.016], [0.022, 0.021, 0.046]), 0.012);   // temporal lobe
+    if (d < 0.012) d += 0.0075 * gauss(x, 0.0045) * smooth(-0.012, 0.03, y) + 0.003 * (folds(x, y, z) - 0.6);   // the groove between the halves, and the folds
+    d = smin(d, ellZ(x, y, z, [0, -0.033, -0.062], [0.05, 0.024, 0.036], 0) + 0.0011 * Math.sin(y * 520 + x * 4), 0.008);   // cerebellum, finely ridged
+    return smin(d, seg(x, y, z, [0, -0.02, -0.018, 0.0105], [0, -0.062, -0.027, 0.0092]), 0.008);                          // brainstem
+  };
+  return meshSDF(sdf, [-0.085, cy - 0.1, -0.1], [0.085, cy + 0.065, 0.1], 0.0021, (x, y, z) => {
+    if (y < cy - 0.045 && Math.abs(x) < 0.014) return hex('#e6c6b8');
+    if (z < -0.035 && y < cy - 0.01 && Math.abs(x) < 0.056) return mix3(hex('#c4857c'), hex('#d89a90'), 0.5 + 0.5 * Math.sin(y * 520));
+    return mix3(dark, base, smooth(0.15, 0.8, folds(Math.abs(x), y - cy, z)));
+  });
 }
 
 function heart() {
-  const C = V(0.025, 0.47, 0.05), red = hex('#b8353d'), arteryC = hex('#c73838'), veinC = hex('#4b6bb3'), trunkC = hex('#7a74c2');
-  const body = blob((u, out) => {
-    const y = u.y, k = y < 0 ? 1 + y * 0.58 : 1, lean = y < 0 ? y * y : 0;
-    out.set(u.x * 0.046 * k + lean * 0.016, y * 0.06, u.z * 0.039 * k + lean * 0.006);
-    out.multiplyScalar(1 - 0.07 * gauss(y - 0.16, 0.09) - 0.06 * gauss(u.x - 0.18, 0.1) * smooth(0.1, 0.6, u.z) * smooth(-0.9, 0.2, y));   // the groove between atria and ventricles, and the one down the front between the two ventricles
-    out.applyAxisAngle(V(0, 0, 1), -0.5); out.applyAxisAngle(V(1, 0, 0), 0.25); out.add(C);
-  }, (p) => { const g = gauss(p.y - C.y - 0.01, 0.03), n = fbm(p.x * 160, p.y * 160, p.z * 160, 3); return mix3(red, fat, Math.min(0.7, g * 0.5 * (0.4 + n) + 0.12 * n)); }, 72, 56);
-  const appR = blob(ellipsoid(0.024, 0.026, 0.02), () => hex('#b0343b'), 24, 18); appR.translate(-0.022 + C.x, 0.06 + C.y, 0.016 + C.z);
-  const appL = blob(ellipsoid(0.014, 0.02, 0.012), () => hex('#b0343b'), 20, 14); appL.translate(0.036 + C.x, 0.062 + C.y, 0.03 + C.z);
-  const tube = (pts, r, col, o = {}) => sweep(pts.map(([x, y, z]) => [x + C.x, y + C.y, z + C.z]), r, { n: o.n ?? 24, ring: o.ring ?? 12, colorFn: () => col });
-  return merge([body, appR, appL,
-    tube([[0.005, 0.045, 0], [0, 0.075, 0.005], [-0.012, 0.098, -0.005], [-0.03, 0.092, -0.03], [-0.04, 0.06, -0.045], [-0.04, 0, -0.05], [-0.04, -0.06, -0.055]], (t) => 0.0135 - 0.003 * t, arteryC, { n: 50 }),
-    tube([[-0.012, 0.098, -0.005], [-0.014, 0.135, -0.005]], 0.006, arteryC), tube([[-0.02, 0.097, -0.015], [-0.021, 0.132, -0.015]], 0.0045, arteryC), tube([[-0.026, 0.093, -0.022], [-0.036, 0.116, -0.02]], 0.005, arteryC),
-    tube([[0.012, 0.03, 0.032], [0.012, 0.065, 0.028], [0.02, 0.09, 0.012]], 0.0125, trunkC), tube([[0.02, 0.09, 0.012], [0.05, 0.09, -0.01], [0.075, 0.085, -0.03]], 0.008, trunkC), tube([[0.02, 0.09, 0.012], [-0.03, 0.08, -0.015], [-0.07, 0.075, -0.03]], 0.008, trunkC),
-    tube([[-0.03, 0.15, -0.012], [-0.03, 0.09, -0.005], [-0.028, 0.045, 0]], 0.0115, veinC), tube([[-0.02, -0.01, -0.015], [-0.025, -0.06, -0.02], [-0.028, -0.1, -0.025]], 0.013, veinC),
-    tube([[0.03, 0.045, -0.03], [0.06, 0.055, -0.04], [0.085, 0.05, -0.05]], 0.0065, hex('#8a6fc0')), tube([[-0.005, 0.03, -0.03], [-0.04, 0.04, -0.045], [-0.075, 0.04, -0.05]], 0.0065, hex('#8a6fc0')),
-    tube([[0.012, 0.07, 0.036], [0.014, 0.03, 0.042], [0.024, -0.012, 0.042], [0.034, -0.046, 0.036], [0.04, -0.066, 0.03]], 0.0028, hex('#d93a32'), { ring: 6 }),
-    tube([[-0.01, 0.074, 0.035], [-0.04, 0.05, 0.03], [-0.05, 0.01, 0.022], [-0.04, -0.02, 0.03], [-0.012, -0.03, 0.04]], 0.0028, hex('#d93a32'), { ring: 6 })]);
+  const C = [0.02, 0.46, 0.05], rotA = 0.5;
+  const AORTA = [[0.0, 0.04, 0.0, 0.0135], [0.0, 0.07, 0.005, 0.0135], [-0.012, 0.092, -0.005, 0.0132], [-0.03, 0.088, -0.03, 0.0126], [-0.04, 0.055, -0.045, 0.0122], [-0.04, 0.0, -0.05, 0.0116], [-0.04, -0.05, -0.055, 0.011]];
+  const ARCH = [[[-0.012, 0.092, -0.005, 0.0065], [-0.014, 0.135, -0.005, 0.006]], [[-0.02, 0.09, -0.015, 0.005], [-0.021, 0.13, -0.015, 0.0045]], [[-0.026, 0.088, -0.022, 0.0055], [-0.036, 0.114, -0.02, 0.005]]];
+  const TRUNK = [[0.012, 0.03, 0.03, 0.0128], [0.012, 0.062, 0.027, 0.0125], [0.02, 0.086, 0.012, 0.0115]], PA_L = [[0.02, 0.086, 0.012, 0.0095], [0.05, 0.088, -0.01, 0.0082], [0.078, 0.082, -0.03, 0.0075]], PA_R = [[0.02, 0.086, 0.012, 0.0095], [-0.03, 0.078, -0.015, 0.0082], [-0.07, 0.072, -0.03, 0.0075]];
+  const SVC = [[-0.03, 0.15, -0.01, 0.0105], [-0.03, 0.09, -0.005, 0.0112], [-0.03, 0.04, 0.0, 0.012]], IVC = [[-0.022, -0.02, -0.016, 0.0122], [-0.026, -0.06, -0.02, 0.0126], [-0.03, -0.11, -0.026, 0.0126]];
+  const PV = [[[0.03, 0.045, -0.03, 0.0065], [0.07, 0.056, -0.04, 0.006]], [[0.03, 0.03, -0.03, 0.0065], [0.07, 0.03, -0.045, 0.006]], [[-0.0, 0.04, -0.03, 0.0065], [-0.05, 0.045, -0.045, 0.006]], [[-0.0, 0.025, -0.03, 0.0065], [-0.05, 0.02, -0.045, 0.006]]];
+  const muscle = (x, y, z) => {
+    let d = ellZ(x, y, z, [0.022, -0.012, -0.008], [0.037, 0.06, 0.034], rotA);          // left ventricle: the big pointed pumping chamber
+    d = smin(d, ellZ(x, y, z, [-0.014, -0.004, 0.022], [0.034, 0.05, 0.026], 0.3), 0.01);   // right ventricle wrapped across the front
+    d = smin(d, ell(x, y, z, [-0.036, 0.036, 0.004], [0.025, 0.03, 0.023]), 0.01);          // right atrium
+    d = smin(d, ell(x, y, z, [0.02, 0.043, -0.03], [0.03, 0.022, 0.028]), 0.01);            // left atrium, behind
+    d = smin(d, ell(x, y, z, [-0.024, 0.066, 0.018], [0.016, 0.02, 0.013]), 0.008);        // right auricle
+    d = smin(d, ell(x, y, z, [0.043, 0.062, 0.03], [0.014, 0.018, 0.011]), 0.008);         // left auricle
+    d += 0.0035 * gauss(y - 0.032, 0.006) * smooth(-0.03, 0.02, z) + 0.004 * gauss(x - 0.0, 0.004) * smooth(0.005, 0.03, z) * smooth(0.03, -0.03, y);   // the groove round the top of the ventricles and the one down the front
+    return d;
+  };
+  const vessels = (x, y, z) => {
+    let d = chain(x, y, z, AORTA); for (const a of ARCH) d = Math.min(d, chain(x, y, z, a));
+    return [d, Math.min(chain(x, y, z, TRUNK), chain(x, y, z, PA_L), chain(x, y, z, PA_R)), Math.min(chain(x, y, z, SVC), chain(x, y, z, IVC), ...PV.map((p) => chain(x, y, z, p)))];
+  };
+  const sdf = (px, py, pz) => { const x = px - C[0], y = py - C[1], z = pz - C[2], v = vessels(x, y, z); return smin(smin(smin(muscle(x, y, z), v[0], 0.012), v[1], 0.012), v[2], 0.012); };
+  const g = meshSDF(sdf, [C[0] - 0.115, C[1] - 0.14, C[2] - 0.075], [C[0] + 0.115, C[1] + 0.165, C[2] + 0.075], 0.0021, (px, py, pz) => {
+    const x = px - C[0], y = py - C[1], z = pz - C[2], m = muscle(x, y, z), v = vessels(x, y, z), n = fbm(x * 160, y * 160, z * 160, 3);
+    if (v[0] < m - 0.0006) return n > 0.5 ? hex('#b72a2f') : hex('#c4343a');                 // arteries leaving the heart
+    if (v[1] < m - 0.0006) return hex('#8d6fa8');                                              // the pulmonary artery
+    if (v[2] < m - 0.0006) return hex('#4a5ba6');                                              // the veins
+    const gr = gauss(y - 0.032, 0.012) * 0.8 + gauss(x, 0.012) * (z > 0.01 ? 0.8 : 0);       // yellow fat lies in the grooves
+    return mix3(mix3(hex('#a42f37'), hex('#bd444a'), n), hex('#e0b565'), Math.min(0.45, gr * (0.2 + n * 0.5)));
+  });
+  // the coronary arteries: thin red vessels that follow the surface of the heart
+  const hug = (pts) => pts.map(([x, y, z]) => { const p = [x + C[0], y + C[1], z + C[2]]; for (let i = 0; i < 6; i++) { const d = sdf(...p), e = 0.002, gx = sdf(p[0] + e, p[1], p[2]) - sdf(p[0] - e, p[1], p[2]), gy = sdf(p[0], p[1] + e, p[2]) - sdf(p[0], p[1] - e, p[2]), gz = sdf(p[0], p[1], p[2] + e) - sdf(p[0], p[1], p[2] - e), l = Math.hypot(gx, gy, gz) || 1; p[0] -= gx / l * (d - 0.0012); p[1] -= gy / l * (d - 0.0012); p[2] -= gz / l * (d - 0.0012); } return p; });
+  const lad = sweep(hug([[0.01, 0.07, 0.03], [0.008, 0.03, 0.038], [0.014, -0.01, 0.04], [0.026, -0.045, 0.036], [0.034, -0.068, 0.028]]), 0.0024, { n: 30, ring: 6, colorFn: () => hex('#cf3a30') });
+  const rca = sweep(hug([[-0.01, 0.07, 0.03], [-0.04, 0.05, 0.026], [-0.054, 0.012, 0.014], [-0.044, -0.022, 0.026], [-0.016, -0.034, 0.038]]), 0.0024, { n: 30, ring: 6, colorFn: () => hex('#cf3a30') });
+  return merge([g, lad, rca]);
 }
 
 function lungs() {
-  const parts = [], lungC = hex('#cd938f'), dark = hex('#a97571'), pale = hex('#e3b5ac');
+  const parts = [], tone = { up: hex('#d69c96'), mid: hex('#cf938e'), low: hex('#c58882') }, dark = hex('#a36c69'), pale = hex('#e6bab0');
   for (const s of [-1, 1]) {
-    const c = V(s * 0.078, 0.5, -0.004), scl = s > 0 ? 0.93 : 1;
-    parts.push(blob((u, out) => {
-      let x = u.x * 0.058, y = u.y * 0.125, z = u.z * 0.088; const med = -u.x * s;
-      if (u.y > 0) { const k = 1 - 0.35 * u.y * u.y; x *= k; z *= k; } else { const k = 1 + 0.18 * -u.y; x *= k; z *= k; }
-      if (med > 0) x *= 0.55;
-      y += 0.03 * smooth(-0.45, -1, u.y) * (1 - (u.x * u.x + u.z * u.z));                       // the lung's underside is hollowed by the diaphragm
-      let r = 1;
-      if (s > 0) r -= 0.5 * gauss(u.y + 0.15, 0.4) * smooth(0.05, 0.7, u.z) * smooth(0, 0.6, med);   // the notch where the heart sits
-      r -= 0.035 * gauss(u.y * 0.7 - u.z * 0.7 - 0.05, 0.06);                                         // the slanting fissure between the lobes
-      if (s < 0) r -= 0.03 * gauss(u.y - 0.12, 0.05) * smooth(-0.1, 0.5, u.z);                        // the right lung has a second, flat fissure
-      out.set(x * r, y, z * r).multiplyScalar(scl).add(c);
-      const q = fbm(out.x * 70, out.y * 70, out.z * 70, 3); out.addScaledVector(V(u.x, u.y * 0.5, u.z).normalize(), 0.0016 * (q - 0.5));
-    }, (p) => { const q = fbm(p.x * 55 + 3, p.y * 55, p.z * 55, 3); return mix3(mix3(dark, lungC, smooth(0.25, 0.55, q)), pale, smooth(0.6, 0.85, q)); }, 72, 60));
+    const c = [s * 0.08, 0.5, -0.004];
+    const lobes = (px, py, pz) => {   // [upper, middle (right lung only) or lingula (left), lower]
+      const x = (px - c[0]) * s, y = py - c[1], z = pz - c[2];
+      const up = ellZ(x, y, z, [0.002, 0.052, -0.004], [0.046, 0.066, 0.078], -s * 0.05);
+      const low = ellZ(x, y, z, [0.004, -0.042, -0.03], [0.054, 0.082, 0.072], s * 0.06);
+      const mid = s < 0 ? ell(x, y, z, [0.0, -0.004, 0.047], [0.044, 0.034, 0.044]) : ell(x, y, z, [-0.014, -0.03, 0.04], [0.026, 0.036, 0.03]);
+      return [up, mid, low];
+    };
+    const sdf = (px, py, pz) => {
+      const x = (px - c[0]) * s, y = py - c[1], z = pz - c[2], [up, mid, low] = lobes(px, py, pz);
+      let d = smin(smin(up, mid, s < 0 ? 0.004 : 0.016), low, 0.004);                                   // lobes meet along real fissures
+      d = smax(d, -(x + 0.02), 0.012);                                                  // flat inner face against the heart and airway
+      d = smax(d, -ell(x, y, z, [0, -0.2, 0.0], [0.13, 0.11, 0.15]), 0.01);             // the underside is hollowed by the diaphragm
+      if (s > 0) d = smax(d, -ell(x, y, z, [-0.03, -0.015, 0.075], [0.03, 0.05, 0.03]), 0.01);   // the notch where the heart sits (left lung)
+      d = smax(d, -ell(x, y, z, [-0.024, 0.012, -0.012], [0.012, 0.024, 0.02]), 0.006);          // the hollow where airway and vessels enter
+      return d + 0.0014 * (fbm(px * 120, py * 120, pz * 120, 2) - 0.5);
+    };
+    parts.push(meshSDF(sdf, [c[0] - 0.1, c[1] - 0.15, c[2] - 0.11], [c[0] + 0.1, c[1] + 0.15, c[2] + 0.11], 0.0024, (px, py, pz) => {
+      const [up, mid, low] = lobes(px, py, pz), m = Math.min(up, mid, low), t = m === up ? tone.up : m === mid ? tone.mid : tone.low, q = fbm(px * 55 + 3, py * 55, pz * 55, 3);
+      return mix3(mix3(dark, t, smooth(0.2, 0.55, q)), pale, smooth(0.66, 0.92, q) * 0.6);
+    }));
   }
-  const airC = hex('#e8dbc9'), ring = (t) => 1 + 0.07 * Math.cos(t * Math.PI * 2 * 18);
+  const airC = hex('#e6d8c4'), ring = (t) => 1 + 0.07 * Math.cos(t * Math.PI * 2 * 18);
   parts.push(sweep([[0, 0.668, -0.002], [0, 0.62, -0.006], [0, 0.586, -0.01]], 0.0095, { n: 60, ring: 14, mod: ring, colorFn: () => airC }));
-  parts.push(sweep([[0, 0.586, -0.01], [-0.02, 0.572, -0.012], [-0.043, 0.552, -0.01]], 0.0072, { n: 24, ring: 12, mod: ring, colorFn: () => airC }));
-  parts.push(sweep([[0, 0.586, -0.01], [0.022, 0.57, -0.012], [0.05, 0.546, -0.01]], 0.0068, { n: 24, ring: 12, mod: ring, colorFn: () => airC }));
-  [[[-0.043, 0.552, -0.01], [-0.058, 0.585, -0.005]], [[-0.043, 0.552, -0.01], [-0.062, 0.55, 0.0]], [[-0.043, 0.552, -0.01], [-0.064, 0.515, -0.015]], [[0.05, 0.546, -0.01], [0.064, 0.58, -0.01]], [[0.05, 0.546, -0.01], [0.066, 0.512, -0.015]]]
+  parts.push(sweep([[0, 0.586, -0.01], [-0.02, 0.572, -0.012], [-0.05, 0.55, -0.01]], 0.0072, { n: 24, ring: 12, mod: ring, colorFn: () => airC }));
+  parts.push(sweep([[0, 0.586, -0.01], [0.022, 0.57, -0.012], [0.052, 0.546, -0.01]], 0.0068, { n: 24, ring: 12, mod: ring, colorFn: () => airC }));
+  [[[-0.05, 0.55, -0.01], [-0.066, 0.585, -0.005]], [[-0.05, 0.55, -0.01], [-0.07, 0.55, 0.0]], [[-0.05, 0.55, -0.01], [-0.07, 0.515, -0.015]], [[0.052, 0.546, -0.01], [0.068, 0.58, -0.01]], [[0.052, 0.546, -0.01], [0.07, 0.512, -0.015]]]
     .forEach((p) => parts.push(sweep(p, 0.0042, { n: 8, ring: 8, colorFn: () => airC })));
   return merge(parts);
 }
 
 function liver() {
-  const base = hex('#8f3a2b'), light = hex('#a85140'), c = V(-0.04, 0.375, 0.025);
-  const body = blob((u, out) => {
-    let x = u.x * 0.108, y = u.y * 0.064, z = u.z * 0.086; const t = smooth(-0.1, 1, u.x);
-    y *= 1 - 0.68 * t; z *= 1 - 0.4 * t; if (u.y < 0) y *= 0.78;
-    const r = 1 - 0.075 * gauss(u.x - 0.2, 0.08) * smooth(0.1, 0.7, u.y) * smooth(0, 0.6, u.z) - 0.05 * gauss(u.x + 0.05, 0.16) * smooth(-0.2, -0.9, u.y) * smooth(-0.1, -0.7, u.z);  // the groove for the ligament and the notch underneath
-    out.set(x * r, y * r, z * r); const q = fbm(out.x * 80, out.y * 80, out.z * 80, 2); out.addScaledVector(V(u.x, u.y, u.z).normalize(), 0.0014 * (q - 0.5)).add(c);
-  }, (p) => mix3(base, light, smooth(0.3, 0.7, fbm(p.x * 40, p.y * 40, p.z * 40, 3))), 80, 60);
-  const gb = blob((u, o) => { const k = u.y < 0 ? 1 - 0.45 * -u.y : 1; o.set(u.x * 0.014 * k, u.y * 0.03, u.z * 0.013 * k).applyAxisAngle(V(0, 0, 1), 0.35).add(V(-0.06, 0.318, 0.078)); }, (p) => mix3(hex('#5f8f38'), hex('#7eab45'), fbm(p.x * 120, p.y * 120, p.z * 120, 2)), 28, 22);
-  const duct = sweep([[-0.062, 0.34, 0.07], [-0.052, 0.352, 0.05], [-0.04, 0.358, 0.035]], 0.003, { n: 10, ring: 6, colorFn: () => hex('#7a9a45') });
+  const base = hex('#8a3629'), light = hex('#a54d3b'), c = [-0.04, 0.375, 0.025];
+  const sdf = (px, py, pz) => {
+    const x = px - c[0], y = py - c[1], z = pz - c[2];
+    let d = ellZ(x, y, z, [-0.012, 0.0, -0.004], [0.072, 0.056, 0.082], 0.1);                    // the big right lobe
+    d = smin(d, ellZ(x, y, z, [0.074, 0.016, 0.014], [0.064, 0.03, 0.05], -0.28), 0.014);          // the thinner left lobe, reaching across
+    d = smin(d, ell(x, y, z, [-0.002, -0.014, -0.045], [0.02, 0.02, 0.024]), 0.01);                // the caudate lobe at the back
+    d = smin(d, ell(x, y, z, [-0.002, -0.034, 0.046], [0.024, 0.017, 0.024]), 0.01);               // the quadrate lobe underneath
+    d = smax(d, -(y + 0.05), 0.012);
+    d += 0.0075 * gauss(x - 0.036, 0.0045) * smooth(-0.01, 0.03, y) * smooth(0.0, 0.05, z);        // the groove for the ligament on the front
+    d = smax(d, -(ell(x, y, z, [-0.02, -0.052, 0.05], [0.015, 0.02, 0.014])), 0.005);                // the hollow where the gallbladder sits
+    return d + 0.0007 * (ridged(x * 90, y * 90, z * 90, 2) - 0.5);
+  };
+  const body = meshSDF(sdf, [c[0] - 0.11, c[1] - 0.075, c[2] - 0.1], [c[0] + 0.15, c[1] + 0.075, c[2] + 0.1], 0.0022, (px, py, pz) => mix3(base, light, smooth(0.3, 0.72, fbm(px * 45, py * 45, pz * 45, 3))));
+  const gb = blob((u, o) => { const k = u.y < 0 ? 1 - 0.5 * -u.y : 1; o.set(u.x * 0.0125 * k, u.y * 0.03, u.z * 0.0115 * k).applyAxisAngle(V(0, 0, 1), 0.3).add(V(c[0] - 0.02, c[1] - 0.05, c[2] + 0.05)); }, (p) => mix3(hex('#4f7d2c'), hex('#6c9a3b'), fbm(p.x * 120, p.y * 120, p.z * 120, 2)), 28, 22);
+  const duct = sweep([[c[0] - 0.018, c[1] - 0.036, c[2] + 0.045], [c[0] - 0.008, c[1] - 0.02, c[2] + 0.03], [c[0], c[1] - 0.01, c[2] + 0.015]], 0.0026, { n: 10, ring: 6, colorFn: () => hex('#6f8f3a') });
   return merge([body, gb, duct]);
 }
 
@@ -170,8 +208,8 @@ function kidneys() {
     parts.push(blob((u, o) => { o.set(u.x * 0.017, u.y * 0.007, u.z * 0.006).applyAxisAngle(V(0, 0, 1), -s * 0.3).add(V(s * 0.062, c.y + 0.058, -0.044)); }, () => hex('#dcb86e'), 20, 14));
     const hx = s * 0.052, dy = s > 0 ? 0 : 0.015;
     parts.push(sweep([[hx, c.y - 0.01, -0.046], [s * 0.046, 0.23, -0.046], [s * 0.038, 0.16, -0.036], [s * 0.03, 0.09, -0.016], [s * 0.022, 0.05, -0.002]], 0.0028, { n: 50, ring: 8, colorFn: () => hex('#e2c48d') }));
-    parts.push(sweep([[hx, c.y + 0.0, -0.046], [s * 0.03, 0.288, -0.04], [s * 0.012, 0.292 - dy * 0, -0.035]], 0.0042, { n: 14, ring: 8, colorFn: () => hex('#c73838') }));
-    parts.push(sweep([[hx, c.y - 0.016, -0.046], [s * 0.03, 0.272, -0.04], [s * 0.014, 0.274, -0.034]], 0.0056, { n: 14, ring: 8, colorFn: () => hex('#4b6bb3') }));
+    parts.push(sweep([[hx, c.y + 0.0, -0.046], [s * 0.03, 0.288, -0.04], [s * 0.012, 0.292 - dy * 0, -0.035]], 0.0034, { n: 14, ring: 8, colorFn: () => hex('#b0282e') }));
+    parts.push(sweep([[hx, c.y - 0.016, -0.046], [s * 0.03, 0.272, -0.04], [s * 0.014, 0.274, -0.034]], 0.0044, { n: 14, ring: 8, colorFn: () => hex('#4a5ba6') }));
   }
   return merge(parts);
 }

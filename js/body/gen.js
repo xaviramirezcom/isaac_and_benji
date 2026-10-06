@@ -129,3 +129,10 @@ export function surfaceNets(sdf, min, max, h) {
   if (agree < 0) for (let t = 0; t < idx.length; t += 3) { const tmp = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = tmp; }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setIndex(idx); return g;
 }
+
+// an organ surface from a signed-distance function, coloured by position
+export function meshSDF(sdf, min, max, h, colorFn = null) {
+  const g = surfaceNets(sdf, min, max, h);
+  if (colorFn) { const p = g.attributes.position, c = new Float32Array(p.count * 3); for (let i = 0; i < p.count; i++) c.set(colorFn(p.getX(i), p.getY(i), p.getZ(i)), i * 3); g.setAttribute('color', new THREE.BufferAttribute(c, 3)); }
+  return g;
+}

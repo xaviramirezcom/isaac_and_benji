@@ -107,7 +107,7 @@ async function init3D() {
   H.take = (id) => { body.organs[id].visible = false; };
   H.hide = (id) => { body.organs[id].visible = false; };
   H.glow = (id, on) => { const m = body.organs[id].userData.mat; m.emissive.setHex(on ? 0x6a5a10 : 0x000000); };
-  H.focus = (id) => { goal = id ? { to: body.organs[id].userData.home.clone(), dist: Math.min(dist, 4.6) } : { to: new THREE.Vector3(0, 0, 0), dist }; };
+  H.focus = (id) => { body.bones.visible = !id; goal = id ? { to: body.organs[id].userData.home.clone(), dist: Math.min(dist, 4.6) } : { to: new THREE.Vector3(0, 0, 0), dist }; };
   H.fit = () => { const r = stage.getBoundingClientRect(); if (!r.width || !r.height) return; renderer.setSize(r.width, r.height, false); camera.aspect = r.width / r.height; const tf = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)); dist = Math.max(3.25 / tf, 1.9 / tf / camera.aspect); camera.updateProjectionMatrix(); };
   H.reset = () => { camera.position.set(0, 0.1, dist); controls.target.set(0, 0, 0); goal = null; controls.update(); };
   H.skin = (on) => { body.skin.visible = on; body.bones.visible = true; };
