@@ -51,7 +51,7 @@ export function sweep(ctrl, radius, { n = 80, ring = 14, mod = null, colorFn = n
 }
 
 // ---------------------------------------------------------------- a body lofted from horizontal cross-sections: rows of [y, halfWidth, halfDepth, zCentre] (top to bottom)
-function interpRows(rows, y) {
+export function interpRows(rows, y) {
   let i = 0; while (i < rows.length - 2 && y < rows[i + 1][0]) i++;
   const a = rows[i], b = rows[i + 1], t = Math.min(1, Math.max(0, (a[0] - y) / (a[0] - b[0]))), s = t * t * (3 - 2 * t);
   const p = rows[Math.max(0, i - 1)], q = rows[Math.min(rows.length - 1, i + 2)];
@@ -96,3 +96,36 @@ export function merge(geos, tint = null) {
 }
 export const solid = (g, c) => { const n = g.attributes.position.count, a = new Float32Array(n * 3); for (let i = 0; i < n; i++) a.set(c, i * 3); g.setAttribute('color', new THREE.BufferAttribute(a, 3)); return g; };
 export const moved = (g, x = 0, y = 0, z = 0) => { g.translate(x, y, z); return g; };
+
+// ---------------------------------------------------------------- one seamless surface from a signed-distance function (naive surface nets).
+// sdf(x, y, z) < 0 inside. Returns a smooth-shaded geometry; parts that were blended with smooth unions come out as one continuous skin.
+export function surfaceNets(sdf, min, max, h) {
+  const nx = Math.ceil((max[0] - min[0]) / h) + 1, ny = Math.ceil((max[1] - min[1]) / h) + 1, nz = Math.ceil((max[2] - min[2]) / h) + 1;
+  const F = new Float32Array(nx * ny * nz), ix = (i, j, k) => i + nx * (j + ny * k);
+  for (let k = 0; k < nz; k++) for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) F[ix(i, j, k)] = sdf(min[0] + i * h, min[1] + j * h, min[2] + k * h);
+  const cx = nx - 1, cy = ny - 1, cell = new Int32Array(cx * cy * (nz - 1)).fill(-1), cid = (i, j, k) => i + cx * (j + cy * k), verts = [];
+  const C = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [1, 1, 0], [0, 0, 1], [1, 0, 1], [0, 1, 1], [1, 1, 1]], E = [[0, 1], [2, 3], [4, 5], [6, 7], [0, 2], [1, 3], [4, 6], [5, 7], [0, 4], [1, 5], [2, 6], [3, 7]], v = new Array(8);
+  for (let k = 0; k < nz - 1; k++) for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
+    let neg = 0; for (let c = 0; c < 8; c++) { v[c] = F[ix(i + C[c][0], j + C[c][1], k + C[c][2])]; if (v[c] < 0) neg++; }
+    if (neg === 0 || neg === 8) continue;
+    let sx = 0, sy = 0, sz = 0, n = 0;
+    for (const [a, b] of E) if ((v[a] < 0) !== (v[b] < 0)) { const t = v[a] / (v[a] - v[b]); sx += C[a][0] + (C[b][0] - C[a][0]) * t; sy += C[a][1] + (C[b][1] - C[a][1]) * t; sz += C[a][2] + (C[b][2] - C[a][2]) * t; n++; }
+    cell[cid(i, j, k)] = verts.length / 3; verts.push(min[0] + (i + sx / n) * h, min[1] + (j + sy / n) * h, min[2] + (k + sz / n) * h);
+  }
+  const idx = [], quad = (a, b, c, d, flip) => { if (a < 0 || b < 0 || c < 0 || d < 0) return; if (flip) idx.push(a, c, b, a, d, c); else idx.push(a, b, c, a, c, d); };
+  for (let k = 1; k < nz - 1; k++) for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++) {
+    const f0 = F[ix(i, j, k)];
+    if (i < nx - 1 && (f0 < 0) !== (F[ix(i + 1, j, k)] < 0)) quad(cell[cid(i, j - 1, k - 1)], cell[cid(i, j, k - 1)], cell[cid(i, j, k)], cell[cid(i, j - 1, k)], f0 >= 0);
+    if (j < ny - 1 && (f0 < 0) !== (F[ix(i, j + 1, k)] < 0)) quad(cell[cid(i - 1, j, k - 1)], cell[cid(i - 1, j, k)], cell[cid(i, j, k)], cell[cid(i, j, k - 1)], f0 >= 0);
+    if (k < nz - 1 && (f0 < 0) !== (F[ix(i, j, k + 1)] < 0)) quad(cell[cid(i - 1, j - 1, k)], cell[cid(i, j - 1, k)], cell[cid(i, j, k)], cell[cid(i - 1, j, k)], f0 >= 0);
+  }
+  const nor = new Float32Array(verts.length), e = h * 0.6;
+  for (let i = 0; i < verts.length; i += 3) {
+    const x = verts[i], y = verts[i + 1], z = verts[i + 2], gx = sdf(x + e, y, z) - sdf(x - e, y, z), gy = sdf(x, y + e, z) - sdf(x, y - e, z), gz = sdf(x, y, z + e) - sdf(x, y, z - e), l = Math.hypot(gx, gy, gz) || 1;
+    nor[i] = gx / l; nor[i + 1] = gy / l; nor[i + 2] = gz / l;
+  }
+  // make sure the triangles face outward (the same way the normals do)
+  let agree = 0; for (let t = 0; t < Math.min(idx.length, 3000); t += 3) { const a = idx[t] * 3, b = idx[t + 1] * 3, c = idx[t + 2] * 3, ux = verts[b] - verts[a], uy = verts[b + 1] - verts[a + 1], uz = verts[b + 2] - verts[a + 2], wx = verts[c] - verts[a], wy = verts[c + 1] - verts[a + 1], wz = verts[c + 2] - verts[a + 2]; agree += (uy * wz - uz * wy) * nor[a] + (uz * wx - ux * wz) * nor[a + 1] + (ux * wy - uy * wx) * nor[a + 2] > 0 ? 1 : -1; }
+  if (agree < 0) for (let t = 0; t < idx.length; t += 3) { const tmp = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = tmp; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setIndex(idx); return g;
+}

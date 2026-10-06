@@ -4,42 +4,44 @@
 // Everything is built in metres around the middle of the body, then turned into scene units (SCALE).
 // Every organ is built around its own centre, so it sits exactly where it lives and can be lifted out and put back.
 import * as THREE from '../../vendor/three.module.min.js';
-import { noise, fbm, ridged, smooth, gauss, hex, mix3, sweep, loftY, blob, ellipsoid, merge, solid } from './gen.js';
+import { noise, fbm, ridged, smooth, gauss, hex, mix3, sweep, blob, ellipsoid, merge, solid, interpRows, surfaceNets } from './gen.js';
 
 export const SCALE = 3.35;
 export const ORGANS = ['brain', 'heart', 'lungs', 'stomach', 'pancreas', 'liver', 'kidneys', 'smallint', 'largeint', 'bladder'];
 const keyed = (keys) => (t) => { for (let i = 0; i < keys.length - 1; i++) if (t <= keys[i + 1][0]) { const a = keys[i], b = keys[i + 1], k = (t - a[0]) / (b[0] - a[0] || 1), s = k * k * (3 - 2 * k); return Array.isArray(a[1]) ? a[1].map((v, j) => v + (b[1][j] - v) * s) : a[1] + (b[1] - a[1]) * s; } return keys[keys.length - 1][1]; };
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
-// ================================================================= the skin
-function bodySkin() {
-  const rows = [[0.915, 0.012, 0.012, 0], [0.905, 0.05, 0.06, -0.004], [0.885, 0.076, 0.088, -0.004], [0.86, 0.087, 0.1, 0], [0.83, 0.089, 0.104, 0.004], [0.8, 0.085, 0.1, 0.01], [0.78, 0.074, 0.09, 0.014], [0.76, 0.057, 0.076, 0.018], [0.745, 0.047, 0.062, 0.012], [0.73, 0.05, 0.058, -0.004], [0.71, 0.055, 0.06, -0.008],
-    [0.69, 0.105, 0.068, -0.01], [0.668, 0.185, 0.082, -0.01], [0.64, 0.205, 0.094, 0], [0.6, 0.186, 0.104, 0.006], [0.55, 0.172, 0.112, 0.012], [0.5, 0.168, 0.116, 0.016], [0.45, 0.164, 0.114, 0.015], [0.4, 0.156, 0.108, 0.013], [0.3, 0.147, 0.1, 0.011], [0.22, 0.145, 0.098, 0.01], [0.12, 0.158, 0.102, 0.006], [0.04, 0.172, 0.108, 0], [-0.02, 0.172, 0.108, -0.004], [-0.07, 0.15, 0.1, -0.004], [-0.095, 0.09, 0.07, -0.004]];
-  const torso = loftY(rows, { step: 0.007, ring: 64, power: 2.4, mod: (y, x, z) => {
-    let dx = 0, dz = 0; const ax = Math.abs(x);
-    if (z > 0.03) dz += 0.016 * gauss(y - 0.545, 0.04) * gauss(ax - 0.078, 0.045) + 0.004 * gauss(y - 0.4, 0.1) * gauss(ax - 0.02, 0.02) + 0.003 * gauss(y - 0.33, 0.12) * gauss(ax - 0.03, 0.02);   // chest and the line of the stomach muscles
-    if (z < -0.02) dz -= 0.009 * gauss(y - 0.57, 0.06) * gauss(ax - 0.09, 0.05) + 0.006 * gauss(y - 0.35, 0.12) * gauss(ax - 0.04, 0.03);                                                           // shoulder blades and back muscles
-    dx += 0.012 * gauss(y - 0.66, 0.03) * Math.sign(x);                                                                                                                                              // shoulder tops
-    return [dx, dz];
-  } });
-  const parts = [torso];
-  for (const s of [-1, 1]) {
-    // (for upright tubes the first radius is front-to-back, the second is side-to-side)
-    const legPath = [[0.09, 0.04, 0], [0.088, -0.1, 0.005], [0.083, -0.28, 0.008], [0.074, -0.46, 0.01], [0.068, -0.55, 0], [0.066, -0.64, -0.012], [0.056, -0.76, -0.005], [0.045, -0.84, -0.004], [0.045, -0.875, 0]].map(([x, y, z]) => [s * x, y, z]);
-    const legR = keyed([[0, [0.1, 0.1]], [0.1, [0.094, 0.094]], [0.3, [0.078, 0.082]], [0.5, [0.056, 0.058]], [0.62, [0.07, 0.064]], [0.8, [0.038, 0.04]], [1, [0.03, 0.034]]]);
-    parts.push(sweep(legPath, legR, { n: 70, ring: 28 }));
-    const foot = blob(ellipsoid(0.04, 0.03, 0.115), null, 28, 20); foot.translate(s * 0.05, -0.885, 0.04); parts.push(foot);
-    const armPath = [[0.19, 0.63, 0], [0.22, 0.55, 0], [0.245, 0.45, 0], [0.262, 0.34, 0.004], [0.28, 0.22, 0.012], [0.298, 0.11, 0.02], [0.305, 0.075, 0.022]].map(([x, y, z]) => [s * x, y, z]);
-    const armR = keyed([[0, [0.058, 0.058]], [0.12, [0.054, 0.054]], [0.3, [0.047, 0.045]], [0.5, [0.04, 0.036]], [0.66, [0.045, 0.042]], [0.9, [0.03, 0.025]], [1, [0.028, 0.022]]]);
-    parts.push(sweep(armPath, armR, { n: 56, ring: 22 }));
-    const palm = blob(ellipsoid(0.036, 0.046, 0.014), null, 24, 18); palm.rotateZ(s * 0.06); palm.translate(s * 0.309, 0.034, 0.022); parts.push(palm);
-    [[-0.025, 0.06], [-0.009, 0.077], [0.008, 0.072], [0.024, 0.056]].forEach(([dx, len]) => parts.push(sweep([[s * (0.309 + dx), 0.058, 0.022], [s * (0.309 + dx * 1.15), 0.058 - len * 0.55, 0.026], [s * (0.309 + dx * 1.25), 0.058 - len, 0.036]], (t) => 0.0088 - 0.003 * t, { n: 10, ring: 8 })));
-    parts.push(sweep([[s * 0.286, 0.05, 0.028], [s * 0.272, 0.02, 0.04], [s * 0.268, -0.008, 0.05]], (t) => 0.0105 - 0.0035 * t, { n: 10, ring: 8 }));
-    const ear = blob(ellipsoid(0.006, 0.027, 0.017), null, 20, 14); ear.translate(s * 0.087, 0.822, -0.004); parts.push(ear);
-  }
-  const nose = blob(ellipsoid(0.009, 0.023, 0.017), null, 20, 14); nose.rotateX(-0.35); nose.translate(0, 0.806, 0.1); parts.push(nose);
-  return merge(parts);
+// ================================================================= the skin: ONE seamless surface (smooth unions of head/neck/torso, arms, hands, legs and feet, meshed together)
+const ROWS = [[0.915, 0.012, 0.012, 0], [0.905, 0.05, 0.06, -0.004], [0.885, 0.076, 0.088, -0.004], [0.86, 0.087, 0.1, 0], [0.83, 0.089, 0.104, 0.004], [0.8, 0.085, 0.1, 0.01], [0.78, 0.074, 0.09, 0.014], [0.76, 0.057, 0.076, 0.018], [0.745, 0.047, 0.062, 0.012], [0.73, 0.05, 0.058, -0.004], [0.71, 0.055, 0.06, -0.008],
+  [0.69, 0.105, 0.068, -0.01], [0.668, 0.185, 0.082, -0.01], [0.64, 0.205, 0.094, 0], [0.6, 0.186, 0.104, 0.006], [0.55, 0.172, 0.112, 0.012], [0.5, 0.168, 0.116, 0.016], [0.45, 0.164, 0.114, 0.015], [0.4, 0.156, 0.108, 0.013], [0.3, 0.147, 0.1, 0.011], [0.22, 0.145, 0.098, 0.01], [0.12, 0.158, 0.102, 0.006], [0.04, 0.172, 0.108, 0], [-0.02, 0.172, 0.108, -0.004], [-0.07, 0.15, 0.1, -0.004], [-0.095, 0.09, 0.07, -0.004]];
+const STEP = 0.002, TOP = 0.915, TAB = []; for (let y = TOP; y >= -0.0951; y -= STEP) TAB.push(interpRows(ROWS, y));
+const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
+const seg = (px, py, pz, a, b) => { const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2], ax = px - a[0], ay = py - a[1], az = pz - a[2], t = Math.min(1, Math.max(0, (ax * bx + ay * by + az * bz) / (bx * bx + by * by + bz * bz))); return Math.hypot(ax - bx * t, ay - by * t, az - bz * t) - (a[3] + (b[3] - a[3]) * t); };
+const chain = (px, py, pz, pts) => { let d = 1e9; for (let i = 0; i < pts.length - 1; i++) d = Math.min(d, seg(px, py, pz, pts[i], pts[i + 1])); return d; };
+const ell = (px, py, pz, c, r) => { const x = (px - c[0]) / r[0], y = (py - c[1]) / r[1], z = (pz - c[2]) / r[2]; return (Math.hypot(x, y, z) - 1) * Math.min(r[0], r[1], r[2]); };
+const ARM = [[0.165, 0.655, 0, 0.064], [0.212, 0.585, 0, 0.058], [0.243, 0.46, 0.002, 0.048], [0.262, 0.34, 0.004, 0.041], [0.28, 0.22, 0.012, 0.043], [0.298, 0.11, 0.02, 0.029], [0.306, 0.07, 0.022, 0.024]];
+const LEG = [[0.095, 0.04, 0, 0.102], [0.093, -0.1, 0.005, 0.092], [0.087, -0.28, 0.008, 0.08], [0.076, -0.46, 0.01, 0.057], [0.07, -0.55, 0, 0.06], [0.068, -0.64, -0.012, 0.066], [0.058, -0.76, -0.005, 0.041], [0.047, -0.84, -0.004, 0.033], [0.047, -0.875, -0.004, 0.032]];
+const FOOT = [[0.05, -0.872, -0.02, 0.034], [0.054, -0.892, 0.1, 0.021]];
+function bodySDF(px, py, pz) {
+  const x = Math.abs(px), y = py, z = pz;
+  // head, neck and trunk (a stack of rounded cross-sections)
+  const i = Math.min(TAB.length - 1, Math.max(0, Math.round((TOP - y) / STEP))), r = TAB[i], ax = x;
+  let hw = r[0] + 0.012 * gauss(y - 0.66, 0.03), hd = r[1];
+  if (z > 0.03) hd += 0.016 * gauss(y - 0.545, 0.04) * gauss(ax - 0.078, 0.045) + 0.004 * gauss(y - 0.4, 0.1) * gauss(ax - 0.02, 0.02);
+  if (z < -0.02) hd += 0.009 * gauss(y - 0.57, 0.06) * gauss(ax - 0.09, 0.05) + 0.006 * gauss(y - 0.35, 0.12) * gauss(ax - 0.04, 0.03);
+  const q = Math.pow(ax / hw, 2.4) + Math.pow(Math.abs(z - r[2]) / hd, 2.4), dxz = (Math.pow(q, 1 / 2.4) - 1) * Math.min(hw, hd), dy = Math.max(y - TOP, -0.0951 - y, 0);
+  let d = dy > 0 ? Math.hypot(Math.max(dxz, 0), dy) : dxz;
+  d = smin(d, chain(x, y, z, ARM), 0.04);                                   // shoulders melt into the arms
+  d = smin(d, ell(x, y, z, [0.309, 0.032, 0.022], [0.033, 0.05, 0.016]), 0.012);   // the hand: palm,
+  d = smin(d, ell(x, y, z, [0.309, -0.012, 0.027], [0.03, 0.052, 0.013]), 0.012);  // fingers together,
+  d = smin(d, seg(x, y, z, [0.284, 0.07, 0.03, 0.011], [0.268, 0.01, 0.05, 0.009]), 0.01);   // and the thumb
+  d = smin(d, chain(x, y, z, LEG), 0.05);                                   // hips melt into the legs
+  d = smin(d, chain(x, y, z, FOOT), 0.025);                                 // and the legs into the feet
+  d = smin(d, ell(x, y, z, [0.087, 0.822, -0.004], [0.007, 0.027, 0.018]), 0.01);   // ears
+  d = smin(d, ell(x, y, z, [0, 0.806, 0.1], [0.01, 0.024, 0.018]), 0.012);          // nose
+  return d;
 }
+function bodySkin() { return surfaceNets(bodySDF, [-0.4, -0.935, -0.15], [0.4, 0.93, 0.16], 0.0072); }
 
 // ================================================================= the skeleton (faint: ribs, breastbone, spine, pelvis)
 const BONE = hex('#e6dac0'), CART = hex('#d3cdc0');
