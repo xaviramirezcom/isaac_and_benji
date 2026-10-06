@@ -89,12 +89,12 @@ function tap({ id }) {
 // ---------------------------------------------------------------- the 3D body (loaded the first time)
 async function init3D() {
   if (ig) return; loading.hidden = false;
-  const [THREE, { OrbitControls }, M] = await Promise.all([import('../vendor/three.module.min.js'), import('../vendor/OrbitControls.js'), import('./body/model3d.js?v=4')]);
+  const [THREE, { OrbitControls }, M, { RoomEnvironment }] = await Promise.all([import('../vendor/three.module.min.js'), import('../vendor/OrbitControls.js'), import('./body/model3d.js?v=5'), import('../vendor/RoomEnvironment.js')]);
   const body = await M.loadBody(); thumbs = M.thumbnails(body); buildTray();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true }); renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setClearColor(0x000000, 0);
   const scene = new THREE.Scene(), camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100); scene.add(camera);
   scene.add(new THREE.HemisphereLight(0xffffff, 0xb9c6d0, 1.5)); const key = new THREE.DirectionalLight(0xffffff, 2.3); key.position.set(3, 4, 6); camera.add(key); const fill = new THREE.DirectionalLight(0xcfe3ff, 0.9); fill.position.set(-4, -1, 3); camera.add(fill);
-  scene.add(body.root);
+  scene.add(body.root); const pm = new THREE.PMREMGenerator(renderer); scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; scene.environmentIntensity = 0.5;   // soft reflections make the organs look wet
   const controls = new OrbitControls(camera, canvas); controls.enablePan = false; controls.enableDamping = true; controls.dampingFactor = 0.09; controls.minDistance = 1.6; controls.maxDistance = 17; controls.rotateSpeed = 0.9;
   const ray = new THREE.Raycaster(), v2 = new THREE.Vector2(), tmp = new THREE.Vector3(), tweens = [], skinMeshes = body.skin.children;
   let goal = null, dist = 11.4;
