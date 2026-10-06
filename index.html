@@ -35,6 +35,7 @@
         <a class="game-tile insects-tile" href="#/isaac/insects"><span class="emoji" aria-hidden="true">🐞</span><span>Insects</span></a>
         <a class="game-tile space-tile" href="#/isaac/space"><span class="emoji" aria-hidden="true">🪐</span><span>Space</span></a>
         <a class="game-tile storm-tile" href="#/isaac/storms"><span class="emoji" aria-hidden="true">🌪️</span><span>Storms</span></a>
+        <a class="game-tile body-tile" href="#/isaac/body"><span class="emoji" aria-hidden="true">🫀</span><span>Body</span></a>
       </div>
     </section>
 
@@ -97,6 +98,40 @@
       </div>
       <div class="chips" id="space-chips" role="group" aria-label="Planets"></div>
       <div class="loading" id="space-loading"><div class="spinner" aria-hidden="true">🪐</div><div class="bar"><i id="space-bar"></i></div><p>Waking up the planets…</p></div>
+    </section>
+
+    <!-- The human body: put organs in and take them out (flat or 3D) -->
+    <section id="view-body" class="view body-view" hidden aria-label="The human body">
+      <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
+      <div class="insect-tools">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="on">EN</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
+        <button class="round-btn small on" id="btn-bsound" type="button" aria-label="Sound"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg></button>
+        <button class="round-btn small" id="btn-bclear" type="button" aria-label="Take everything out"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M6 16a10 10 0 1 0 3.2-7.3M6 5v6h6" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="body-mode" id="body-mode" role="group" aria-label="Flat or 3D">
+        <button type="button" data-mode="2d" class="on">2D</button>
+        <button type="button" data-mode="3d">3D</button>
+      </div>
+      <div class="body-layout">
+        <div class="body-stage" id="body-stage">
+          <svg id="body-svg" viewBox="0 0 300 640" preserveAspectRatio="xMidYMid meet" aria-label="Flat body"></svg>
+          <canvas id="body-canvas" aria-label="3D body" hidden></canvas>
+          <div class="body-hearts" id="body-fx" aria-hidden="true"></div>
+        </div>
+        <div class="body-tray" id="body-tray" role="group" aria-label="Organs"></div>
+      </div>
+      <div class="insect-card body-card" id="body-card" aria-live="polite">
+        <div class="ic-text"><h3 id="bc-name"></h3><p class="kidtext" id="bc-job"></p><div class="adult-box"><p id="bc-adult"></p></div></div>
+        <div class="ic-actions">
+          <button type="button" class="ic-btn info" id="bc-info" aria-label="Facts for grown-ups"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M16 14v8" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="16" cy="9.6" r="1.9" fill="currentColor"/></svg></button>
+          <button type="button" class="ic-btn" id="bc-say" aria-label="Listen"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg></button>
+          <button type="button" class="ic-btn remove" id="bc-out" aria-label="Take it out"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 26V8M8 15l8-8 8 8" stroke="currentColor" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="loading" id="body-loading" hidden><div class="spinner" aria-hidden="true">🫀</div><p>Getting the body ready…</p></div>
     </section>
 
     <!-- Tornadoes & storms -->

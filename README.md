@@ -41,3 +41,7 @@ tools/pick_animals.py          copies the clips chosen by ear into sounds/animal
 ```
 
 Adding a game for Isaac: add a tile in `#view-isaac` (index.html), a route in `js/app.js`.
+
+## Isaac — Body (`#/isaac/body`)
+A human body (realistic outline) in **2D** (SVG) or **3D** (three.js, turn it with a finger) with 9 organs to put in and take out: brain, heart, lungs, stomach, liver, kidneys, small and large intestine, bladder.
+Drag an organ from the tray onto the body (its outline lights up where it lives; dropped anywhere on the body it glides home), drag it out or tap it and press the arrow to take it out. Tap an organ for what it does (heart beats, lungs breathe), 🔊 reads it, (i) has grown-up facts. Voices: `python3 tools/build_body_voices.py` (names + one-line jobs, EN/ES, from `data/body.json`). Code: `js/body-game.js`, `js/body/shapes.js` (2D shapes, silhouette), `js/body/model3d.js` (procedural 3D).
