@@ -493,35 +493,14 @@ button, a { touch-action: manipulation; font: inherit; }
 .body-view { background: linear-gradient(#e3f0f7, #f7fbfd); overflow: hidden; }
 .body-view .round-btn.back, .body-view .insect-tools { z-index: 6; }
 #view-body .insect-tools { flex-direction: row; align-items: center; gap: 10px; }
-.body-mode { position: absolute; z-index: 6; top: calc(env(safe-area-inset-top) + 82px); left: 50%; transform: translateX(-50%); display: flex; padding: 4px; gap: 2px; background: #fff; border-radius: 99px; box-shadow: 0 4px 0 rgba(0, 0, 0, .15), 0 8px 16px rgba(0, 0, 0, .18); }
-.body-mode button { min-width: 72px; height: 46px; border: 0; border-radius: 99px; background: transparent; color: var(--ink); font-size: 1.1rem; font-weight: 900; letter-spacing: .04em; cursor: pointer; transition: background .15s, color .15s; }
-.body-mode button.on { background: #e8567a; color: #fff; }
-.body-layout { position: absolute; inset: 0; padding: calc(env(safe-area-inset-top) + 140px) 12px calc(env(safe-area-inset-bottom) + 10px); display: flex; flex-direction: column; gap: 8px; }
+.body-layout { position: absolute; inset: 0; padding: calc(env(safe-area-inset-top) + 84px) 12px calc(env(safe-area-inset-bottom) + 10px); display: flex; flex-direction: column; gap: 8px; }
 .body-stage { position: relative; flex: 1; min-height: 0; }
-#body-svg, #body-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
-.b-out { fill: #c48a6d; stroke: #c48a6d; stroke-width: 4; stroke-linejoin: round; }
-.b-fill { fill: url(#gSkin); transition: filter .2s; }
-#body-svg .bones { pointer-events: none; }
-.body-stage.over .b-fill { filter: brightness(1.08); }
+#body-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; outline: none; }
 .body-stage.over #body-canvas { filter: drop-shadow(0 0 16px #ffe27a); }
-.slot { opacity: 0; pointer-events: none; transition: opacity .2s; }
-.slot.target { opacity: 1; animation: slotPulse 1s ease-in-out infinite; }
-.slot path { fill: #fff1a0; stroke: #f2b705; stroke-width: 3; }
-.slot .st { fill: none; stroke: #ffd84d; opacity: .95; }
-.slot .d { display: none; }
-@keyframes slotPulse { 50% { opacity: .55; } }
-.org:not(.on) { display: none; }
-.org.on { cursor: grab; }
-.org.lifted { visibility: hidden; }
-.org.sel { filter: drop-shadow(0 0 5px #ffd84d) drop-shadow(0 0 12px #ffd84d); }
-.org .beat, .body-ghost .beat { transform-box: fill-box; transform-origin: center; animation: beat 1.25s ease-in-out infinite; }
-.org .breathe { transform-box: fill-box; transform-origin: 50% 60%; animation: breathe 4.2s ease-in-out infinite; }
-@keyframes beat { 0%, 50%, 100% { transform: scale(1); } 10% { transform: scale(1.11); } 20% { transform: scale(1); } 32% { transform: scale(1.07); } }
-@keyframes breathe { 50% { transform: scale(1.07, 1.1); } }
 .body-tray { flex: none; display: flex; gap: 10px; overflow-x: auto; padding: 6px 4px 10px; touch-action: pan-x; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .body-tray::-webkit-scrollbar { display: none; }
-.organ-chip { flex: none; width: 86px; border: 0; border-radius: 22px; background: #fff; color: var(--ink); padding: 8px 4px 7px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-weight: 800; font-size: .74rem; line-height: 1.05; text-align: center; box-shadow: 0 5px 0 rgba(0, 0, 0, .16), 0 8px 14px rgba(0, 0, 0, .12); cursor: grab; touch-action: pan-x; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: opacity .2s; }
-.organ-chip svg { width: 66px; height: 50px; display: block; pointer-events: none; }
+.organ-chip { flex: none; width: 88px; border: 0; border-radius: 22px; background: #fff; color: var(--ink); padding: 8px 4px 7px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 800; font-size: .74rem; line-height: 1.05; text-align: center; box-shadow: 0 5px 0 rgba(0, 0, 0, .16), 0 8px 14px rgba(0, 0, 0, .12); cursor: grab; touch-action: pan-x; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: opacity .2s; }
+.organ-chip img { width: 68px; height: 68px; object-fit: contain; display: block; pointer-events: none; }
 .organ-chip span { min-height: 2.1em; display: grid; place-items: center; pointer-events: none; }
 .organ-chip.in-body { opacity: .45; background: #e3eef5; box-shadow: none; }
 .organ-chip.lifted { opacity: .3; }
@@ -530,7 +509,7 @@ button, a { touch-action: manipulation; font: inherit; }
 @keyframes chipWig { 20% { transform: rotate(-7deg) scale(1.06); } 50% { transform: rotate(6deg) scale(1.06); } 80% { transform: rotate(-3deg); } }
 @keyframes chipBack { from { transform: scale(.4) translateY(-30px); } }
 .body-ghost { position: fixed; left: 0; top: 0; z-index: 60; pointer-events: none; filter: drop-shadow(0 12px 8px rgba(0, 0, 0, .25)); will-change: transform; }
-.body-ghost svg { width: 120px; height: 96px; display: block; animation: ghostIn .25s cubic-bezier(.2, 1.6, .4, 1); }
+.body-ghost img { width: 120px; height: 120px; object-fit: contain; display: block; animation: ghostIn .25s cubic-bezier(.2, 1.6, .4, 1); }
 @keyframes ghostIn { from { transform: scale(.6); } }
 .body-card { bottom: calc(env(safe-area-inset-bottom) + 150px); max-height: 56vh; overflow-y: auto; }
 #body-card.adult .adult-box { display: block; } #body-card.adult .ic-btn.info { background: #13a06f; }
@@ -542,11 +521,9 @@ button, a { touch-action: manipulation; font: inherit; }
 .body-view .loading { background: radial-gradient(ellipse at 50% 40%, #ffb3c4, #c2457a); }
 /* wide screens (tablets, phones on their side): the organs wait in a grid on the right, the body fills the left */
 @media (orientation: landscape) and (min-width: 700px) {
-  .body-mode { top: calc(env(safe-area-inset-top) + 16px); }
-  .body-layout { flex-direction: row; padding-top: calc(env(safe-area-inset-top) + 84px); gap: 14px; }
-  .body-tray { width: 306px; flex-wrap: wrap; align-content: flex-start; justify-content: center; overflow-x: hidden; overflow-y: auto; touch-action: pan-y; padding: 4px 4px 14px; }
+    .body-layout { flex-direction: row; padding-top: calc(env(safe-area-inset-top) + 84px); gap: 14px; }
   .organ-chip { touch-action: pan-y; }
-  .body-card { left: calc((100% - 320px) / 2); width: min(640px, calc(100% - 360px)); bottom: calc(env(safe-area-inset-bottom) + 14px); }
+  .body-tray { width: 306px; flex-wrap: wrap; align-content: flex-start; justify-content: center; overflow-x: hidden; overflow-y: auto; touch-action: pan-y; padding: 4px 4px 14px; }
+    .body-card { left: calc((100% - 320px) / 2); width: min(640px, calc(100% - 360px)); bottom: calc(env(safe-area-inset-bottom) + 14px); }
 }
-@media (orientation: landscape) and (max-height: 520px) { .body-layout { padding-top: calc(env(safe-area-inset-top) + 74px); } .body-tray { width: 280px; } .organ-chip { width: 80px; } .organ-chip svg { height: 40px; } }
-@media (prefers-reduced-motion: reduce) { .org .beat, .org .breathe, .body-ghost .beat { animation: none; } }
+@media (orientation: landscape) and (max-height: 520px) { .body-layout { padding-top: calc(env(safe-area-inset-top) + 74px); } .body-tray { width: 280px; } .organ-chip { width: 80px; } .organ-chip img { width: 52px; height: 52px; } }
