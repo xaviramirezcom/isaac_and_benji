@@ -33,10 +33,10 @@ def add(oid, v, f, rgb, target):
 
 # skin
 for n,v,f in vh_parts('skin'): add('skin',v,f,col('#e2a583'),42000)
-# modesty: smooth over the crotch and paint a pair of boxer shorts (the scan is anatomically nude)
+# modesty: the scan is anatomically nude, so the genitals are smoothed away completely (a mannequin-like pelvis)
 sv,sf,sc=ORG['skin'][0]
-cap=np.interp(sv[:,1],[-0.2,-0.13,-0.09,-0.04,0.2],[0.045,0.058,0.078,0.098,0.2])
-m=(np.abs(sv[:,0])<0.07)&(sv[:,1]>-0.21)&(sv[:,1]<0.0)&(sv[:,2]>cap)
+cap=np.interp(sv[:,1],[-0.22,-0.13,-0.09,-0.04,0.0,0.2],[0.035,0.05,0.064,0.088,0.104,0.2])
+m=(np.abs(sv[:,0])<0.085)&(sv[:,1]>-0.23)&(sv[:,1]<0.02)&(sv[:,2]>cap)
 sv[m,2]=cap[m]
 ORG['skin'][0]=(sv,sf,sc)
 # brain: every cortex piece, a little different in tone
@@ -74,7 +74,7 @@ for p in A['parts']:
     if re.search(r'\brib\b|sternum|manubrium|costal cartilage',p['name'],re.I) and p['system'] in ('skeletal','connective'):
         v,f=part(p); add('bones',v+T,f,col('#eadfc4'),700)
 # extra organs shown as always-there context
-for n,v,f in vh_parts('pancreas'): add('context',v,f,col('#d9a86a'),1500)
+for n,v,f in vh_parts('pancreas'): add('pancreas',v,f,col('#dcb274',0.04,rng),2200)
 for n,v,f in vh_parts('spleen'): add('context',v,f,col('#7d2c3b'),1500)
 
 # ---- pack: int16 positions around the centroid, uint8 colours, uint16/32 indices

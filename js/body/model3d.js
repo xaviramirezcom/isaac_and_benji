@@ -3,7 +3,7 @@
 import * as THREE from '../../vendor/three.module.min.js';
 
 export const SCALE = 3.35;                    // metres → scene units (the body is about 6.1 tall)
-export const ORGANS = ['brain', 'heart', 'lungs', 'stomach', 'liver', 'kidneys', 'smallint', 'largeint', 'bladder'];
+export const ORGANS = ['brain', 'heart', 'lungs', 'stomach', 'pancreas', 'liver', 'kidneys', 'smallint', 'largeint', 'bladder'];
 const Q = 32767;
 
 function geometry(buf, m) {
@@ -29,8 +29,7 @@ export async function loadBody() {
     transparent: true, depthWrite: false, vertexColors: true, uniforms: { uOpacity: { value: 1 } },
     vertexShader: 'varying vec3 vN; varying vec3 vV; varying vec3 vC; varying vec3 vW; void main(){ vC = color; vW = (modelMatrix * vec4(position, 1.0)).xyz; vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
     fragmentShader: 'uniform float uOpacity; varying vec3 vN; varying vec3 vV; varying vec3 vC; varying vec3 vW; void main(){ vec3 n = normalize(vN); float f = pow(1.0 - clamp(dot(n, normalize(vV)), 0.0, 1.0), 2.0); float l = 0.6 + 0.4 * dot(n, normalize(vec3(0.4, 0.6, 0.7)));'
-      + ' vec3 m = vW / 3.35; float sh = smoothstep(-0.205, -0.195, m.y) * (1.0 - smoothstep(0.07, 0.08, m.y)) * (1.0 - smoothstep(0.29, 0.3, abs(m.x)));'   // a pair of boxer shorts, drawn smoothly in the shader
-      + ' vec3 base = mix(vC, vec3(0.30, 0.42, 0.68), sh); vec3 c = mix(base * l, base * 0.78, f); float a = mix(0.3, 0.72, f); a = mix(a, mix(0.62, 0.85, f), sh); gl_FragColor = vec4(c, a * uOpacity); }',
+      + ' vec3 c = mix(vC * l, vC * 0.78, f); float a = mix(0.3, 0.72, f); gl_FragColor = vec4(c, a * uOpacity); }',
   });
   const skin = new THREE.Mesh(skinGeo, skinMat), skinDepth = new THREE.Mesh(skinGeo, new THREE.MeshBasicMaterial({ colorWrite: false }));
   skin.renderOrder = 6; skinDepth.renderOrder = 5; const skinGroup = new THREE.Group(); skinGroup.add(skinDepth, skin);

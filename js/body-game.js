@@ -7,7 +7,7 @@ import { audio, unlock, loadBuf, playUrl, tone, setMuted, stop as stopSound, bub
 const $ = (s) => document.querySelector(s);
 const root = $('#view-body'), stage = $('#body-stage'), canvas = $('#body-canvas'), tray = $('#body-tray'), fx = $('#body-fx'), loading = $('#body-loading');
 const card = $('#body-card'), cName = $('#bc-name'), cJob = $('#bc-job'), cAdult = $('#bc-adult');
-const TRAY_ORDER = ['brain', 'heart', 'lungs', 'stomach', 'liver', 'kidneys', 'smallint', 'largeint', 'bladder'];
+const TRAY_ORDER = ['brain', 'heart', 'lungs', 'stomach', 'pancreas', 'liver', 'kidneys', 'smallint', 'largeint', 'bladder'];
 const T = { en: { done: 'You built a whole body! 🎉' }, es: { done: '¡Armaste un cuerpo completo! 🎉' } };
 
 let data = [], by = {}, lang = 'en', running = false, bound = false, soundOn = true, sel = null, ig = null, thumbs = {}, doneShown = false, skinOn = true;
