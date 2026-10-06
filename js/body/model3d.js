@@ -12,8 +12,8 @@ const keyed = (keys) => (t) => { for (let i = 0; i < keys.length - 1; i++) if (t
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 
 // ================================================================= the skin: ONE seamless surface (smooth unions of head/neck/torso, arms, hands, legs and feet, meshed together)
-const ROWS = [[0.915, 0.012, 0.012, 0], [0.905, 0.05, 0.06, -0.004], [0.885, 0.076, 0.088, -0.004], [0.86, 0.087, 0.1, 0], [0.83, 0.089, 0.104, 0.004], [0.8, 0.085, 0.1, 0.01], [0.78, 0.074, 0.09, 0.014], [0.76, 0.057, 0.076, 0.018], [0.745, 0.047, 0.062, 0.012], [0.73, 0.05, 0.058, -0.004], [0.71, 0.055, 0.06, -0.008],
-  [0.69, 0.105, 0.068, -0.01], [0.668, 0.185, 0.082, -0.01], [0.64, 0.205, 0.094, 0], [0.6, 0.186, 0.104, 0.006], [0.55, 0.172, 0.112, 0.012], [0.5, 0.168, 0.116, 0.016], [0.45, 0.164, 0.114, 0.015], [0.4, 0.156, 0.108, 0.013], [0.3, 0.147, 0.1, 0.011], [0.22, 0.145, 0.098, 0.01], [0.12, 0.158, 0.102, 0.006], [0.04, 0.172, 0.108, 0], [-0.02, 0.172, 0.108, -0.004], [-0.07, 0.15, 0.1, -0.004], [-0.095, 0.09, 0.07, -0.004]];
+const ROWS = [[0.915, 0.01, 0.01, 0], [0.905, 0.045, 0.055, -0.006], [0.885, 0.07, 0.085, -0.005], [0.855, 0.08, 0.095, -0.003], [0.82, 0.082, 0.098, 0.002], [0.78, 0.076, 0.092, 0.01], [0.74, 0.066, 0.082, 0.016], [0.71, 0.055, 0.07, 0.02], [0.69, 0.045, 0.056, 0.016], [0.675, 0.047, 0.05, 0.002], [0.655, 0.051, 0.053, -0.006],
+  [0.635, 0.09, 0.062, -0.008], [0.615, 0.175, 0.075, -0.008], [0.598, 0.215, 0.085, 0], [0.57, 0.205, 0.098, 0.006], [0.53, 0.182, 0.108, 0.012], [0.48, 0.17, 0.112, 0.015], [0.43, 0.163, 0.11, 0.014], [0.38, 0.153, 0.104, 0.012], [0.3, 0.14, 0.096, 0.01], [0.22, 0.133, 0.092, 0.01], [0.12, 0.142, 0.097, 0.004], [0.04, 0.158, 0.106, -0.002], [-0.02, 0.158, 0.106, -0.006], [-0.07, 0.142, 0.096, -0.006], [-0.095, 0.09, 0.07, -0.004]];
 const STEP = 0.002, TOP = 0.915, TAB = []; for (let y = TOP; y >= -0.0951; y -= STEP) TAB.push(interpRows(ROWS, y));
 const smin = (a, b, k) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.min(a, b) - h * h * k * 0.25; };
 const seg = (px, py, pz, a, b) => { const bx = b[0] - a[0], by = b[1] - a[1], bz = b[2] - a[2], ax = px - a[0], ay = py - a[1], az = pz - a[2], t = Math.min(1, Math.max(0, (ax * bx + ay * by + az * bz) / (bx * bx + by * by + bz * bz))); return Math.hypot(ax - bx * t, ay - by * t, az - bz * t) - (a[3] + (b[3] - a[3]) * t); };
@@ -21,26 +21,32 @@ const chain = (px, py, pz, pts) => { let d = 1e9; for (let i = 0; i < pts.length
 const ell = (px, py, pz, c, r) => { const x = (px - c[0]) / r[0], y = (py - c[1]) / r[1], z = (pz - c[2]) / r[2]; return (Math.hypot(x, y, z) - 1) * Math.min(r[0], r[1], r[2]); };
 const smax = (a, b, k) => -smin(-a, -b, k);
 const ellZ = (px, py, pz, c, r, a) => { const x = px - c[0], y = py - c[1], co = Math.cos(a), si = Math.sin(a); return ((Math.hypot((co * x + si * y) / r[0], (-si * x + co * y) / r[1], (pz - c[2]) / r[2]) - 1) * Math.min(r[0], r[1], r[2])); };
-const ARM = [[0.165, 0.655, 0, 0.064], [0.212, 0.585, 0, 0.058], [0.243, 0.46, 0.002, 0.048], [0.262, 0.34, 0.004, 0.041], [0.28, 0.22, 0.012, 0.043], [0.298, 0.11, 0.02, 0.029], [0.306, 0.07, 0.022, 0.024]];
-const LEG = [[0.095, 0.04, 0, 0.102], [0.093, -0.1, 0.005, 0.092], [0.087, -0.28, 0.008, 0.08], [0.076, -0.46, 0.01, 0.057], [0.07, -0.55, 0, 0.06], [0.068, -0.64, -0.012, 0.066], [0.058, -0.76, -0.005, 0.041], [0.047, -0.84, -0.004, 0.033], [0.047, -0.875, -0.004, 0.032]];
+const ARM = [[0.19, 0.622, 0, 0.07], [0.232, 0.572, 0, 0.06], [0.252, 0.46, 0.002, 0.048], [0.268, 0.3, 0.004, 0.04], [0.292, 0.19, 0.016, 0.043], [0.31, 0.06, 0.024, 0.028], [0.316, 0.03, 0.026, 0.024]];
+const LEG = [[0.093, 0.05, 0, 0.1], [0.092, -0.1, 0.005, 0.092], [0.086, -0.28, 0.008, 0.078], [0.074, -0.42, 0.01, 0.056], [0.068, -0.52, 0.002, 0.058], [0.066, -0.62, -0.012, 0.064], [0.057, -0.75, -0.005, 0.04], [0.047, -0.83, -0.004, 0.033], [0.047, -0.872, -0.004, 0.032]];
 const FOOT = [[0.05, -0.872, -0.02, 0.034], [0.054, -0.892, 0.1, 0.021]];
 function bodySDF(px, py, pz) {
   const x = Math.abs(px), y = py, z = pz;
   // head, neck and trunk (a stack of rounded cross-sections)
   const i = Math.min(TAB.length - 1, Math.max(0, Math.round((TOP - y) / STEP))), r = TAB[i], ax = x;
-  let hw = r[0] + 0.012 * gauss(y - 0.66, 0.03), hd = r[1];
-  if (z > 0.03) hd += 0.016 * gauss(y - 0.545, 0.04) * gauss(ax - 0.078, 0.045) + 0.004 * gauss(y - 0.4, 0.1) * gauss(ax - 0.02, 0.02);
-  if (z < -0.02) hd += 0.009 * gauss(y - 0.57, 0.06) * gauss(ax - 0.09, 0.05) + 0.006 * gauss(y - 0.35, 0.12) * gauss(ax - 0.04, 0.03);
+  let hw = r[0] + 0.012 * gauss(y - 0.6, 0.03), hd = r[1];
+  if (z > 0.03) hd += 0.016 * gauss(y - 0.5, 0.04) * gauss(ax - 0.078, 0.045) + 0.004 * gauss(y - 0.36, 0.1) * gauss(ax - 0.02, 0.02);
+  if (z < -0.02) hd += 0.009 * gauss(y - 0.53, 0.06) * gauss(ax - 0.09, 0.05) + 0.006 * gauss(y - 0.32, 0.12) * gauss(ax - 0.04, 0.03);
   const q = Math.pow(ax / hw, 2.4) + Math.pow(Math.abs(z - r[2]) / hd, 2.4), dxz = (Math.pow(q, 1 / 2.4) - 1) * Math.min(hw, hd), dy = Math.max(y - TOP, -0.0951 - y, 0);
   let d = dy > 0 ? Math.hypot(Math.max(dxz, 0), dy) : dxz;
-  d = smin(d, chain(x, y, z, ARM), 0.04);                                   // shoulders melt into the arms
-  d = smin(d, ell(x, y, z, [0.309, 0.032, 0.022], [0.033, 0.05, 0.016]), 0.012);   // the hand: palm,
-  d = smin(d, ell(x, y, z, [0.309, -0.012, 0.027], [0.03, 0.052, 0.013]), 0.012);  // fingers together,
-  d = smin(d, seg(x, y, z, [0.284, 0.07, 0.03, 0.011], [0.268, 0.01, 0.05, 0.009]), 0.01);   // and the thumb
+  d = smin(d, chain(x, y, z, ARM), 0.06);                                  // shoulders melt into the arms
+  d = smin(d, ell(x, y, z, [0.32, -0.012, 0.028], [0.033, 0.05, 0.016]), 0.012);  // the hand: palm,
+  d = smin(d, ell(x, y, z, [0.323, -0.075, 0.032], [0.029, 0.058, 0.013]), 0.012); // fingers together,
+  d = smin(d, seg(x, y, z, [0.295, 0.02, 0.036, 0.0115], [0.279, -0.035, 0.054, 0.0095]), 0.01);   // and the thumb
   d = smin(d, chain(x, y, z, LEG), 0.05);                                   // hips melt into the legs
   d = smin(d, chain(x, y, z, FOOT), 0.025);                                 // and the legs into the feet
-  d = smin(d, ell(x, y, z, [0.087, 0.822, -0.004], [0.007, 0.027, 0.018]), 0.01);   // ears
-  d = smin(d, ell(x, y, z, [0, 0.806, 0.1], [0.01, 0.024, 0.018]), 0.012);          // nose
+  if (z < -0.01) d = smin(d, ell(x, y, z, [0.07, -0.01, -0.07], [0.075, 0.075, 0.05]), 0.04);   // buttocks
+  // the face: a brow, eye sockets, nose, lips and chin, ears
+  d = smin(d, ell(x, y, z, [0.03, 0.838, 0.086], [0.028, 0.008, 0.016]), 0.012);
+  d = smax(d, -ell(x, y, z, [0.033, 0.822, 0.092], [0.016, 0.011, 0.012]), 0.008);
+  d = smin(d, seg(x, y, z, [0, 0.832, 0.09, 0.007], [0, 0.79, 0.11, 0.0105]), 0.01);
+  d = smin(d, ell(x, y, z, [0, 0.726, 0.088], [0.021, 0.01, 0.014]), 0.008);
+  d = smin(d, ell(x, y, z, [0, 0.694, 0.062], [0.022, 0.017, 0.02]), 0.01);
+  d = smin(d, ell(x, y, z, [0.082, 0.808, -0.004], [0.007, 0.028, 0.019]), 0.01);
   return d;
 }
 function bodySkin() { return surfaceNets(bodySDF, [-0.4, -0.935, -0.15], [0.4, 0.93, 0.16], 0.0072); }
@@ -50,14 +56,14 @@ const BONE = hex('#e6dac0'), CART = hex('#d3cdc0');
 function skeleton() {
   const parts = [];
   for (let k = 0; k < 12; k++) for (const s of [-1, 1]) {
-    const y0 = 0.625 - k * 0.0345, hw = 0.135 - Math.abs(k - 3) * 0.004 - (k > 8 ? 0.012 : 0), hd = 0.085, pts = [], len = k < 10 ? 1 : 0.55 - (k - 10) * 0.12;
+    const y0 = 0.595 - k * 0.0345, hw = 0.135 - Math.abs(k - 3) * 0.004 - (k > 8 ? 0.012 : 0), hd = 0.085, pts = [], len = k < 10 ? 1 : 0.55 - (k - 10) * 0.12;
     for (let j = 0; j <= 10; j++) { const th = 0.12 + (Math.PI * 0.72) * (j / 10) * len; pts.push([s * hw * Math.sin(th), y0 - 0.15 * (th / Math.PI) * (k + 5) / 10, 0.012 - hd * Math.cos(th)]); }
     if (k < 10) pts.push([s * 0.012, pts[pts.length - 1][1] - 0.02, 0.1]);
     parts.push(sweep(pts, [0.0048, 0.0036], { n: 40, ring: 6, colorFn: (p, t) => (t > 0.8 && k < 10 ? CART : BONE) }));
   }
-  parts.push(solid(sweep([[0, 0.588, 0.108], [0, 0.52, 0.114], [0, 0.44, 0.112], [0, 0.415, 0.108]], keyed([[0, [0.006, 0.02]], [0.3, [0.005, 0.016]], [0.85, [0.004, 0.012]], [1, [0.003, 0.004]]]), { n: 20, ring: 8 }), BONE));
+  parts.push(solid(sweep([[0, 0.558, 0.108], [0, 0.5, 0.114], [0, 0.42, 0.112], [0, 0.39, 0.108]], keyed([[0, [0.006, 0.02]], [0.3, [0.005, 0.016]], [0.85, [0.004, 0.012]], [1, [0.003, 0.004]]]), { n: 20, ring: 8 }), BONE));
   for (let i = 0; i < 24; i++) {
-    const y = 0.735 - i * 0.0255, z = -0.082 - 0.016 * Math.sin((0.735 - y) / 0.6 * Math.PI * 1.6 + 0.4) + (y < 0.3 ? 0.01 : 0), r = i < 7 ? 0.015 : 0.02 + i * 0.0003;
+    const y = 0.7 - i * 0.0245, z = -0.082 - 0.016 * Math.sin((0.7 - y) / 0.6 * Math.PI * 1.6 + 0.4) + (y < 0.3 ? 0.01 : 0), r = i < 7 ? 0.015 : 0.02 + i * 0.0003;
     const v = blob(ellipsoid(r, 0.0098, r * 0.85), null, 16, 12); v.translate(0, y, z); parts.push(solid(v, BONE));
     const sp = blob(ellipsoid(0.004, 0.01, 0.02), null, 10, 8); sp.rotateX(0.5); sp.translate(0, y - 0.004, z - 0.03); parts.push(solid(sp, BONE));
   }
@@ -73,7 +79,7 @@ function skeleton() {
 // ================================================================= the organs
 const fat = hex('#e6b76a');
 function brain() {
-  const base = hex('#e2b1ab'), dark = hex('#c58a85'), cy = 0.855;
+  const base = hex('#e2b1ab'), dark = hex('#c58a85'), cy = 0.868;
   const folds = (x, y, z) => ridged(x * 85 + noise(x * 45, y * 45, z * 45) * 2.2, y * 85 + 7, z * 85, 2);
   const sdf = (px, py, pz) => {
     const x = Math.abs(px), y = py - cy, z = pz;
@@ -254,8 +260,8 @@ export async function loadBody() {
   const skinMat = new THREE.ShaderMaterial({
     transparent: true, depthWrite: false, uniforms: { uOpacity: { value: 1 } },
     vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
-    fragmentShader: 'uniform float uOpacity; varying vec3 vN; varying vec3 vV; void main(){ vec3 n = normalize(vN); float f = pow(1.0 - clamp(dot(n, normalize(vV)), 0.0, 1.0), 2.0); float l = 0.6 + 0.4 * dot(n, normalize(vec3(0.4, 0.6, 0.7)));'
-      + ' vec3 skin = vec3(0.89, 0.65, 0.52); vec3 c = mix(skin * l, skin * 0.78, f); float a = mix(0.3, 0.72, f); gl_FragColor = vec4(c, a * uOpacity); }',   // see-through skin, a little more solid at the edges
+    fragmentShader: 'uniform float uOpacity; varying vec3 vN; varying vec3 vV; void main(){ vec3 n = normalize(vN); float f = pow(1.0 - clamp(dot(n, normalize(vV)), 0.0, 1.0), 2.0); float l = 0.45 + 0.55 * dot(n, normalize(vec3(0.4, 0.6, 0.7)));'
+      + ' vec3 skin = vec3(0.89, 0.65, 0.52); vec3 c = mix(skin * l, skin * 0.7, f); float a = mix(0.36, 0.76, f); gl_FragColor = vec4(c, a * uOpacity); }',   // see-through skin, a little more solid at the edges
   });
   const skin = new THREE.Mesh(skinGeo, skinMat), skinDepth = new THREE.Mesh(skinGeo, new THREE.MeshBasicMaterial({ colorWrite: false }));
   skin.renderOrder = 6; skinDepth.renderOrder = 5; const skinGroup = new THREE.Group(); skinGroup.add(skinDepth, skin); root.add(skinGroup);
