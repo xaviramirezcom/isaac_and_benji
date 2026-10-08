@@ -26,6 +26,7 @@ const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return
 const clearTimers = () => { timers.forEach(clearTimeout); timers = []; handAnim?.cancel(); handAnim = null; hand.classList.remove('on'); };
 const voice = (f) => playUrl(`sounds/fruits/${lang}/${f.id}.mp3`, { gain: 1, stopPrev: true });
 const setOpen = (v) => teddy.style.setProperty('--open', Math.max(0, Math.min(1, v)).toFixed(2));
+const mouthR = () => M.T * 0.2 + M.F * 0.32;   // an invisible forgiving zone round the mouth: let go anywhere inside it and the fruit is taken
 const mouthPt = () => { const m = MOUTH[friend?.id] ?? MOUTH.teddy; return { x: M.tx + M.T * m[0] / 100, y: M.ty + M.T * m[1] / 100 }; };
 
 // ---------------------------------------------------------------- layout
@@ -88,12 +89,13 @@ function bindItem(it) {
     if (!drag || drag.it !== it || e.pointerId !== drag.id) return; const r = stage.getBoundingClientRect();
     setItem(it, Math.min(Math.max(e.clientX - r.left - drag.dx, -20), M.w - M.F + 20), Math.min(Math.max(e.clientY - r.top - drag.dy, -20), M.h - M.F + 20));
     const c = { x: it.x + M.F / 2, y: it.y + M.F / 2 }, m = mouthPt(), d = Math.hypot(c.x - m.x, c.y - m.y);
-    if (it.f === wanted) { const o = (M.T * 1 + M.F * 0.3 - d) / (M.T * 0.55); setOpen(o); teddy.classList.toggle('near', o > 0.7); }          // Teddy opens up for the fruit it asked for
-    else teddy.classList.toggle('no', d < M.T * 0.62);                                                                                          // …and politely shakes its head for another
+    const R = mouthR();
+    if (it.f === wanted) { const o = (R * 2.4 - d) / (R * 1.5); setOpen(o); teddy.classList.toggle('near', o > 0.7) }   // Teddy opens up as the fruit nears the mouth
+    else teddy.classList.toggle('no', d < R * 1.7);                                                                                          // …and politely shakes its head for another
   });
   const up = (e) => {
     if (!drag || drag.it !== it || e.pointerId !== drag.id) return; drag = null; el.classList.remove('drag'); teddy.classList.remove('no');
-    const c = { x: it.x + M.F / 2, y: it.y + M.F / 2 }, t = { x: M.tx + M.T / 2, y: M.ty + M.T / 2 }, onTeddy = Math.hypot(c.x - t.x, c.y - t.y) < M.T * 0.42 + M.F * 0.2;
+    const c = { x: it.x + M.F / 2, y: it.y + M.F / 2 }, m = mouthPt(), onTeddy = Math.hypot(c.x - m.x, c.y - m.y) < mouthR();   // only the mouth takes it
     if (onTeddy && it.f === wanted) eat(it);
     else {
       setOpen(0); teddy.classList.remove('near'); if (onTeddy) { nope(); teddy.classList.remove('shake'); void teddy.offsetWidth; teddy.classList.add('shake'); wrong++; }
