@@ -34,7 +34,7 @@ const T = {
 const SD = 0.09;
 let lang = 'en', sizeIdx = 1, running = false, ready = false, loadP = null, raf = 0, lastT = 0, acc = 0, speed = 3, alarm = true, follow = true, soundOn = true, cardTimer = 0;
 let renderer, scene, camera, controls, sim, W, shakeT = 0, ring, goal = new THREE.Vector3(170, 0, 85), epi = null, hudT = 0, phase = 0, phaseT = 0, base = { edge: 0 }, drawback = false, floodPeak = 0, peakT = 0, sirenOn = false, sirenT = -1, buoyHit = false, ended = false, bound = false, roar = null;
-const flowv = [0, 0];
+const flowv = [0, 0], camOff = new THREE.Vector3(-35, 40, 70);
 const L = (o) => o[lang];
 
 // ------------------------------------------------------------------ sound (everything starts from the child's touch)
@@ -76,7 +76,7 @@ function trigger(x, z) {
   ring.visible = true; ring.position.set(x, 0.3, z); ring.userData.t = 0; ui.hint.classList.add('gone'); rumble(7, 0.9 * (0.5 + S.A / 14)); startRoar(); setFollow(true); setCard(1);
 }
 function resetWorld(quiet) {
-  sim.reset(); for (const h of W.houses) { h.alive = true; W.place(h, true); sim.nn[idx(h.i, h.j)] = 0.22; } W.hm.instanceMatrix.needsUpdate = true; W.rm.instanceMatrix.needsUpdate = true;
+  sim.reset(); for (const h of W.houses) { h.alive = true; W.place(h, true); sim.nn[idx(h.i, h.j)] = 0.22; } for (const m of [W.hm, W.rm, W.tm2, W.cm]) m.instanceMatrix.needsUpdate = true;
   W.debris.length = 0; W.dm.count = 0; W.people.forEach((p, n) => { const h = W.houses[Math.floor((n * 37) % W.houses.length)]; p.x = h.x + 0.7 + (n % 5) * 0.08; p.z = h.z + 0.5 + (n % 3) * 0.2; p.state = 'home'; p.wait = (n % 7) * 0.9; });
   epi = null; phase = 0; sirenOn = false; sirenT = -1; shakeT = 0; ring.visible = false; stopRoar(); acc = 0; setFollow(false);
   if (!quiet) { ui.hint.classList.remove('gone'); setCard(0); controls.target.set(175, 0, 85); camera.position.set(140, 62, 178); }
@@ -91,7 +91,7 @@ function houseDamage() {
       for (let n = 0; n < 6 && W.debris.length < W.DEB; n++) W.debris.push({ x: h.x + (Math.random() - 0.5) * 0.5, z: h.z + (Math.random() - 0.5) * 0.5, sx: 0.12 + Math.random() * 0.3, sy: 0.05 + Math.random() * 0.12, sz: 0.12 + Math.random() * 0.3, r: Math.random() * 6, life: 0, c: Math.random() < 0.5 ? 0xb98a5a : 0xd8cbb0 });
     }
   }
-  if (changed) { W.hm.instanceMatrix.needsUpdate = true; W.rm.instanceMatrix.needsUpdate = true; }
+  if (changed) { for (const m of [W.hm, W.rm, W.tm2, W.cm]) m.instanceMatrix.needsUpdate = true; }
 }
 function moveThings(dtS) {
   const { eta, b } = sim, M = W.M, Q = W.Q, P = W.P, Sc = W.Sc, E = new THREE.Euler();
@@ -162,7 +162,7 @@ function frame(now) {
   const bk = idx(100, 85), by = sim.eta[bk] * VX * 8; W.buoy.position.y = Math.max(-0.5, by) + 0.2; W.buoy.getObjectByName('lamp').material.color.setHex(buoyHit && Math.floor(now / 300) % 2 ? 0xffff40 : 0xff4040);
   W.flag.children[1].rotation.y = Math.sin(now / 280) * 0.25;
   // follow the wave
-  if (follow && epi) { const S = sim.S, fx = phase >= 3 ? Math.max(205, Math.min(235, S.front + 12)) : Math.min(185, Math.max(epi.x, S.front + 8)); goal.set(fx, 0, epi.z); const d = goal.clone().sub(controls.target).multiplyScalar(Math.min(1, dt * 1.2)); controls.target.add(d); camera.position.add(d); }
+  if (follow && epi) { const S = sim.S, fx = phase >= 3 ? Math.max(205, Math.min(235, S.front + 12)) : Math.min(185, Math.max(epi.x, S.front + 8)); goal.set(fx, 0, epi.z); controls.target.lerp(goal, Math.min(1, dt * 1.4)); camOff.lerp(new THREE.Vector3(-30, 17, 44), Math.min(1, dt * 0.8)); camera.position.lerp(controls.target.clone().add(camOff), Math.min(1, dt * 1.4)); }
   // the sound of the water follows how much water is rushing at the coast
   if (roar) { const S = sim.S, v = Math.min(1, (S.maxRun * 0.12) + (phase >= 3 && phase < 7 ? 0.1 + Math.min(0.5, S.frontEta * 0.06) : 0)); roar.g.gain.setTargetAtTime(soundOn ? v * 0.5 + 0.0001 : 0.0001, roar.ctx.currentTime, 0.25); }
   controls.update(); renderer.render(scene, camera);
@@ -190,7 +190,7 @@ function bindOnce() {
   $('#tsu-close').addEventListener('click', () => ui.card.classList.add('mini'));
   ui.card.addEventListener('click', (e) => { if (ui.card.classList.contains('mini') && !e.target.closest('button')) ui.card.classList.remove('mini'); });
 }
-function setFollow(on) { follow = on; $('#btn-tfollow').classList.toggle('on', on); }
+function setFollow(on) { if (on) camOff.copy(camera.position).sub(controls.target); follow = on; $('#btn-tfollow').classList.toggle('on', on); }
 function buildChips() {
   ui.chips.innerHTML = SIZES.map((s, i) => `<button type="button" class="chip lvl${i === sizeIdx ? ' on' : ''}" data-i="${i}"><b>${s.short}</b><span>${L(s.chip)}</span></button>`).join('');
   ui.chips.querySelectorAll('.chip').forEach((el) => el.addEventListener('click', () => { unlock(); const i = +el.dataset.i; if (i === sizeIdx && phase === 0) { ui.card.classList.toggle('mini'); return; } sizeIdx = i; buildChips(); if (phase === 0) setCard(0); }));
