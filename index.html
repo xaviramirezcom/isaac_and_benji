@@ -142,7 +142,7 @@
           <button type="button" data-lang="es">ES</button>
         </div>
         <button class="round-btn small on" id="btn-tsound" type="button" aria-label="Sound"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg></button>
-        <button class="round-btn small" id="btn-tspeed" type="button" aria-label="Speed" data-s="×3"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 4h14M9 28h14M10 4c0 7 6 8 6 12s-6 5-6 12M22 4c0 7-6 8-6 12s6 5 6 12" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg></button>
+        <button class="round-btn small" id="btn-tspeed" type="button" aria-label="Speed" data-s="AUTO"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M9 4h14M9 28h14M10 4c0 7 6 8 6 12s-6 5-6 12M22 4c0 7-6 8-6 12s6 5 6 12" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg></button>
         <button class="round-btn small on" id="btn-talarm" type="button" aria-label="Warning siren"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4c-5 0-8 4-8 9v6l-3 4h22l-3-4v-6c0-5-3-9-8-9zM13 26a3 3 0 0 0 6 0" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         <button class="round-btn small on" id="btn-tfollow" type="button" aria-label="Follow the wave"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="7" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M16 3v6M16 23v6M3 16h6M23 16h6" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/></svg></button>
         <button class="round-btn small" id="btn-treset" type="button" aria-label="Start again"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 16L16 5l12 11M8 14v13h16V14M13 27v-8h6v8" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linejoin="round" stroke-linecap="round"/></svg></button>
@@ -156,6 +156,7 @@
         </div>
       </div>
       <div class="storm-hint" id="tsu-hint" aria-hidden="true"></div>
+      <div class="tsu-banner" id="tsu-banner" aria-hidden="true"></div><div class="tsu-vignette" aria-hidden="true"></div>
       <div class="storm-bar"><div class="chips" id="tsu-chips" role="group" aria-label="Earthquake size"></div></div>
       <div class="loading" id="tsu-loading" hidden><div class="spinner" aria-hidden="true">🌊</div><p>Filling the ocean…</p></div>
     </section>

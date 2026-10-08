@@ -557,3 +557,10 @@ button, a { touch-action: manipulation; font: inherit; }
 #tsu-card { bottom: calc(env(safe-area-inset-bottom) + 70px); }
 #tsu-card .meter i.on { background: linear-gradient(90deg, #3fb8e8, #1c6fd6); }
 .tsunami-view .insect-title { display: none; }
+
+/* the movie feel: a flashing warning banner and a dark cinematic edge */
+.tsu-banner { position: absolute; z-index: 5; left: 50%; top: calc(env(safe-area-inset-top) + 84px); transform: translateX(-50%) scale(.8); padding: 8px 22px; border-radius: 12px; background: #d6221f; color: #fff; font-weight: 900; font-size: clamp(1rem, 4vw, 1.5rem); letter-spacing: .04em; text-shadow: 0 2px 0 rgba(0,0,0,.3); box-shadow: 0 0 0 3px #fff, 0 8px 22px rgba(214, 34, 31, .6); opacity: 0; pointer-events: none; white-space: nowrap; transition: opacity .3s, transform .3s; }
+.tsu-banner.on { opacity: 1; transform: translateX(-50%) scale(1); animation: banner 0.8s steps(2, jump-none) infinite; }
+@keyframes banner { 0% { background: #d6221f; } 100% { background: #ff6a1a; } }
+.tsu-vignette { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0) 55%, rgba(5, 18, 30, .45) 100%); }
+@media (min-width: 700px) { .tsu-banner { top: calc(env(safe-area-inset-top) + 22px); } }

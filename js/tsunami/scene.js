@@ -161,7 +161,41 @@ export function buildWorld(sim) {
   // ---- floating pieces from broken houses
   const DEB = 360, debris = [], dm = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ roughness: 0.9 }), DEB); dm.frustumCulled = false; dm.count = 0; world.add(dm);
 
-  const api = { scene, world, water, wMat, field, fieldTex, houses, hm, rm, tm2: towerM, cm, place, people, pm, debris, dm, DEB, buoy, flag, sun, hillX, hillZ, M, Q, P, Sc };
+  // ---- the WAVE WALL: a tall, curling face of water drawn along the biggest crest, so the tsunami looks like the movies
+  const WJ = Math.floor(NY / 2), PROF = [[-5, 0], [-3.5, 0.12], [-2, 0.35], [-1, 0.62], [-0.35, 0.88], [0, 1], [0.35, 1.03], [0.7, 0.97], [1.0, 0.86], [1.18, 0.7], [1.15, 0.52], [0.95, 0.4], [0.6, 0.24], [0.28, 0.09], [0.05, 0]], WP = PROF.length;
+  const wpos2 = new Float32Array(WJ * WP * 3), wuv = new Float32Array(WJ * WP * 2), widx2 = [];
+  for (let j = 0; j < WJ; j++) for (let p = 0; p < WP; p++) { wuv[(j * WP + p) * 2] = p / (WP - 1); wuv[(j * WP + p) * 2 + 1] = PROF[p][1]; }
+  for (let j = 0; j < WJ - 1; j++) for (let p = 0; p < WP - 1; p++) { const a = j * WP + p; widx2.push(a, a + WP, a + 1, a + 1, a + WP, a + WP + 1); }
+  const wallGeo = new THREE.BufferGeometry(); wallGeo.setAttribute('position', new THREE.BufferAttribute(wpos2, 3)); wallGeo.setAttribute('uv', new THREE.BufferAttribute(wuv, 2)); wallGeo.setIndex(widx2);
+  const wallMat = new THREE.ShaderMaterial({ transparent: true, side: THREE.DoubleSide, depthWrite: false, uniforms: { uSky: wMat.uniforms.uSky, uTime: wMat.uniforms.uTime },
+    vertexShader: 'varying vec2 vUv; varying vec3 vN; varying vec3 vW; void main(){ vUv = uv; vN = normalize(normalMatrix * normal); vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }',
+    fragmentShader: 'precision highp float; uniform vec3 uSky; uniform float uTime; varying vec2 vUv; varying vec3 vN; varying vec3 vW; float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); } float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }'
+      + ' void main(){ vec3 n = normalize(vN); if (!gl_FrontFacing) n = -n; vec3 V = normalize(cameraPosition - vW); float fres = pow(1.0 - abs(dot(n, V)), 2.2); float h = vUv.y;'
+      + ' vec3 low = vec3(0.02, 0.2, 0.34), high = vec3(0.3, 0.78, 0.74); vec3 c = mix(low, high, smoothstep(0.0, 1.0, h)) * (0.6 + 0.5 * max(dot(n, normalize(vec3(-0.4, 0.8, 0.3))), 0.0));'
+      + ' c = mix(c, uSky, fres * 0.55); float lip = smoothstep(0.78, 1.0, h) * smoothstep(0.2, 0.95, vUv.x * 1.0) * (1.0 - smoothstep(0.62, 0.9, vUv.x)) + smoothstep(0.55, 0.95, h) * 0.5 * smoothstep(0.45, 0.8, vUv.x);'
+      + ' float fn = vn(vec2(vW.z * 1.3, vW.y * 2.5 + uTime * 0.8)) * 0.6 + vn(vec2(vW.z * 4.0, vW.y * 6.0 - uTime)) * 0.4; float foam = clamp(lip * (0.5 + fn) + smoothstep(0.62, 0.9, fn) * smoothstep(0.55, 1.0, h) * 0.8, 0.0, 1.0);'
+      + ' c = mix(c, vec3(0.97, 0.99, 1.0), foam); float a = mix(0.62, 0.93, smoothstep(0.0, 0.5, h)); a = max(a, foam); gl_FragColor = vec4(c, a * smoothstep(0.0, 0.06, vUv.x) * smoothstep(1.0, 0.94, vUv.x)); }' });
+  const wall = new THREE.Mesh(wallGeo, wallMat); wall.frustumCulled = false; wall.renderOrder = 4; world.add(wall);
+  const wallRows = new Array(WJ).fill(null).map(() => ({ x: 0, h: 0, on: false }));
+  const updateWall = () => {
+    for (let j = 0; j < WJ; j++) { const r = wallRows[j]; for (let p = 0; p < WP; p++) { const o = (j * WP + p) * 3; if (!r.on) { wpos2[o] = 0; wpos2[o + 1] = -80; wpos2[o + 2] = 0; continue; } wpos2[o] = r.x + 0.5 + PROF[p][0] * r.h * 1.05; wpos2[o + 1] = PROF[p][1] * r.h + 0.02; wpos2[o + 2] = j * 2 + 0.5; } }
+    wallGeo.attributes.position.needsUpdate = true; wallGeo.computeVertexNormals();
+  };
+  // ---- spray: white drops thrown up by the breaking wave and by smashed houses
+  const MAXP = 3600, sp = { pos: new Float32Array(MAXP * 3), vel: new Float32Array(MAXP * 3), life: new Float32Array(MAXP), size: new Float32Array(MAXP), ptr: 0 };
+  for (let n = 0; n < MAXP; n++) sp.pos[n * 3 + 1] = -90;
+  const spGeo = new THREE.BufferGeometry(); spGeo.setAttribute('position', new THREE.BufferAttribute(sp.pos, 3)); spGeo.setAttribute('aSize', new THREE.BufferAttribute(sp.size, 1));
+  const spMat = new THREE.ShaderMaterial({ transparent: true, depthWrite: false, uniforms: { uScale: { value: 420 } },
+    vertexShader: 'attribute float aSize; uniform float uScale; void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * uScale / max(0.1, -mv.z); gl_Position = projectionMatrix * mv; }',
+    fragmentShader: 'void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; gl_FragColor = vec4(0.97, 0.99, 1.0, smoothstep(0.5, 0.05, d) * 0.85); }' });
+  const spray = new THREE.Points(spGeo, spMat); spray.frustumCulled = false; spray.renderOrder = 5; world.add(spray);
+  const emit = (x, y, z, vx, vy, vz, size = 0.5, life = 1.3) => { const n = sp.ptr++ % MAXP, o = n * 3; sp.pos[o] = x; sp.pos[o + 1] = y; sp.pos[o + 2] = z; sp.vel[o] = vx; sp.vel[o + 1] = vy; sp.vel[o + 2] = vz; sp.life[n] = life; sp.size[n] = size; };
+  const updateSpray = (dt) => { for (let n = 0; n < MAXP; n++) { if (sp.life[n] <= 0) { if (sp.pos[n * 3 + 1] > -50) sp.pos[n * 3 + 1] = -90; continue; } const o = n * 3; sp.life[n] -= dt; sp.vel[o + 1] -= 11 * dt; sp.pos[o] += sp.vel[o] * dt; sp.pos[o + 1] += sp.vel[o + 1] * dt; sp.pos[o + 2] += sp.vel[o + 2] * dt; if (sp.life[n] < 0.35) sp.size[n] *= 0.93; } spGeo.attributes.position.needsUpdate = true; spGeo.attributes.aSize.needsUpdate = true; };
+  // ---- the mood of the sky: bright and sunny → dark and stormy
+  const moodA = { hor: HOR.clone(), top: SKY.clone(), fog: HOR.clone() }, storm = { hor: col(0x7c8a91), top: col(0x2d3c4a) }, hemi = scene.children.find((o) => o.isHemisphereLight);
+  const setMood = (m) => { const h = HOR.clone().lerp(storm.hor, m), t = SKY.clone().lerp(storm.top, m); scene.background.copy(h); scene.fog.color.copy(h); skyMat.uniforms.hor.value.copy(h); skyMat.uniforms.top.value.copy(t); wMat.uniforms.uSky.value.copy(SKY.clone().lerp(HOR, 0.5).lerp(storm.hor, m)); if (hemi) hemi.intensity = 1.25 - 0.55 * m; sun.intensity = 2.2 - 1.35 * m; };
+
+  const api = { scene, world, water, wMat, wall, wallRows, updateWall, WJ, emit, updateSpray, spMat, setMood, field, fieldTex, houses, hm, rm, tm2: towerM, cm, place, people, pm, debris, dm, DEB, buoy, flag, sun, hillX, hillZ, M, Q, P, Sc };
   api.updateField = (sim, dt) => {
     const { eta, b, foam, u, v } = sim;
     for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
