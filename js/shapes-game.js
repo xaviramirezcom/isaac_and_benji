@@ -154,10 +154,14 @@ function paintPanel() {
 }
 function applyCfg() { saveCfg(); paintPanel(); buildPlan(); round = 0; patNo = 0; startRound(); }
 function bindPanel() {
-  const gear = $('#btn-shgear'); let hold = 0;
-  const cancel = () => { clearTimeout(hold); gear.classList.remove('holding'); };
-  gear.addEventListener('pointerdown', () => { unlock(); gear.classList.add('holding'); hold = setTimeout(() => { cancel(); paintPanel(); panel.hidden = false; clearTimers(); }, 1100); });
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach((e) => gear.addEventListener(e, cancel));
+  const gear = $('#btn-shgear'); let hold = 0, t0 = 0, opened = false;
+  const open = () => { opened = true; clearTimeout(hold); gear.classList.remove('holding'); paintPanel(); panel.hidden = false; clearTimers(); };
+  const start = (e) => { e.preventDefault(); unlock(); opened = false; t0 = performance.now(); gear.classList.add('holding'); clearTimeout(hold); hold = setTimeout(open, 800); };
+  const end = () => { clearTimeout(hold); gear.classList.remove('holding'); if (!opened && performance.now() - t0 < 700) tip(); };   // a quick tap only shows how to open it
+  gear.addEventListener('pointerdown', start); ['pointerup', 'pointercancel'].forEach((ev) => gear.addEventListener(ev, end)); gear.addEventListener('contextmenu', (e) => e.preventDefault());
+  gear.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  const tipEl = document.createElement('div'); tipEl.className = 'sh-tip'; root.appendChild(tipEl);
+  const tip = () => { tipEl.textContent = lang === 'es' ? 'Para adultos: mantén presionado el engranaje' : 'For grown-ups: press and HOLD the gear'; tipEl.classList.add('on'); clearTimeout(tip.t); tip.t = setTimeout(() => tipEl.classList.remove('on'), 2200); };
   panel.querySelectorAll('#sha-games button').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.k, n = Object.values(cfg.games).filter(Boolean).length; if (cfg.games[k] && n === 1) return; cfg.games[k] = !cfg.games[k]; applyCfg(); }));
   panel.querySelectorAll('#sha-train button').forEach((b) => b.addEventListener('click', () => { cfg.train = b.dataset.v; applyCfg(); }));
   panel.querySelectorAll('#sha-per button').forEach((b) => b.addEventListener('click', () => { cfg.per = +b.dataset.v; applyCfg(); }));
