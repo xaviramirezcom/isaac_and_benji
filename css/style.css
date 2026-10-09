@@ -564,3 +564,44 @@ button, a { touch-action: manipulation; font: inherit; }
 @keyframes banner { 0% { background: #d6221f; } 100% { background: #ff6a1a; } }
 .tsu-vignette { position: absolute; inset: 0; z-index: 2; pointer-events: none; background: radial-gradient(ellipse at 50% 55%, rgba(0,0,0,0) 55%, rgba(5, 18, 30, .45) 100%); }
 @media (min-width: 700px) { .tsu-banner { top: calc(env(safe-area-inset-top) + 22px); } }
+
+/* ---------- shapes: matching rules that change (Benji) ---------- */
+.game-tile.shapes-tile { background: linear-gradient(160deg, #5ab0ff, #8a5cf0); }
+.shapes-view { background: #d9eefe; overflow: hidden; }
+.sh-stage { position: absolute; inset: 0; touch-action: none; overflow: hidden; transition: background .7s; --ps: clamp(96px, 23vmin, 190px); }
+.shapes-view .round-btn.back, .shapes-view .insect-tools { z-index: 6; }
+#view-shapes .insect-tools { flex-direction: row; align-items: center; gap: 10px; }
+.sh-rule { position: absolute; z-index: 3; left: 50%; top: calc(env(safe-area-inset-top) + 86px); transform: translateX(-50%); display: flex; align-items: center; gap: 12px; height: 64px; padding: 0 22px 0 14px; border: 0; border-radius: 99px; background: #fff; color: var(--ink); font-weight: 900; font-size: 1.15rem; box-shadow: 0 6px 0 rgba(0,0,0,.12), 0 14px 24px rgba(0,0,0,.14); cursor: pointer; }
+.sh-rule .ico { display: flex; align-items: center; gap: 3px; } .sh-rule .ico svg { width: 36px; height: 36px; } .sh-rule .ico i { width: 24px; height: 24px; border-radius: 50%; display: block; }
+.sh-rule.flip { animation: ruleFlip .8s cubic-bezier(.3,1.5,.5,1); }
+@keyframes ruleFlip { 0% { transform: translateX(-50%) scale(.5) rotate(-8deg); } 60% { transform: translateX(-50%) scale(1.25) rotate(4deg); } 100% { transform: translateX(-50%) scale(1); } }
+.sh-stage.swoosh::after { content: ''; position: absolute; inset: 0; z-index: 2; pointer-events: none; background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.75) 50%, transparent 80%); animation: swoosh .9s ease-out forwards; }
+@keyframes swoosh { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.sh-field { position: absolute; z-index: 1; left: 0; right: 0; top: 34%; display: flex; justify-content: center; align-items: center; gap: clamp(10px, 3vmin, 28px); padding: 0 12px; flex-wrap: nowrap; }
+.sh-home, .sh-slot, .sh-car { width: var(--ps); height: var(--ps); flex: none; display: grid; place-items: center; transition: transform .2s; animation: popIn .5s cubic-bezier(.2,1.5,.4,1) both; }
+.sh-home svg, .sh-car svg { width: 100%; height: 100%; } .sh-home.hot, .sh-slot.hot { transform: scale(1.15); }
+.sh-home.filled svg { animation: fillPop .45s cubic-bezier(.2,1.6,.4,1); }
+.sh-home.hint, .sh-slot.hint { animation: hintPulse .7s ease-in-out 3; }
+.sh-field.train { gap: 6px; } .sh-field.train .sh-car, .sh-field.train .sh-slot { width: min(var(--ps), calc((100vw - 90px) / 7)); height: min(var(--ps), calc((100vw - 90px) / 7)); background: rgba(255,255,255,.7); border-radius: 16px; box-shadow: 0 4px 0 rgba(0,0,0,.1); }
+.sh-engine { font-size: min(calc(var(--ps) * .8), 14vw); line-height: 1; flex: none; }
+.sh-slot { border: 4px dashed #2f8a4a; background: rgba(255,255,255,.55) !important; } .sh-slot .q { font-size: 2.6rem; font-weight: 900; color: #2f8a4a; } .sh-slot.filled { border-style: solid; }
+.sh-tray { position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom) + 64px); display: flex; justify-content: center; gap: clamp(18px, 6vmin, 60px); pointer-events: none; }
+.sh-piece { width: calc(var(--ps) * 1.15); height: calc(var(--ps) * 1.15); pointer-events: auto; touch-action: none; cursor: grab; will-change: transform; filter: drop-shadow(0 10px 8px rgba(0,0,0,.2)); animation: pieceIn .55s cubic-bezier(.2,1.5,.4,1) both; user-select: none; -webkit-user-select: none; }
+.sh-piece svg { width: 100%; height: 100%; display: block; pointer-events: none; } .sh-piece.drag { cursor: grabbing; z-index: 8; filter: drop-shadow(0 18px 14px rgba(0,0,0,.25)); animation: none; }
+.sh-piece.wiggle { animation: fiWig .9s ease-in-out infinite; }
+@keyframes popIn { from { transform: scale(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes pieceIn { from { transform: translateY(80px) scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fillPop { 0% { transform: scale(.6); } 60% { transform: scale(1.22); } 100% { transform: scale(1); } }
+@keyframes hintPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+#sh-burst { position: absolute; inset: 0; z-index: 7; pointer-events: none; }
+.sh-spark { position: absolute; width: var(--sz, 14px); height: var(--sz, 14px); border-radius: 30%; margin: -7px; animation: sparkFly .85s ease-out forwards; }
+@keyframes sparkFly { from { transform: translate(0, 0) rotate(0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) rotate(260deg) scale(.3); opacity: 0; } }
+.sh-pet { position: absolute; z-index: 9; left: 50%; top: 52%; width: min(62vmin, 380px); transform: translate(-50%, -50%) scale(0); opacity: 0; pointer-events: none; text-align: center; display: grid; justify-items: center; gap: 4px; }
+.sh-pet img { width: 100%; filter: drop-shadow(0 16px 12px rgba(0,0,0,.25)); } .sh-pet b { font-size: clamp(1.8rem, 7vmin, 3.2rem); font-weight: 900; color: #fff; text-shadow: 0 4px 0 rgba(0,0,0,.2), 0 0 14px rgba(0,0,0,.3); }
+.sh-pet.show { animation: petJump 2.6s cubic-bezier(.3,1.4,.5,1) forwards; }
+@keyframes petJump { 0% { transform: translate(-50%, 30%) scale(0); opacity: 0; } 14% { transform: translate(-50%, -62%) scale(1.15) rotate(-4deg); opacity: 1; } 24% { transform: translate(-50%, -50%) scale(1) rotate(3deg); } 36% { transform: translate(-50%, -64%) scale(1.08) rotate(-3deg); } 48% { transform: translate(-50%, -50%) scale(1) rotate(2deg); } 85% { transform: translate(-50%, -52%) scale(1); opacity: 1; } 100% { transform: translate(-50%, -40%) scale(.7); opacity: 0; } }
+.sh-prog { z-index: 3; } .sh-prog i.done { background: #ff9f43; transform: scale(1); } .sh-prog i.now { background: #fff; box-shadow: 0 0 0 3px #ff9f43; }
+@media (max-height: 520px) { .sh-field { top: 30%; } .sh-tray { bottom: 56px; } .sh-rule { height: 52px; top: calc(env(safe-area-inset-top) + 16px); left: 38%; } }
+@media (prefers-reduced-motion: reduce) { .sh-home, .sh-piece, .sh-pet.show { animation-duration: .01s; } }
+.sh-piece.settled { animation: none; }
+.sh-piece.wiggle.settled { animation: fiWig .9s ease-in-out infinite; }
