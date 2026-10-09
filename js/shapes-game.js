@@ -15,7 +15,14 @@ const SHAPES = ['circle', 'square', 'triangle', 'star', 'heart'];
 const NAMES = { en: { circle: 'Circle', square: 'Square', triangle: 'Triangle', star: 'Star', heart: 'Heart', red: 'Red', blue: 'Blue', yellow: 'Yellow', green: 'Green', orange: 'Orange', purple: 'Purple' }, es: { circle: 'Círculo', square: 'Cuadrado', triangle: 'Triángulo', star: 'Estrella', heart: 'Corazón', red: 'Rojo', blue: 'Azul', yellow: 'Amarillo', green: 'Verde', orange: 'Naranja', purple: 'Morado' } };
 const RULE_TXT = { shape: { en: 'Same shape', es: 'Misma forma' }, color: { en: 'Same color', es: 'Mismo color' }, pattern: { en: 'What comes next?', es: '¿Qué sigue?' } };
 const SCENE = { shape: '#d9eefe', color: '#ffe6cc', pattern: '#dcf6dc' };
-const HINT_AFTER = 9000, PATTERN_TYPES = ['AB', 'AB', 'AAB', 'ABC', 'AAB', 'ABC'];
+const HINT_AFTER = 9000, TRAINS = { same: ['A'], easy: ['AB'], medium: ['AB', 'AB', 'AAB'], full: ['AB', 'AB', 'AAB', 'ABC', 'AAB', 'ABC'] };
+// the grown-up settings (saved on this device): which games, how hard the train is, how long each rule lasts
+const DEF = { games: { shape: true, color: true, pattern: false }, train: 'same', per: 3, shapes: 3 }, G = (shape, color, pattern) => ({ shape, color, pattern });
+const PRESETS = { 1: { games: G(true, false, false), train: 'same', per: 4, shapes: 3 }, 2: { games: G(true, true, false), train: 'same', per: 3, shapes: 3 }, 3: { games: G(true, true, true), train: 'same', per: 3, shapes: 3 }, 4: { games: G(true, true, true), train: 'easy', per: 3, shapes: 3 }, 5: { games: G(true, true, true), train: 'full', per: 3, shapes: 4 } };
+let cfg = (() => { try { return { ...DEF, ...JSON.parse(localStorage.getItem('shapesCfg')) }; } catch { return { ...DEF }; } })();
+const saveCfg = () => { try { localStorage.setItem('shapesCfg', JSON.stringify(cfg)); } catch { /* private mode */ } };
+const TX = { en: { title: 'For grown-ups', help: 'Choose what Benji plays. The scene changes colour when the rule changes.', games: 'Games', shape: 'Shape', color: 'Color', pattern: 'Train', train: 'Train difficulty', same: 'Easiest: same again', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rounds before the rule changes', sh: 'Shapes to choose from', pre: 'Quick levels (for a 2-year-old start at 1 or 2)', p1: '1 Shapes only', p2: '2 + Colors', p3: '3 + Train: same again', p4: '4 + Train: A-B', p5: '5 Everything', done: 'Done' },
+  es: { title: 'Para adultos', help: 'Elige qué juega Benji. La escena cambia de color cuando cambia la regla.', games: 'Juegos', shape: 'Forma', color: 'Color', pattern: 'Tren', train: 'Dificultad del tren', same: 'Lo más fácil: igual otra vez', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rondas antes de cambiar la regla', sh: 'Formas para elegir', pre: 'Niveles rápidos (a los 2 años, empieza en 1 o 2)', p1: '1 Solo formas', p2: '2 + Colores', p3: '3 + Tren: igual otra vez', p4: '4 + Tren: A-B', p5: '5 Todo', done: 'Listo' } };
 
 let animals = [], lang = 'en', running = false, bound = false, soundOn = true, round = 0, plan = [], cur = null, lastAnimal = '', busy = false, timers = [], drag = null, misses = 0, handAnim = null, patNo = 0;
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
@@ -35,7 +42,8 @@ const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[
 
 // ---------------------------------------------------------------- the plan: three rounds of each rule, then it comes round again a little harder
 function buildPlan() {
-  plan = []; for (let c = 0; c < 40; c++) { const n = Math.min(4, 3 + (c > 0 ? 1 : 0)); for (const m of ['shape', 'shape', 'shape', 'color', 'color', 'color']) plan.push({ m, n }); for (let k = 0; k < 3; k++) plan.push({ m: 'pattern', n }); }
+  plan = []; const on = ['shape', 'color', 'pattern'].filter((m) => cfg.games[m]); if (!on.length) on.push('shape');
+  for (let c = 0; c < 40; c++) { const n = Math.min(4, cfg.shapes); for (const m of on) for (let k = 0; k < (m === 'pattern' && cfg.train !== 'full' && cfg.train !== 'medium' ? Math.min(2, cfg.per) : cfg.per); k++) plan.push({ m, n }); }
 }
 function setScene(m) { stage.style.background = SCENE[m]; root.dataset.rule = m; rule.className = 'sh-rule ' + m; rule.querySelector('b').textContent = RULE_TXT[m][lang]; }
 const ICON = { shape: svg('triangle', 'blue') + svg('circle', 'red') + svg('square', 'yellow'), color: ['red', 'blue', 'yellow'].map((c) => `<i style="background:${COLORS[c]}"></i>`).join(''), pattern: svg('circle', 'red') + svg('square', 'blue') + svg('circle', 'red') };
@@ -60,9 +68,9 @@ function roundColor(n) {
   addPiece({ shape, color: want }, want);
 }
 function roundPattern() {
-  const type = PATTERN_TYPES[patNo++ % PATTERN_TYPES.length], byShape = patNo % 2 === 1, shapes = shuffle(SHAPES.slice(0, 4)), cols = shuffle(['red', 'blue', 'yellow', 'green']), baseShape = pick(shapes), baseCol = pick(cols);
+  const type = TRAINS[cfg.train][patNo++ % TRAINS[cfg.train].length], byShape = patNo % 2 === 1, shapes = shuffle(SHAPES.slice(0, 4)), cols = shuffle(['red', 'blue', 'yellow', 'green']), baseShape = pick(shapes), baseCol = pick(cols);
   const el = (i) => (byShape ? { shape: shapes[i], color: baseCol } : { shape: baseShape, color: cols[i] });
-  const unit = { AB: [0, 1], AAB: [0, 0, 1], ABC: [0, 1, 2] }[type], shown = type === 'AB' ? 4 : type === 'AAB' ? 5 : 5, seq = Array.from({ length: shown + 1 }, (_, i) => unit[i % unit.length]);
+  const unit = { A: [0], AB: [0, 1], AAB: [0, 0, 1], ABC: [0, 1, 2] }[type], shown = type === 'A' ? 3 : type === 'AB' ? (cfg.train === 'easy' ? 3 : 4) : 5, seq = Array.from({ length: shown + 1 }, (_, i) => unit[i % unit.length]);
   field.className = 'sh-field train'; field.innerHTML = '<div class="sh-engine">🚂</div>';
   seq.slice(0, shown).forEach((u) => { const c = document.createElement('div'); c.className = 'sh-car'; c.innerHTML = svg(el(u).shape, el(u).color); field.appendChild(c); });
   const want = el(seq[shown]), t = addTarget('<span class="q">?</span>', want, 'sh-slot', true); cur.targets = [t]; cur.ans = t;
@@ -120,22 +128,45 @@ function celebrate() {
   for (let i = 0; i < 4; i++) later(() => sparkle(stage.clientWidth * (0.2 + Math.random() * 0.6) + stage.getBoundingClientRect().left, stage.clientHeight * (0.25 + Math.random() * 0.4) + stage.getBoundingClientRect().top, 'x'), i * 250);
   round++; later(() => { pet.classList.remove('show'); }, 2700); later(startRound, 3000);
 }
-function renderProg() { const n = 9, k = round % n; prog.innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i < k ? 'done' : i === k ? 'now' : ''}"></i>`).join(''); }
+function renderProg() { const n = Math.min(plan.length, 9), k = round % n; prog.innerHTML = Array.from({ length: n }, (_, i) => `<i class="${i < k ? 'done' : i === k ? 'now' : ''}"></i>`).join(''); }
 
 // ---------------------------------------------------------------- setup
 function bind() {
-  if (bound) return; bound = true; root.addEventListener('pointerdown', () => unlock(), true); root.addEventListener('touchend', () => unlock(), true);
+  if (bound) return; bound = true; bindPanel(); root.addEventListener('pointerdown', () => unlock(), true); root.addEventListener('touchend', () => unlock(), true);
   document.addEventListener('pointermove', move); document.addEventListener('pointerup', up); document.addEventListener('pointercancel', up);
   document.querySelectorAll('#view-shapes .lang button').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
   $('#btn-shsound').addEventListener('click', () => { soundOn = !soundOn; $('#btn-shsound').classList.toggle('on', soundOn); setMuted(!soundOn); if (soundOn) unlock(); });
   rule.addEventListener('pointerdown', () => { unlock(); if (cur) say('rule_' + cur.m); });                                       // tap the rule to hear it
 }
 function setLang(l) {
-  lang = l; document.querySelectorAll('#view-shapes .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); if (cur) rule.querySelector('b').textContent = RULE_TXT[cur.m][l];
+  lang = l; if (!panel.hidden) paintPanel(); document.querySelectorAll('#view-shapes .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); if (cur) rule.querySelector('b').textContent = RULE_TXT[cur.m][l];
   [...SHAPES, ...Object.keys(COLORS), 'rule_shape', 'rule_color', 'rule_pattern'].forEach((id) => loadBuf(`sounds/shapes/${l}/${id}.mp3`)); animals.slice(0, 4).forEach((a) => { loadBuf(a.sound); new Image().src = `images/animals/${a.id}.png`; });
+}
+// ---------------------------------------------------------------- the grown-up panel (press and hold the gear)
+const panel = $('#sh-adult');
+function paintPanel() {
+  const t = TX[lang]; $('#sha-title').textContent = t.title; $('#sha-help').textContent = t.help; $('#sha-l-games').textContent = t.games; $('#sha-l-train').textContent = t.train; $('#sha-l-per').textContent = t.per; $('#sha-l-sh').textContent = t.sh; $('#sha-l-pre').textContent = t.pre; $('#sha-done-l').textContent = t.done;
+  panel.querySelectorAll('#sha-games button').forEach((b) => { b.textContent = t[b.dataset.k]; b.classList.toggle('on', !!cfg.games[b.dataset.k]); });
+  panel.querySelectorAll('#sha-train button').forEach((b) => { b.textContent = t[b.dataset.v]; b.classList.toggle('on', cfg.train === b.dataset.v); });
+  panel.querySelectorAll('#sha-per button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.per));
+  panel.querySelectorAll('#sha-shapes button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.shapes));
+  panel.querySelectorAll('#sha-pre button').forEach((b) => { b.textContent = t['p' + b.dataset.p]; });
+}
+function applyCfg() { saveCfg(); paintPanel(); buildPlan(); round = 0; patNo = 0; startRound(); }
+function bindPanel() {
+  const gear = $('#btn-shgear'); let hold = 0;
+  const cancel = () => { clearTimeout(hold); gear.classList.remove('holding'); };
+  gear.addEventListener('pointerdown', () => { unlock(); gear.classList.add('holding'); hold = setTimeout(() => { cancel(); paintPanel(); panel.hidden = false; clearTimers(); }, 1100); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((e) => gear.addEventListener(e, cancel));
+  panel.querySelectorAll('#sha-games button').forEach((b) => b.addEventListener('click', () => { const k = b.dataset.k, n = Object.values(cfg.games).filter(Boolean).length; if (cfg.games[k] && n === 1) return; cfg.games[k] = !cfg.games[k]; applyCfg(); }));
+  panel.querySelectorAll('#sha-train button').forEach((b) => b.addEventListener('click', () => { cfg.train = b.dataset.v; applyCfg(); }));
+  panel.querySelectorAll('#sha-per button').forEach((b) => b.addEventListener('click', () => { cfg.per = +b.dataset.v; applyCfg(); }));
+  panel.querySelectorAll('#sha-shapes button').forEach((b) => b.addEventListener('click', () => { cfg.shapes = +b.dataset.v; applyCfg(); }));
+  panel.querySelectorAll('#sha-pre button').forEach((b) => b.addEventListener('click', () => { cfg = JSON.parse(JSON.stringify(PRESETS[b.dataset.p])); applyCfg(); }));
+  $('#sha-done').addEventListener('click', () => { panel.hidden = true; startRound(); });
 }
 export async function enter() {
   running = true; setMuted(!soundOn); audio(); bind(); if (!animals.length) animals = await fetch('data/animals.json').then((r) => r.json()).catch(() => []);
-  if (!running) return; buildPlan(); round = 0; patNo = 0; lastAnimal = ''; setLang('en'); startRound();
+  if (!running) return; buildPlan(); round = 0; patNo = 0; lastAnimal = ''; panel.hidden = true; setLang('en'); startRound();
 }
 export function leave() { running = false; clearTimers(); stopSound(); busy = false; drag = null; pet.classList.remove('show'); }

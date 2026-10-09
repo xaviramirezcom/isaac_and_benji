@@ -252,9 +252,23 @@
           <button type="button" data-lang="en" class="on">EN</button>
           <button type="button" data-lang="es">ES</button>
         </div>
+        <button class="round-btn small" id="btn-shgear" type="button" aria-label="For grown-ups: hold to open"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 10.5a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11zM13.5 3h5l.8 3.400 2.200.9 3-1.800 3.500 3.500-1.800 3 .9 2.200L30 15v5l-3.400.8-.9 2.200 1.800 3-3.500 3.500-3-1.800-2.200.9L18.500 30h-5l-.8-3.400-2.200-.9-3 1.800L4 24l1.800-3-.9-2.200L1.500 18v-5l3.400-.8.9-2.200L4 7l3.500-3.500 3 1.800 2.200-.9z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" transform="translate(0 -1) scale(.96)"/></svg><i class="hold-ring"></i></button>
         <button class="round-btn small on" id="btn-shsound" type="button" aria-label="Sound"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 12h5.5L16 5.5v21L8.5 20H3z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M21 11.5a6.5 6.5 0 0 1 0 9M25 7.5a12 12 0 0 1 0 17" stroke="currentColor" stroke-width="2.8" fill="none" stroke-linecap="round"/></svg></button>
       </div>
       <div class="fr-prog sh-prog" id="sh-prog" aria-hidden="true"></div>
+      <div class="sh-adult" id="sh-adult" hidden>
+        <div class="sh-adult-card">
+          <h3 id="sha-title">For grown-ups</h3>
+          <p id="sha-help" class="sha-help"></p>
+          <div class="sha-row"><b id="sha-l-games">Games</b><div class="sha-opts" id="sha-games"><button type="button" data-k="shape"></button><button type="button" data-k="color"></button><button type="button" data-k="pattern"></button></div></div>
+          <div class="sha-row"><b id="sha-l-train">Train</b><div class="sha-opts" id="sha-train"><button type="button" data-v="same"></button><button type="button" data-v="easy"></button><button type="button" data-v="medium"></button><button type="button" data-v="full"></button></div></div>
+          <div class="sha-row"><b id="sha-l-per">Rounds before the rule changes</b><div class="sha-opts" id="sha-per"><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button><button type="button" data-v="6">6</button></div></div>
+          <div class="sha-row"><b id="sha-l-sh">Shapes to choose from</b><div class="sha-opts" id="sha-shapes"><button type="button" data-v="2">2</button><button type="button" data-v="3">3</button><button type="button" data-v="4">4</button></div></div>
+          <div class="sha-row"><b id="sha-l-pre">Quick levels</b><div class="sha-opts" id="sha-pre"><button type="button" data-p="1"></button><button type="button" data-p="2"></button><button type="button" data-p="3"></button><button type="button" data-p="4"></button><button type="button" data-p="5"></button></div></div>
+          <button type="button" class="ic-btn" id="sha-done"><span id="sha-done-l">Done</span></button>
+        </div>
+      </div>
+
     </section>
 
     <!-- Mouth placer (a helper to mark where each animal's mouth is) -->
