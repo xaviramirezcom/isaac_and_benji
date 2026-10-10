@@ -10,19 +10,20 @@ import { audio, unlock, loadBuf, playUrl, tone, nope, chime, setMuted, stop as s
 const $ = (s) => document.querySelector(s);
 const root = $('#view-shapes'), stage = $('#sh-stage'), rule = $('#sh-rule'), field = $('#sh-field'), tray = $('#sh-tray'), burst = $('#sh-burst'), pet = $('#sh-pet'), prog = $('#sh-prog'), hand = $('#sh-hand');
 
-const COLORS = { red: '#ff4d4d', blue: '#3b82f6', yellow: '#ffd23f', green: '#3fc66b', orange: '#ff9f43', purple: '#a66cff' };
-const SHAPES = ['circle', 'square', 'triangle', 'star', 'heart'];
-const NAMES = { en: { circle: 'Circle', square: 'Square', triangle: 'Triangle', star: 'Star', heart: 'Heart', red: 'Red', blue: 'Blue', yellow: 'Yellow', green: 'Green', orange: 'Orange', purple: 'Purple' }, es: { circle: 'Círculo', square: 'Cuadrado', triangle: 'Triángulo', star: 'Estrella', heart: 'Corazón', red: 'Rojo', blue: 'Azul', yellow: 'Amarillo', green: 'Verde', orange: 'Naranja', purple: 'Morado' } };
+const COLORS = { red: '#ff4d4d', blue: '#3b82f6', yellow: '#ffd23f', green: '#3fc66b', orange: '#ff9f43', purple: '#a66cff', pink: '#ff7eb6', brown: '#9a6a43' };
+const COLOR_LIST = ['red', 'blue', 'yellow', 'green', 'orange', 'purple', 'pink', 'brown'];   // the order they are added in
+const SHAPES = ['circle', 'square', 'triangle', 'star', 'heart', 'diamond', 'oval', 'rectangle'];   // the look-alikes (oval, rectangle) come last
+const NAMES = { en: { circle: 'Circle', square: 'Square', triangle: 'Triangle', star: 'Star', heart: 'Heart', diamond: 'Diamond', oval: 'Oval', rectangle: 'Rectangle', pink: 'Pink', brown: 'Brown', red: 'Red', blue: 'Blue', yellow: 'Yellow', green: 'Green', orange: 'Orange', purple: 'Purple' }, es: { circle: 'Círculo', square: 'Cuadrado', triangle: 'Triángulo', star: 'Estrella', heart: 'Corazón', diamond: 'Rombo', oval: 'Óvalo', rectangle: 'Rectángulo', pink: 'Rosa', brown: 'Marrón', red: 'Rojo', blue: 'Azul', yellow: 'Amarillo', green: 'Verde', orange: 'Naranja', purple: 'Morado' } };
 const RULE_TXT = { shape: { en: 'Same shape', es: 'Misma forma' }, color: { en: 'Same color', es: 'Mismo color' }, pattern: { en: 'What comes next?', es: '¿Qué sigue?' } };
 const SCENE = { shape: '#d9eefe', color: '#ffe6cc', pattern: '#dcf6dc' };
 const HINT_AFTER = 9000, TRAINS = { same: ['A'], easy: ['AB'], medium: ['AB', 'AB', 'AAB'], full: ['AB', 'AB', 'AAB', 'ABC', 'AAB', 'ABC'] };
 // the grown-up settings (saved on this device): which games, how hard the train is, how long each rule lasts
-const DEF = { games: { shape: true, color: true, pattern: false }, train: 'same', per: 3, shapes: 3 }, G = (shape, color, pattern) => ({ shape, color, pattern });
-const PRESETS = { 1: { games: G(true, false, false), train: 'same', per: 4, shapes: 3 }, 2: { games: G(true, true, false), train: 'same', per: 3, shapes: 3 }, 3: { games: G(true, true, true), train: 'same', per: 3, shapes: 3 }, 4: { games: G(true, true, true), train: 'easy', per: 3, shapes: 3 }, 5: { games: G(true, true, true), train: 'full', per: 3, shapes: 4 } };
+const DEF = { games: { shape: true, color: true, pattern: false }, train: 'same', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, G = (shape, color, pattern) => ({ shape, color, pattern });
+const PRESETS = { 1: { games: G(true, false, false), train: 'same', per: 4, shapes: 3, nShapes: 3, nColors: 3 }, 2: { games: G(true, true, false), train: 'same', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, 3: { games: G(true, true, true), train: 'same', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, 4: { games: G(true, true, true), train: 'easy', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, 5: { games: G(true, true, true), train: 'full', per: 3, shapes: 4, nShapes: 5, nColors: 5 } };
 let cfg = (() => { try { return { ...DEF, ...JSON.parse(localStorage.getItem('shapesCfg')) }; } catch { return { ...DEF }; } })();
 const saveCfg = () => { try { localStorage.setItem('shapesCfg', JSON.stringify(cfg)); } catch { /* private mode */ } };
-const TX = { en: { title: 'For grown-ups', help: 'Choose what Benji plays. The scene changes colour when the rule changes.', games: 'Games', shape: 'Shape', color: 'Color', pattern: 'Train', train: 'Train difficulty', same: 'Easiest: same again', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rounds before the rule changes', sh: 'Shapes to choose from', pre: 'Quick levels (for a 2-year-old start at 1 or 2)', p1: '1 Shapes only', p2: '2 + Colors', p3: '3 + Train: same again', p4: '4 + Train: A-B', p5: '5 Everything', done: 'Done' },
-  es: { title: 'Para adultos', help: 'Elige qué juega Benji. La escena cambia de color cuando cambia la regla.', games: 'Juegos', shape: 'Forma', color: 'Color', pattern: 'Tren', train: 'Dificultad del tren', same: 'Lo más fácil: igual otra vez', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rondas antes de cambiar la regla', sh: 'Formas para elegir', pre: 'Niveles rápidos (a los 2 años, empieza en 1 o 2)', p1: '1 Solo formas', p2: '2 + Colores', p3: '3 + Tren: igual otra vez', p4: '4 + Tren: A-B', p5: '5 Todo', done: 'Listo' } };
+const TX = { en: { nsh: 'Shapes in the game (more = harder)', ncol: 'Colors in the game (more = harder)', title: 'For grown-ups', help: 'Choose what Benji plays. The scene changes colour when the rule changes.', games: 'Games', shape: 'Shape', color: 'Color', pattern: 'Train', train: 'Train difficulty', same: 'Easiest: same again', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rounds before the rule changes', sh: 'Shapes to choose from', pre: 'Quick levels (for a 2-year-old start at 1 or 2)', p1: '1 Shapes only', p2: '2 + Colors', p3: '3 + Train: same again', p4: '4 + Train: A-B', p5: '5 Everything', done: 'Done' },
+  es: { nsh: 'Formas en el juego (más = más difícil)', ncol: 'Colores en el juego (más = más difícil)', title: 'Para adultos', help: 'Elige qué juega Benji. La escena cambia de color cuando cambia la regla.', games: 'Juegos', shape: 'Forma', color: 'Color', pattern: 'Tren', train: 'Dificultad del tren', same: 'Lo más fácil: igual otra vez', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rondas antes de cambiar la regla', sh: 'Formas para elegir', pre: 'Niveles rápidos (a los 2 años, empieza en 1 o 2)', p1: '1 Solo formas', p2: '2 + Colores', p3: '3 + Tren: igual otra vez', p4: '4 + Tren: A-B', p5: '5 Todo', done: 'Listo' } };
 
 let animals = [], lang = 'en', running = false, bound = false, soundOn = true, round = 0, plan = [], cur = null, lastAnimal = '', busy = false, timers = [], drag = null, misses = 0, handAnim = null, patNo = 0;
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
@@ -31,7 +32,7 @@ const say = (id) => playUrl(`sounds/shapes/${lang}/${id}.mp3`, { gain: 1, stopPr
 
 // ---------------------------------------------------------------- shapes drawn as clean SVG
 const starPath = () => { const p = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 19 : 45, a = -Math.PI / 2 + i * Math.PI / 5; p.push(`${(50 + r * Math.cos(a)).toFixed(1)},${(54 + r * Math.sin(a)).toFixed(1)}`); } return `M${p.join('L')}Z`; };
-const GEO = { circle: '<circle cx="50" cy="50" r="40"/>', square: '<rect x="14" y="14" width="72" height="72" rx="8"/>', triangle: '<path d="M50 14L87 82H13Z"/>', star: `<path d="${starPath()}"/>`, heart: '<path d="M50 86C14 60 12 30 31 23C42 19 50 27 50 33C50 27 58 19 69 23C88 30 86 60 50 86Z"/>' };
+const GEO = { diamond: '<path d="M50 10L88 50L50 90L12 50Z"/>', oval: '<ellipse cx="50" cy="50" rx="42" ry="28"/>', rectangle: '<rect x="9" y="26" width="82" height="48" rx="7"/>', circle: '<circle cx="50" cy="50" r="40"/>', square: '<rect x="14" y="14" width="72" height="72" rx="8"/>', triangle: '<path d="M50 14L87 82H13Z"/>', star: `<path d="${starPath()}"/>`, heart: '<path d="M50 86C14 60 12 30 31 23C42 19 50 27 50 33C50 27 58 19 69 23C88 30 86 60 50 86Z"/>' };
 function svg(shape, color, mode = 'solid') {   // mode: solid piece, or home (a dashed outline waiting to be filled)
   const c = COLORS[color] ?? color;
   const st = mode === 'home' || mode === 'chome' ? `fill="${c}" fill-opacity="${mode === 'chome' ? .38 : .16}" stroke="${c}" stroke-opacity=".95" stroke-width="5" stroke-dasharray="9 8" stroke-linejoin="round"` : `fill="${c}" stroke="${c}" stroke-width="10" stroke-linejoin="round"`;
@@ -40,6 +41,8 @@ function svg(shape, color, mode = 'solid') {   // mode: solid piece, or home (a 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 // the right answer never sits in the same place two rounds in a row (so "always the middle" can never work)
 const lastPos = {}, lastQ = {};
+// the pools: 3 shapes (circle, square, triangle) and 3 colours (red, blue, yellow) — a grown-up can raise it to 4 in the panel
+const shapePool = () => SHAPES.slice(0, Math.max(3, Math.min(8, cfg.nShapes))), colorPool = () => COLOR_LIST.slice(0, Math.max(3, Math.min(8, cfg.nColors)));
 const pickNot = (arr, last) => { const o = arr.filter((v) => v !== last); return pick(o.length ? o : arr); };   // a different one from last time
 function place(arr, isAns, key) {
   const i = arr.findIndex(isAns);
@@ -66,12 +69,12 @@ function startRound() {
   renderProg(); later(showHint, HINT_AFTER); [...field.querySelectorAll('.sh-home,.sh-slot')].forEach((el, i) => { el.style.animationDelay = `${i * 80}ms`; });
 }
 function roundShape(n) {
-  const set = SHAPES.slice(0, n), want = pickNot(set, lastQ.shape), col = pickNot(Object.keys(COLORS).slice(0, 4), lastQ.pcol); lastQ.shape = want; lastQ.pcol = col; field.className = 'sh-field homes';
+  const set = shuffle(shapePool()).slice(0, n), want = pickNot(set, lastQ.shape), col = pickNot(colorPool(), lastQ.pcol); lastQ.shape = want; lastQ.pcol = col; field.className = 'sh-field homes';
   cur.targets = place(shuffle(set), (s) => s === want, 'home').map((s) => addTarget(svg(s, '#2f5d8a', 'home'), { shape: s }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.shape === want);
   addPiece({ shape: want, color: col }, want);
 }
 function roundColor(n) {
-  const cols = shuffle(['red', 'blue', 'yellow', 'green']).slice(0, n - 0 > 4 ? 4 : n), want = pickNot(cols, lastQ.color), shape = pickNot(SHAPES.slice(0, 4), lastQ.cshape); lastQ.color = want; lastQ.cshape = shape; field.className = 'sh-field homes';
+  const cols = shuffle(colorPool()).slice(0, n), want = pickNot(cols, lastQ.color), shape = pickNot(shapePool(), lastQ.cshape); lastQ.color = want; lastQ.cshape = shape; field.className = 'sh-field homes';
   cur.targets = place(cols, (c) => c === want, 'home').map((c) => addTarget(svg('circle', c, 'chome'), { color: c }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.color === want);
   addPiece({ shape, color: want }, want);
 }
@@ -81,14 +84,14 @@ function roundPattern() {
   lastQ.pat = cur.qkey;
 }
 function buildTrain() {
-  const type = TRAINS[cfg.train][patNo++ % TRAINS[cfg.train].length], byShape = patNo % 2 === 1, shapes = shuffle(SHAPES.slice(0, 4)), cols = shuffle(['red', 'blue', 'yellow', 'green']), baseShape = pick(shapes), baseCol = pick(cols);
+  const type = TRAINS[cfg.train][patNo++ % TRAINS[cfg.train].length], byShape = patNo % 2 === 1, shapes = shuffle(shapePool()), cols = shuffle(colorPool()), baseShape = pick(shapes), baseCol = pick(cols);
   const el = (i) => (byShape ? { shape: shapes[i], color: baseCol } : { shape: baseShape, color: cols[i] });
-  const unit = { A: [0], AB: [0, 1], AAB: [0, 0, 1], ABC: [0, 1, 2] }[type], shown = type === 'A' ? 3 : type === 'AB' ? (cfg.train === 'easy' ? 3 : 4) : 5, seq = Array.from({ length: shown + 1 }, (_, i) => unit[i % unit.length]);
+  const unit = { A: [0], AB: [0, 1], AAB: [0, 0, 1], ABC: [0, 1, 2] }[type], shown = 4, seq = Array.from({ length: shown + 1 }, (_, i) => unit[i % unit.length]);
   field.className = 'sh-field train'; field.innerHTML = '<div class="sh-engine">🚂</div>';
   seq.slice(0, shown).forEach((u) => { const c = document.createElement('div'); c.className = 'sh-car'; c.innerHTML = svg(el(u).shape, el(u).color); field.appendChild(c); });
   const want = el(seq[shown]); cur.qkey = `${want.shape}-${want.color}`; const t = addTarget('<span class="q">?</span>', want, 'sh-slot', true); cur.targets = [t]; cur.ans = t;
-  const pool = [0, 1, 2, 3].filter((i) => i !== seq[shown]), others = shuffle(pool).slice(0, 2).map(el), opts = place(shuffle([want, ...others]), (o) => o === want, 'opt');   // three choices, like the other rounds
-  tray.classList.toggle('three', opts.length === 3); opts.forEach((o) => addPiece(o, byShape ? o.shape : o.color));
+  const other = el(shuffle([0, 1, 2].filter((i) => i !== seq[shown]))[0]), opts = place(shuffle([want, other]), (o) => o === want, 'opt');   // two choices, as before
+  opts.forEach((o) => addPiece(o, byShape ? o.shape : o.color));
 }
 function addTarget(html, key, cls, inCar) { const d = document.createElement('div'); d.className = cls + (inCar ? ' sh-car' : ''); d.innerHTML = html; field.appendChild(d); return { el: d, key }; }
 function addPiece(key, nameId) {
@@ -154,12 +157,12 @@ function bind() {
 }
 function setLang(l) {
   lang = l; if (!panel.hidden) paintPanel(); document.querySelectorAll('#view-shapes .lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l)); if (cur) rule.querySelector('b').textContent = RULE_TXT[cur.m][l];
-  [...SHAPES, ...Object.keys(COLORS), 'rule_shape', 'rule_color', 'rule_pattern'].forEach((id) => loadBuf(`sounds/shapes/${l}/${id}.mp3`)); animals.slice(0, 4).forEach((a) => { loadBuf(a.sound); new Image().src = `images/animals/${a.id}.png`; });
+  [...SHAPES, ...COLOR_LIST, 'rule_shape', 'rule_color', 'rule_pattern'].forEach((id) => loadBuf(`sounds/shapes/${l}/${id}.mp3`)); animals.slice(0, 4).forEach((a) => { loadBuf(a.sound); new Image().src = `images/animals/${a.id}.png`; });
 }
 // ---------------------------------------------------------------- the grown-up panel (press and hold the gear)
 const panel = $('#sh-adult');
 function paintPanel() {
-  const t = TX[lang]; $('#sha-title').textContent = t.title; $('#sha-help').textContent = t.help; $('#sha-l-games').textContent = t.games; $('#sha-l-train').textContent = t.train; $('#sha-l-per').textContent = t.per; $('#sha-l-sh').textContent = t.sh; $('#sha-l-pre').textContent = t.pre; $('#sha-done-l').textContent = t.done;
+  const t = TX[lang]; $('#sha-l-nsh').textContent = t.nsh; $('#sha-l-ncol').textContent = t.ncol; panel.querySelectorAll('#sha-nshapes button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.nShapes)); panel.querySelectorAll('#sha-ncolors button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.nColors)); $('#sha-title').textContent = t.title; $('#sha-help').textContent = t.help; $('#sha-l-games').textContent = t.games; $('#sha-l-train').textContent = t.train; $('#sha-l-per').textContent = t.per; $('#sha-l-sh').textContent = t.sh; $('#sha-l-pre').textContent = t.pre; $('#sha-done-l').textContent = t.done;
   panel.querySelectorAll('#sha-games button').forEach((b) => { b.textContent = t[b.dataset.k]; b.classList.toggle('on', !!cfg.games[b.dataset.k]); });
   panel.querySelectorAll('#sha-train button').forEach((b) => { b.textContent = t[b.dataset.v]; b.classList.toggle('on', cfg.train === b.dataset.v); });
   panel.querySelectorAll('#sha-per button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.per));
@@ -180,6 +183,8 @@ function bindPanel() {
   panel.querySelectorAll('#sha-train button').forEach((b) => b.addEventListener('click', () => { cfg.train = b.dataset.v; applyCfg(); }));
   panel.querySelectorAll('#sha-per button').forEach((b) => b.addEventListener('click', () => { cfg.per = +b.dataset.v; applyCfg(); }));
   panel.querySelectorAll('#sha-shapes button').forEach((b) => b.addEventListener('click', () => { cfg.shapes = +b.dataset.v; applyCfg(); }));
+  panel.querySelectorAll('#sha-nshapes button').forEach((b) => b.addEventListener('click', () => { cfg.nShapes = +b.dataset.v; applyCfg(); }));
+  panel.querySelectorAll('#sha-ncolors button').forEach((b) => b.addEventListener('click', () => { cfg.nColors = +b.dataset.v; applyCfg(); }));
   panel.querySelectorAll('#sha-pre button').forEach((b) => b.addEventListener('click', () => { cfg = JSON.parse(JSON.stringify(PRESETS[b.dataset.p])); applyCfg(); }));
   $('#sha-done').addEventListener('click', () => { panel.hidden = true; startRound(); });
 }

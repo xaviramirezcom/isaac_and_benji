@@ -6,8 +6,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VOICES = {'en': 'Samantha', 'es': 'Paulina'}
 TARGET = -16.0
 WORDS = {
-  'circle': ('Circle', 'Círculo'), 'square': ('Square', 'Cuadrado'), 'triangle': ('Triangle', 'Triángulo'), 'star': ('Star', 'Estrella'), 'heart': ('Heart', 'Corazón'),
-  'red': ('Red', 'Rojo'), 'blue': ('Blue', 'Azul'), 'yellow': ('Yellow', 'Amarillo'), 'green': ('Green', 'Verde'), 'orange': ('Orange', 'Naranja'), 'purple': ('Purple', 'Morado'),
+  'circle': ('Circle', 'Círculo'), 'square': ('Square', 'Cuadrado'), 'triangle': ('Triangle', 'Triángulo'), 'star': ('Star', 'Estrella'), 'heart': ('Heart', 'Corazón'), 'diamond': ('Diamond', 'Rombo'), 'oval': ('Oval', 'Óvalo'), 'rectangle': ('Rectangle', 'Rectángulo'),
+  'red': ('Red', 'Rojo'), 'blue': ('Blue', 'Azul'), 'yellow': ('Yellow', 'Amarillo'), 'green': ('Green', 'Verde'), 'orange': ('Orange', 'Naranja'), 'purple': ('Purple', 'Morado'), 'pink': ('Pink', 'Rosa'), 'brown': ('Brown', 'Marrón'),
   'rule_shape': ('Find the same shape!', '¡Busca la misma forma!'), 'rule_color': ('Find the same color!', '¡Busca el mismo color!'), 'rule_pattern': ('What comes next?', '¿Qué sigue?'),
 }
 def mean_db(path):
