@@ -18,12 +18,12 @@ const RULE_TXT = { shape: { en: 'Same shape', es: 'Misma forma' }, color: { en: 
 const SCENE = { shape: '#d9eefe', color: '#ffe6cc', pattern: '#dcf6dc' };
 const HINT_AFTER = 9000, TRAINS = { same: ['A'], easy: ['AB'], medium: ['AB', 'AB', 'AAB'], full: ['AB', 'AB', 'AAB', 'ABC', 'AAB', 'ABC'] };
 // the grown-up settings (saved on this device): which games, how hard the train is, how long each rule lasts
-const DEF = { games: { shape: true, color: true, pattern: false }, train: 'same', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, G = (shape, color, pattern) => ({ shape, color, pattern });
+const DEF = { games: { shape: true, color: true, pattern: false }, train: 'same', per: 3, shapes: 3, nShapes: 3, nColors: 3, say: true }, G = (shape, color, pattern) => ({ shape, color, pattern });
 const PRESETS = { 1: { games: G(true, false, false), train: 'same', per: 4, shapes: 3, nShapes: 3, nColors: 3 }, 2: { games: G(true, true, false), train: 'same', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, 3: { games: G(true, true, true), train: 'same', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, 4: { games: G(true, true, true), train: 'easy', per: 3, shapes: 3, nShapes: 3, nColors: 3 }, 5: { games: G(true, true, true), train: 'full', per: 3, shapes: 4, nShapes: 5, nColors: 5 } };
 let cfg = (() => { try { return { ...DEF, ...JSON.parse(localStorage.getItem('shapesCfg')) }; } catch { return { ...DEF }; } })();
 const saveCfg = () => { try { localStorage.setItem('shapesCfg', JSON.stringify(cfg)); } catch { /* private mode */ } };
-const TX = { en: { nsh: 'Shapes in the game (more = harder)', ncol: 'Colors in the game (more = harder)', title: 'For grown-ups', help: 'Choose what Benji plays. The scene changes colour when the rule changes.', games: 'Games', shape: 'Shape', color: 'Color', pattern: 'Train', train: 'Train difficulty', same: 'Easiest: same again', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rounds before the rule changes', sh: 'Shapes to choose from', pre: 'Quick levels (for a 2-year-old start at 1 or 2)', p1: '1 Shapes only', p2: '2 + Colors', p3: '3 + Train: same again', p4: '4 + Train: A-B', p5: '5 Everything', done: 'Done' },
-  es: { nsh: 'Formas en el juego (más = más difícil)', ncol: 'Colores en el juego (más = más difícil)', title: 'Para adultos', help: 'Elige qué juega Benji. La escena cambia de color cuando cambia la regla.', games: 'Juegos', shape: 'Forma', color: 'Color', pattern: 'Tren', train: 'Dificultad del tren', same: 'Lo más fácil: igual otra vez', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rondas antes de cambiar la regla', sh: 'Formas para elegir', pre: 'Niveles rápidos (a los 2 años, empieza en 1 o 2)', p1: '1 Solo formas', p2: '2 + Colores', p3: '3 + Tren: igual otra vez', p4: '4 + Tren: A-B', p5: '5 Todo', done: 'Listo' } };
+const TX = { en: { lsay: 'Say the name when each round starts', on: 'On', off: 'Off', nsh: 'Shapes in the game (more = harder)', ncol: 'Colors in the game (more = harder)', title: 'For grown-ups', help: 'Choose what Benji plays. The scene changes colour when the rule changes.', games: 'Games', shape: 'Shape', color: 'Color', pattern: 'Train', train: 'Train difficulty', same: 'Easiest: same again', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rounds before the rule changes', sh: 'Shapes to choose from', pre: 'Quick levels (for a 2-year-old start at 1 or 2)', p1: '1 Shapes only', p2: '2 + Colors', p3: '3 + Train: same again', p4: '4 + Train: A-B', p5: '5 Everything', done: 'Done' },
+  es: { lsay: 'Decir el nombre al empezar cada ronda', on: 'Sí', off: 'No', nsh: 'Formas en el juego (más = más difícil)', ncol: 'Colores en el juego (más = más difícil)', title: 'Para adultos', help: 'Elige qué juega Benji. La escena cambia de color cuando cambia la regla.', games: 'Juegos', shape: 'Forma', color: 'Color', pattern: 'Tren', train: 'Dificultad del tren', same: 'Lo más fácil: igual otra vez', easy: 'A-B', medium: '+ A-A-B', full: '+ A-B-C', per: 'Rondas antes de cambiar la regla', sh: 'Formas para elegir', pre: 'Niveles rápidos (a los 2 años, empieza en 1 o 2)', p1: '1 Solo formas', p2: '2 + Colores', p3: '3 + Tren: igual otra vez', p4: '4 + Tren: A-B', p5: '5 Todo', done: 'Listo' } };
 
 let animals = [], lang = 'en', running = false, bound = false, soundOn = true, round = 0, plan = [], cur = null, lastAnimal = '', busy = false, timers = [], drag = null, misses = 0, handAnim = null, patNo = 0;
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
@@ -37,6 +37,10 @@ function svg(shape, color, mode = 'solid') {   // mode: solid piece, or home (a 
   const c = COLORS[color] ?? color;
   const st = mode === 'home' || mode === 'chome' ? `fill="${c}" fill-opacity="${mode === 'chome' ? .38 : .16}" stroke="${c}" stroke-opacity=".95" stroke-width="5" stroke-dasharray="9 8" stroke-linejoin="round"` : `fill="${c}" stroke="${c}" stroke-width="10" stroke-linejoin="round"`;
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><g ${st}>${GEO[shape]}</g>${mode === 'solid' ? `<g fill="#fff" opacity=".28" transform="translate(-2 -3) scale(.9)" style="transform-origin:50px 50px"><ellipse cx="38" cy="32" rx="14" ry="7" transform="rotate(-25 38 32)"/></g>` : ''}</svg>`;
+}
+let lastSaid = '';
+function sayQuestion() {   // when a shape or colour round starts, its name is said (if the phone's sound is awake)
+  if (!cur || busy) return; lastSaid = cur.pieces[0].nameId; const ctx = audio(); if (ctx && ctx.state === 'running') say(lastSaid);
 }
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 // the right answer never sits in the same place two rounds in a row (so "always the middle" can never work)
@@ -66,7 +70,7 @@ function startRound() {
   const switched = round > 0 && prev.m !== p.m; field.innerHTML = ''; tray.innerHTML = ''; tray.classList.remove('three'); cur = { m: p.m, targets: [], pieces: [], ans: null };
   setScene(p.m); setIcon(p.m); if (switched) { rule.classList.remove('flip'); void rule.offsetWidth; rule.classList.add('flip'); stage.classList.remove('swoosh'); void stage.offsetWidth; stage.classList.add('swoosh'); }
   if (p.m === 'shape') roundShape(p.n); else if (p.m === 'color') roundColor(p.n); else roundPattern(p.n);
-  renderProg(); later(showHint, HINT_AFTER); [...field.querySelectorAll('.sh-home,.sh-slot')].forEach((el, i) => { el.style.animationDelay = `${i * 80}ms`; });
+  renderProg(); later(showHint, HINT_AFTER); if (cfg.say && cur.m !== 'pattern') later(sayQuestion, 900); [...field.querySelectorAll('.sh-home,.sh-slot')].forEach((el, i) => { el.style.animationDelay = `${i * 80}ms`; });
 }
 function roundShape(n) {
   const set = shuffle(shapePool()).slice(0, n), want = pickNot(set, lastQ.shape), col = pickNot(colorPool(), lastQ.pcol); lastQ.shape = want; lastQ.pcol = col; field.className = 'sh-field homes';
@@ -162,7 +166,7 @@ function setLang(l) {
 // ---------------------------------------------------------------- the grown-up panel (press and hold the gear)
 const panel = $('#sh-adult');
 function paintPanel() {
-  const t = TX[lang]; $('#sha-l-nsh').textContent = t.nsh; $('#sha-l-ncol').textContent = t.ncol; panel.querySelectorAll('#sha-nshapes button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.nShapes)); panel.querySelectorAll('#sha-ncolors button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.nColors)); $('#sha-title').textContent = t.title; $('#sha-help').textContent = t.help; $('#sha-l-games').textContent = t.games; $('#sha-l-train').textContent = t.train; $('#sha-l-per').textContent = t.per; $('#sha-l-sh').textContent = t.sh; $('#sha-l-pre').textContent = t.pre; $('#sha-done-l').textContent = t.done;
+  const t = TX[lang]; $('#sha-l-say').textContent = t.lsay; panel.querySelectorAll('#sha-say button').forEach((b) => { b.textContent = b.dataset.v === '1' ? t.on : t.off; b.classList.toggle('on', (b.dataset.v === '1') === !!cfg.say); }); $('#sha-l-nsh').textContent = t.nsh; $('#sha-l-ncol').textContent = t.ncol; panel.querySelectorAll('#sha-nshapes button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.nShapes)); panel.querySelectorAll('#sha-ncolors button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.nColors)); $('#sha-title').textContent = t.title; $('#sha-help').textContent = t.help; $('#sha-l-games').textContent = t.games; $('#sha-l-train').textContent = t.train; $('#sha-l-per').textContent = t.per; $('#sha-l-sh').textContent = t.sh; $('#sha-l-pre').textContent = t.pre; $('#sha-done-l').textContent = t.done;
   panel.querySelectorAll('#sha-games button').forEach((b) => { b.textContent = t[b.dataset.k]; b.classList.toggle('on', !!cfg.games[b.dataset.k]); });
   panel.querySelectorAll('#sha-train button').forEach((b) => { b.textContent = t[b.dataset.v]; b.classList.toggle('on', cfg.train === b.dataset.v); });
   panel.querySelectorAll('#sha-per button').forEach((b) => b.classList.toggle('on', +b.dataset.v === cfg.per));
@@ -183,14 +187,15 @@ function bindPanel() {
   panel.querySelectorAll('#sha-train button').forEach((b) => b.addEventListener('click', () => { cfg.train = b.dataset.v; applyCfg(); }));
   panel.querySelectorAll('#sha-per button').forEach((b) => b.addEventListener('click', () => { cfg.per = +b.dataset.v; applyCfg(); }));
   panel.querySelectorAll('#sha-shapes button').forEach((b) => b.addEventListener('click', () => { cfg.shapes = +b.dataset.v; applyCfg(); }));
+  panel.querySelectorAll('#sha-say button').forEach((b) => b.addEventListener('click', () => { cfg.say = b.dataset.v === '1'; applyCfg(); }));
   panel.querySelectorAll('#sha-nshapes button').forEach((b) => b.addEventListener('click', () => { cfg.nShapes = +b.dataset.v; applyCfg(); }));
   panel.querySelectorAll('#sha-ncolors button').forEach((b) => b.addEventListener('click', () => { cfg.nColors = +b.dataset.v; applyCfg(); }));
-  panel.querySelectorAll('#sha-pre button').forEach((b) => b.addEventListener('click', () => { cfg = JSON.parse(JSON.stringify(PRESETS[b.dataset.p])); applyCfg(); }));
+  panel.querySelectorAll('#sha-pre button').forEach((b) => b.addEventListener('click', () => { cfg = { ...cfg, ...JSON.parse(JSON.stringify(PRESETS[b.dataset.p])) }; applyCfg(); }));
   $('#sha-done').addEventListener('click', () => { panel.hidden = true; startRound(); });
 }
 export async function enter() {
   running = true; setMuted(!soundOn); audio(); bind(); if (!animals.length) animals = await fetch('data/animals.json').then((r) => r.json()).catch(() => []);
   if (!running) return; buildPlan(); round = 0; patNo = 0; lastAnimal = ''; panel.hidden = true; setLang('en'); startRound();
 }
-if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__shapes = { q: () => (cur.m === 'pattern' ? cur.qkey : JSON.stringify(cur.pieces[0].key)), mode: () => cur.m, next: () => { startRound(); return cur.targets.indexOf(cur.ans); }, pos: () => cur.targets.indexOf(cur.ans), optPos: () => cur.pieces.findIndex((p) => cur.m === 'pattern' && same(p.key, cur.ans.key)) };   // dev helper
+if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__shapes = { said: () => lastSaid, q: () => (cur.m === 'pattern' ? cur.qkey : JSON.stringify(cur.pieces[0].key)), mode: () => cur.m, next: () => { startRound(); return cur.targets.indexOf(cur.ans); }, pos: () => cur.targets.indexOf(cur.ans), optPos: () => cur.pieces.findIndex((p) => cur.m === 'pattern' && same(p.key, cur.ans.key)) };   // dev helper
 export function leave() { running = false; clearTimers(); stopSound(); busy = false; drag = null; pet.classList.remove('show'); }
