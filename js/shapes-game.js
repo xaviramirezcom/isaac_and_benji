@@ -39,7 +39,8 @@ function svg(shape, color, mode = 'solid') {   // mode: solid piece, or home (a 
 }
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 // the right answer never sits in the same place two rounds in a row (so "always the middle" can never work)
-const lastPos = {};
+const lastPos = {}, lastQ = {};
+const pickNot = (arr, last) => { const o = arr.filter((v) => v !== last); return pick(o.length ? o : arr); };   // a different one from last time
 function place(arr, isAns, key) {
   const i = arr.findIndex(isAns);
   if (arr.length > 1 && i === lastPos[key]) { const others = arr.map((_, k) => k).filter((k) => k !== i), j = pick(others); [arr[i], arr[j]] = [arr[j], arr[i]]; }
@@ -65,22 +66,27 @@ function startRound() {
   renderProg(); later(showHint, HINT_AFTER); [...field.querySelectorAll('.sh-home,.sh-slot')].forEach((el, i) => { el.style.animationDelay = `${i * 80}ms`; });
 }
 function roundShape(n) {
-  const set = SHAPES.slice(0, n), want = pick(set), col = pick(Object.keys(COLORS).slice(0, 4)); field.className = 'sh-field homes';
+  const set = SHAPES.slice(0, n), want = pickNot(set, lastQ.shape), col = pickNot(Object.keys(COLORS).slice(0, 4), lastQ.pcol); lastQ.shape = want; lastQ.pcol = col; field.className = 'sh-field homes';
   cur.targets = place(shuffle(set), (s) => s === want, 'home').map((s) => addTarget(svg(s, '#2f5d8a', 'home'), { shape: s }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.shape === want);
   addPiece({ shape: want, color: col }, want);
 }
 function roundColor(n) {
-  const cols = shuffle(['red', 'blue', 'yellow', 'green']).slice(0, n - 0 > 4 ? 4 : n), want = pick(cols), shape = pick(SHAPES.slice(0, 4)); field.className = 'sh-field homes';
+  const cols = shuffle(['red', 'blue', 'yellow', 'green']).slice(0, n - 0 > 4 ? 4 : n), want = pickNot(cols, lastQ.color), shape = pickNot(SHAPES.slice(0, 4), lastQ.cshape); lastQ.color = want; lastQ.cshape = shape; field.className = 'sh-field homes';
   cur.targets = place(cols, (c) => c === want, 'home').map((c) => addTarget(svg('circle', c, 'chome'), { color: c }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.color === want);
   addPiece({ shape, color: want }, want);
 }
 function roundPattern() {
+  const keepPos = lastPos.opt;
+  for (let tries = 0; tries < 12; tries++) { lastPos.opt = keepPos; buildTrain(); if (cur.qkey !== lastQ.pat) break; field.innerHTML = ''; tray.innerHTML = ''; cur.targets = []; cur.pieces = []; patNo--; }
+  lastQ.pat = cur.qkey;
+}
+function buildTrain() {
   const type = TRAINS[cfg.train][patNo++ % TRAINS[cfg.train].length], byShape = patNo % 2 === 1, shapes = shuffle(SHAPES.slice(0, 4)), cols = shuffle(['red', 'blue', 'yellow', 'green']), baseShape = pick(shapes), baseCol = pick(cols);
   const el = (i) => (byShape ? { shape: shapes[i], color: baseCol } : { shape: baseShape, color: cols[i] });
   const unit = { A: [0], AB: [0, 1], AAB: [0, 0, 1], ABC: [0, 1, 2] }[type], shown = type === 'A' ? 3 : type === 'AB' ? (cfg.train === 'easy' ? 3 : 4) : 5, seq = Array.from({ length: shown + 1 }, (_, i) => unit[i % unit.length]);
   field.className = 'sh-field train'; field.innerHTML = '<div class="sh-engine">🚂</div>';
   seq.slice(0, shown).forEach((u) => { const c = document.createElement('div'); c.className = 'sh-car'; c.innerHTML = svg(el(u).shape, el(u).color); field.appendChild(c); });
-  const want = el(seq[shown]), t = addTarget('<span class="q">?</span>', want, 'sh-slot', true); cur.targets = [t]; cur.ans = t;
+  const want = el(seq[shown]); cur.qkey = `${want.shape}-${want.color}`; const t = addTarget('<span class="q">?</span>', want, 'sh-slot', true); cur.targets = [t]; cur.ans = t;
   const other = el(unit.find((u) => u !== seq[shown]) ?? (seq[shown] + 1) % 3), opts = place(shuffle([want, other]), (o) => o === want, 'opt'); opts.forEach((o) => addPiece(o, byShape ? o.shape : o.color));
 }
 function addTarget(html, key, cls, inCar) { const d = document.createElement('div'); d.className = cls + (inCar ? ' sh-car' : ''); d.innerHTML = html; field.appendChild(d); return { el: d, key }; }
@@ -180,5 +186,5 @@ export async function enter() {
   running = true; setMuted(!soundOn); audio(); bind(); if (!animals.length) animals = await fetch('data/animals.json').then((r) => r.json()).catch(() => []);
   if (!running) return; buildPlan(); round = 0; patNo = 0; lastAnimal = ''; panel.hidden = true; setLang('en'); startRound();
 }
-if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__shapes = { next: () => { startRound(); return cur.targets.indexOf(cur.ans); }, pos: () => cur.targets.indexOf(cur.ans), optPos: () => cur.pieces.findIndex((p) => cur.m === 'pattern' && same(p.key, cur.ans.key)) };   // dev helper
+if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__shapes = { q: () => (cur.m === 'pattern' ? cur.qkey : JSON.stringify(cur.pieces[0].key)), mode: () => cur.m, next: () => { startRound(); return cur.targets.indexOf(cur.ans); }, pos: () => cur.targets.indexOf(cur.ans), optPos: () => cur.pieces.findIndex((p) => cur.m === 'pattern' && same(p.key, cur.ans.key)) };   // dev helper
 export function leave() { running = false; clearTimers(); stopSound(); busy = false; drag = null; pet.classList.remove('show'); }
