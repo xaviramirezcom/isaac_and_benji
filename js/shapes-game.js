@@ -60,7 +60,7 @@ function setIcon(m) { rule.querySelector('.ico').innerHTML = ICON[m]; }
 // ---------------------------------------------------------------- one round
 function startRound() {
   if (!running || !animals.length) return; clearTimers(); busy = false; misses = 0; drag = null; const p = plan[round % plan.length], prev = plan[(round - 1 + plan.length) % plan.length];
-  const switched = round > 0 && prev.m !== p.m; field.innerHTML = ''; tray.innerHTML = ''; cur = { m: p.m, targets: [], pieces: [], ans: null };
+  const switched = round > 0 && prev.m !== p.m; field.innerHTML = ''; tray.innerHTML = ''; tray.classList.remove('three'); cur = { m: p.m, targets: [], pieces: [], ans: null };
   setScene(p.m); setIcon(p.m); if (switched) { rule.classList.remove('flip'); void rule.offsetWidth; rule.classList.add('flip'); stage.classList.remove('swoosh'); void stage.offsetWidth; stage.classList.add('swoosh'); }
   if (p.m === 'shape') roundShape(p.n); else if (p.m === 'color') roundColor(p.n); else roundPattern(p.n);
   renderProg(); later(showHint, HINT_AFTER); [...field.querySelectorAll('.sh-home,.sh-slot')].forEach((el, i) => { el.style.animationDelay = `${i * 80}ms`; });
@@ -87,7 +87,8 @@ function buildTrain() {
   field.className = 'sh-field train'; field.innerHTML = '<div class="sh-engine">🚂</div>';
   seq.slice(0, shown).forEach((u) => { const c = document.createElement('div'); c.className = 'sh-car'; c.innerHTML = svg(el(u).shape, el(u).color); field.appendChild(c); });
   const want = el(seq[shown]); cur.qkey = `${want.shape}-${want.color}`; const t = addTarget('<span class="q">?</span>', want, 'sh-slot', true); cur.targets = [t]; cur.ans = t;
-  const other = el(unit.find((u) => u !== seq[shown]) ?? (seq[shown] + 1) % 3), opts = place(shuffle([want, other]), (o) => o === want, 'opt'); opts.forEach((o) => addPiece(o, byShape ? o.shape : o.color));
+  const pool = [0, 1, 2, 3].filter((i) => i !== seq[shown]), others = shuffle(pool).slice(0, 2).map(el), opts = place(shuffle([want, ...others]), (o) => o === want, 'opt');   // three choices, like the other rounds
+  tray.classList.toggle('three', opts.length === 3); opts.forEach((o) => addPiece(o, byShape ? o.shape : o.color));
 }
 function addTarget(html, key, cls, inCar) { const d = document.createElement('div'); d.className = cls + (inCar ? ' sh-car' : ''); d.innerHTML = html; field.appendChild(d); return { el: d, key }; }
 function addPiece(key, nameId) {
