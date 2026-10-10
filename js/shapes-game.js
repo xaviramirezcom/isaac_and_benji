@@ -38,6 +38,13 @@ function svg(shape, color, mode = 'solid') {   // mode: solid piece, or home (a 
   return `<svg viewBox="0 0 100 100" aria-hidden="true"><g ${st}>${GEO[shape]}</g>${mode === 'solid' ? `<g fill="#fff" opacity=".28" transform="translate(-2 -3) scale(.9)" style="transform-origin:50px 50px"><ellipse cx="38" cy="32" rx="14" ry="7" transform="rotate(-25 38 32)"/></g>` : ''}</svg>`;
 }
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
+// the right answer never sits in the same place two rounds in a row (so "always the middle" can never work)
+const lastPos = {};
+function place(arr, isAns, key) {
+  const i = arr.findIndex(isAns);
+  if (arr.length > 1 && i === lastPos[key]) { const others = arr.map((_, k) => k).filter((k) => k !== i), j = pick(others); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  lastPos[key] = arr.findIndex(isAns); return arr;
+}
 const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
 
 // ---------------------------------------------------------------- the plan: three rounds of each rule, then it comes round again a little harder
@@ -59,12 +66,12 @@ function startRound() {
 }
 function roundShape(n) {
   const set = SHAPES.slice(0, n), want = pick(set), col = pick(Object.keys(COLORS).slice(0, 4)); field.className = 'sh-field homes';
-  cur.targets = shuffle(set).map((s) => addTarget(svg(s, '#2f5d8a', 'home'), { shape: s }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.shape === want);
+  cur.targets = place(shuffle(set), (s) => s === want, 'home').map((s) => addTarget(svg(s, '#2f5d8a', 'home'), { shape: s }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.shape === want);
   addPiece({ shape: want, color: col }, want);
 }
 function roundColor(n) {
   const cols = shuffle(['red', 'blue', 'yellow', 'green']).slice(0, n - 0 > 4 ? 4 : n), want = pick(cols), shape = pick(SHAPES.slice(0, 4)); field.className = 'sh-field homes';
-  cur.targets = cols.map((c) => addTarget(svg('circle', c, 'chome'), { color: c }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.color === want);
+  cur.targets = place(cols, (c) => c === want, 'home').map((c) => addTarget(svg('circle', c, 'chome'), { color: c }, 'sh-home')); cur.ans = cur.targets.find((t) => t.key.color === want);
   addPiece({ shape, color: want }, want);
 }
 function roundPattern() {
@@ -74,7 +81,7 @@ function roundPattern() {
   field.className = 'sh-field train'; field.innerHTML = '<div class="sh-engine">🚂</div>';
   seq.slice(0, shown).forEach((u) => { const c = document.createElement('div'); c.className = 'sh-car'; c.innerHTML = svg(el(u).shape, el(u).color); field.appendChild(c); });
   const want = el(seq[shown]), t = addTarget('<span class="q">?</span>', want, 'sh-slot', true); cur.targets = [t]; cur.ans = t;
-  const other = el(unit.find((u) => u !== seq[shown]) ?? (seq[shown] + 1) % 3), opts = shuffle([want, other]); opts.forEach((o) => addPiece(o, byShape ? o.shape : o.color));
+  const other = el(unit.find((u) => u !== seq[shown]) ?? (seq[shown] + 1) % 3), opts = place(shuffle([want, other]), (o) => o === want, 'opt'); opts.forEach((o) => addPiece(o, byShape ? o.shape : o.color));
 }
 function addTarget(html, key, cls, inCar) { const d = document.createElement('div'); d.className = cls + (inCar ? ' sh-car' : ''); d.innerHTML = html; field.appendChild(d); return { el: d, key }; }
 function addPiece(key, nameId) {
@@ -173,4 +180,5 @@ export async function enter() {
   running = true; setMuted(!soundOn); audio(); bind(); if (!animals.length) animals = await fetch('data/animals.json').then((r) => r.json()).catch(() => []);
   if (!running) return; buildPlan(); round = 0; patNo = 0; lastAnimal = ''; panel.hidden = true; setLang('en'); startRound();
 }
+if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__shapes = { next: () => { startRound(); return cur.targets.indexOf(cur.ans); }, pos: () => cur.targets.indexOf(cur.ans), optPos: () => cur.pieces.findIndex((p) => cur.m === 'pattern' && same(p.key, cur.ans.key)) };   // dev helper
 export function leave() { running = false; clearTimers(); stopSound(); busy = false; drag = null; pet.classList.remove('show'); }

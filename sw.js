@@ -1,6 +1,6 @@
 // Offline support: cache everything the app needs on first visit.
 // App code (html/js/css) is network-first so updates show up immediately; big static files are cache-first.
-const CACHE = 'isaac-benji-v111';
+const CACHE = 'isaac-benji-v112';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/style.css', 'js/app.js', 'js/map-game.js',
   'js/animals-game.js', 'js/insects-game.js', 'js/insects/lib.js', 'js/insects/beetle.js', 'js/insects/bee.js', 'js/insects/ant.js', 'js/insects/ladybug.js', 'js/insects/fly.js', 'js/insects/spider.js', 'js/insects/centipede.js', 'js/insects/rhino.js', 'js/insects/pillbug.js', 'js/space-game.js', 'js/storms-game.js', 'js/numbers-game.js', 'js/mouths.js', 'js/fruits-game.js', 'js/sound.js', 'js/mouth-place.js', 'js/storms/levels.js', 'js/storms/world.js', 'js/storms/vortex.js', 'js/storms/sky.js', 'js/storms/debris.js', 'js/space/bodies.js', 'js/body-game.js', 'js/body/model3d.js', 'js/body/gen.js', 'js/tsunami-game.js', 'js/shapes-game.js', 'js/tsunami/sim.js', 'js/tsunami/scene.js', 'data/body.json', 'vendor/RoomEnvironment.js', 'data/animals.json', 'vendor/three.module.min.js', 'vendor/OrbitControls.js', 'vendor/topojson-client.min.js',
