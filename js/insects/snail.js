@@ -14,7 +14,7 @@ export const info = {
   name: { en: 'Garden Snail', es: 'Caracol de jardín' },
   sci: 'Cornu aspersum',
   blurb: { en: 'Not an insect! A soft mollusc that carries its spiral shell house and glides on a trail of slime.', es: '¡No es un insecto! Un molusco blando que carga su casita de caracola y se desliza sobre un rastro de baba.' },
-  cameraDir: V(0.35, 0.5, 1.0).normalize(),
+  cameraDir: V(0.15, 0.22, 1.0).normalize(),
 };
 
 export const categories = {
@@ -37,22 +37,22 @@ export const categories = {
 
 const PI2 = Math.PI * 2, smooth = THREE.MathUtils.smoothstep;
 // ---------------- the spiral shell (Raup's model): a circle that grows as it winds round the axis. θ grows from the apex to the aperture; dextral = clockwise seen from the apex
-const WR = 3.4, WHORLS = 4.2, TH0 = PI2 * 0.5, TH1 = PI2 * WHORLS, B = Math.log(WR) / PI2, AEND = 0.86, RHO = 1.1, ZC = ((WR + 1) / (WR - 1)) * 0.9;
+const WR = 2.7, WHORLS = 4.2, TH0 = PI2 * 0.5, TH1 = PI2 * WHORLS, B = Math.log(WR) / PI2, AEND = 0.85, RHO = 1.1, ZC = ((WR + 1) / (WR - 1)) * 0.9;
 const aOf = (th) => AEND * Math.exp(B * (th - TH1));
 const Sp = (th, phi, k = 1) => { const a = aOf(th), r = RHO * a + k * a * Math.cos(phi); return V(r * Math.cos(th), -ZC * a + k * a * Math.sin(phi), r * Math.sin(th)); };   // a point of the shell: turn θ, angle φ round the opening, fraction k of the radius
 const key = (keys, t) => { for (let i = 0; i < keys.length - 1; i++) if (t <= keys[i + 1][0]) { const [t0, v0] = keys[i], [t1, v1] = keys[i + 1]; return v0 + (v1 - v0) * smooth(t, t0, t1); } return keys[keys.length - 1][1]; };
 
 // where the shell sits on the snail: aperture faces forward / right / a little down; the apex points up and backwards
-const nLoc = V(-Math.sin(TH1), 0, Math.cos(TH1)), nW = V(0.8, -0.3, 0.5).normalize();
+const nLoc = V(-Math.sin(TH1), 0, Math.cos(TH1)), nW = V(0.9, 0.35, 0.1).normalize();
 const qA = new THREE.Quaternion().setFromUnitVectors(nLoc, nW);
-const apW = V(0, 1, 0).applyQuaternion(qA), wantUp = V(-0.5, 0.85, -0.12).normalize();
+const apW = V(0, 1, 0).applyQuaternion(qA), wantUp = V(-0.3, 0.25, -0.9).normalize();
 const proj = (v) => v.clone().addScaledVector(nW, -v.dot(nW)), pa = proj(apW), pt = proj(wantUp);
 const qSpin = new THREE.Quaternion().setFromAxisAngle(nW, Math.atan2(nW.dot(new THREE.Vector3().crossVectors(pa, pt)), pa.dot(pt)));
 const QSH = qSpin.multiply(qA);
-const APER = V(0.55, 0.62, 0.3);                                            // where the shell's opening is, in the world
+const APER = V(0.3, 0.9, 0.1);                                            // where the shell's opening is, in the world
 const cEnd = V((RHO * aOf(TH1)) * Math.cos(TH1), -ZC * aOf(TH1), (RHO * aOf(TH1)) * Math.sin(TH1));
-const LIFT = 0.45;                                                           // the shell rides on top of the back, not inside it
-const PSH = APER.clone().sub(cEnd.clone().applyQuaternion(QSH)).add(V(0, LIFT, 0));
+const LIFT = 0.35, SHZ = 0.36;                                                           // the shell rides on top of the back, not inside it
+const PSH = APER.clone().sub(cEnd.clone().applyQuaternion(QSH)).add(V(0, LIFT, SHZ));
 const toW = (v) => v.clone().applyQuaternion(QSH).add(PSH);
 const P = APER;                                                              // the head and foot pull in toward this point (retract frame)
 
@@ -67,12 +67,20 @@ export function build() {
     x.globalAlpha = 0.16; x.fillStyle = '#3a1c08'; for (let i = 0; i < w; i += 7 + (i % 5)) x.fillRect(i, 0, 1.5, h);    // lines of growth
   });
   const shellMat = mat(0xffffff, { roughness: 0.3, clearcoat: 0.9, clearcoatRoughness: 0.14, map: shellMap, bumpMap: microBumpTex(77, 28), bumpScale: 0.25, side: THREE.DoubleSide, transparent: true });
-  const skinMap = canvasTex(256, 256, (x, w, h) => {
-    const g = x.createLinearGradient(0, 0, 0, h); [[0, '#a89576'], [0.25, '#6f5b46'], [0.5, '#a89576'], [0.56, '#d8c8a6'], [1, '#e2d4b4']].forEach(([t, c]) => g.addColorStop(t, c)); x.fillStyle = g; x.fillRect(0, 0, w, h);
-    x.globalAlpha = 0.35; for (let i = 0; i < 220; i++) { x.fillStyle = Math.random() < 0.5 ? '#3d2f22' : '#c9b793'; x.beginPath(); x.arc(Math.random() * w, Math.random() * h * 0.55, 3 + Math.random() * 9, 0, 7); x.fill(); }
+  const net = (x, w, h, line, a, cell = 15) => {                       // the net of grooves that divides the skin into little bumps
+    const nx = Math.ceil(w / cell) + 2, ny = Math.ceil(h / cell) + 2, pts = [];
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) pts.push([(i - 0.5 + (j % 2) * 0.5 + (Math.random() - 0.5) * 0.7) * cell, (j - 0.5 + (Math.random() - 0.5) * 0.7) * cell * 0.9]);
+    x.strokeStyle = line; x.globalAlpha = a; x.lineWidth = 2.2; x.lineCap = 'round'; x.beginPath();
+    for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) { const p = pts[j * nx + i], r = pts[j * nx + i + 1], d = pts[(j + 1) * nx + i]; x.moveTo(p[0], p[1]); x.lineTo(r[0], r[1]); x.moveTo(p[0], p[1]); x.lineTo(d[0], d[1]); }
+    x.stroke(); x.globalAlpha = 1;
+  };
+  const skinMap = canvasTex(512, 512, (x, w, h) => {
+    const g = x.createLinearGradient(0, 0, 0, h); [[0, '#7c6038'], [0.3, '#8d6f43'], [0.5, '#a08354'], [0.56, '#c2a870'], [1, '#d4bf8a']].forEach(([t, c]) => g.addColorStop(t, c)); x.fillStyle = g; x.fillRect(0, 0, w, h);
+    x.globalAlpha = 0.3; for (let i = 0; i < 160; i++) { x.fillStyle = Math.random() < 0.5 ? '#4a3622' : '#e5d4a3'; x.beginPath(); x.arc(Math.random() * w, Math.random() * h * 0.6, 3 + Math.random() * 9, 0, 7); x.fill(); } x.globalAlpha = 1;
+    net(x, w, h, '#4b3622', 0.75);
   });
-  const bumpDots = canvasTex(128, 128, (x, w, h) => { x.fillStyle = '#707070'; x.fillRect(0, 0, w, h); for (let i = 0; i < 160; i++) { const px = Math.random() * w, py = Math.random() * h, r = 3 + Math.random() * 5, gg = x.createRadialGradient(px, py, 0, px, py, r); gg.addColorStop(0, '#d0d0d0'); gg.addColorStop(1, '#707070'); x.fillStyle = gg; x.beginPath(); x.arc(px, py, r, 0, 7); x.fill(); } }, { srgb: false, repeat: [3, 7] });
-  const skin = mat(0xffffff, { roughness: 0.42, clearcoat: 0.85, clearcoatRoughness: 0.2, map: skinMap, bumpMap: bumpDots, bumpScale: 0.9, sheen: 0.4, sheenColor: new THREE.Color(0xd9c9a6), transparent: true });
+  const bumpDots = canvasTex(512, 512, (x, w, h) => { x.fillStyle = '#d0d0d0'; x.fillRect(0, 0, w, h); net(x, w, h, '#202020', 1); }, { srgb: false, repeat: [2, 5] });
+  const skin = mat(0xffffff, { roughness: 0.42, clearcoat: 0.85, clearcoatRoughness: 0.2, map: skinMap, bumpMap: bumpDots, bumpScale: 0.9, sheen: 0.2, sheenColor: new THREE.Color(0xc9b486), transparent: true });
   const lipSkin = wet(0xc9b79a, { transparent: true });
 
   const shellFrame = () => { const g = new THREE.Group(); g.quaternion.copy(QSH); g.position.copy(PSH); return g; };
@@ -94,8 +102,8 @@ export function build() {
   root.add(part('shell', 'shell', holder(shellG), categories.shell));
 
   // ======================= THE SOFT BODY: a foot lofted from rings (so it can ripple), in the retract frame
-  const NR = 46, MR = 26, X0 = -2.25, X1 = 2.3;
-  const wKey = [[0, 0.015], [0.06, 0.2], [0.2, 0.46], [0.45, 0.6], [0.7, 0.57], [0.86, 0.48], [0.96, 0.36], [1, 0.02]], hKey = [[0, 0.01], [0.06, 0.22], [0.2, 0.52], [0.45, 0.74], [0.7, 0.7], [0.86, 0.6], [0.96, 0.46], [1, 0.02]];
+  const NR = 46, MR = 26, X0 = -2.7, X1 = 2.3;
+  const wKey = [[0, 0.01], [0.05, 0.1], [0.2, 0.26], [0.34, 0.4], [0.46, 0.46], [0.58, 0.52], [0.7, 0.58], [0.88, 0.56], [0.95, 0.42], [1, 0.02]], hKey = [[0, 0.01], [0.04, 0.06], [0.2, 0.3], [0.34, 0.5], [0.46, 0.6], [0.58, 0.85], [0.68, 0.98], [0.88, 0.92], [0.95, 0.7], [0.99, 0.4], [1, 0.02]];   // a thin tail, the back rises under the shell, then a thick tall neck
   const bpos = new Float32Array(NR * MR * 3), buv = new Float32Array(NR * MR * 2), bidx = [];
   for (let i = 0; i < NR; i++) for (let j = 0; j < MR; j++) { buv[(i * MR + j) * 2] = (i / (NR - 1)) * 3; buv[(i * MR + j) * 2 + 1] = j / MR; }
   for (let i = 0; i < NR - 1; i++) for (let j = 0; j < MR; j++) { const a = i * MR + j, b = i * MR + ((j + 1) % MR), c = (i + 1) * MR + j, d = (i + 1) * MR + ((j + 1) % MR); bidx.push(a, c, b, b, c, d); }
@@ -128,11 +136,11 @@ export function build() {
   const mkTent = (base, dir, len, r0, r1, upper) => {
     const pv = new THREE.Group(); pv.position.copy(W(base)); pv.quaternion.setFromUnitVectors(V(0, 1, 0), dir.clone().normalize());
     const cyl = new THREE.CylinderGeometry(r1, r0, len, 12, 1).translate(0, len / 2, 0); pv.add(new THREE.Mesh(cyl, skin));
-    if (upper) { pv.add(sph(V(0, len, 0), 0.105, 0.115, 0.105, skin)); pv.add(sph(V(0.03, len + 0.04, 0.05).clone(), 0.04, 0.04, 0.04, wet(0x050505, { roughness: 0.1, clearcoat: 1 }))); }
+    if (upper) { pv.add(sph(V(0, len, 0), 0.08, 0.09, 0.08, skin)); pv.add(sph(V(0.03, len + 0.04, 0.05).clone(), 0.03, 0.03, 0.03, wet(0x050505, { roughness: 0.1, clearcoat: 1 }))); }
     else pv.add(sph(V(0, len, 0), r1 * 1.1, r1 * 1.3, r1 * 1.1, skin));
     tentR.add(pv); tents.push({ pv, upper, base: pv.quaternion.clone() }); return pv;
   };
-  for (const s of [-1, 1]) { mkTent(V(1.85, 0.56, s * 0.2), V(0.5, 0.82, s * 0.32), 1.15, 0.08, 0.05, true); mkTent(V(2.25, 0.3, s * 0.24), V(0.95, -0.05, s * 0.55), 0.38, 0.055, 0.032, false); }
+  for (const s of [-1, 1]) { mkTent(V(1.85, 0.6, s * 0.2), V(0.5, 0.82, s * 0.3), 2.0, 0.06, 0.028, true); mkTent(V(2.25, 0.3, s * 0.24), V(0.95, -0.05, s * 0.55), 0.38, 0.055, 0.032, false); }
   root.add(part('tentacles', 'tentacles', holder(tentR), categories.tentacles));
 
   // ======================= COLLAR, breathing hole (right side), anus
@@ -156,12 +164,12 @@ export function build() {
   nerveR.add(new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.035, 10, 28).rotateY(Math.PI / 2).translate(nc.x, nc.y, nc.z), wet(0xf1ead6)));          // the nerve ring round the food tube
   for (const s of [-1, 1]) { nerveR.add(sph(V(nc.x, nc.y + 0.2, s * 0.08), 0.1, 0.075, 0.085, wet(0xfaf3df))); nerveR.add(sph(V(nc.x, nc.y - 0.18, s * 0.09), 0.09, 0.07, 0.08, wet(0xf1ead6))); }    // the cerebral ganglia on top, the others below
   nerveR.add(sph(V(nc.x, nc.y - 0.2, 0), 0.08, 0.07, 0.1, wet(0xf1ead6)));
-  for (const s of [-1, 1]) nerveR.add(tubeThrough([V(nc.x + 0.05, nc.y + 0.22, s * 0.1), V(nc.x + 0.3, nc.y + 0.55, s * 0.18), W(V(2.35, 1.22, s * 0.52))], 0.02, wet(0xf1ead6), { segs: 12, radial: 6 }));   // the eye nerves
+  for (const s of [-1, 1]) nerveR.add(tubeThrough([V(nc.x + 0.05, nc.y + 0.22, s * 0.1), V(nc.x + 0.4, nc.y + 0.9, s * 0.3), W(V(2.75, 2.2, s * 0.7))], 0.02, wet(0xf1ead6), { segs: 12, radial: 6 }));   // the eye nerves
   root.add(part('nerves', 'nerves', holder(nerveR), categories.nerves));
 
   const mus = new THREE.Group(), muscleMat = wet(0xf5f2ea, { roughness: 0.5 }), colTop = toW(V(0, -ZC * AEND * 0.7, 0)), colBot = toW(V(0, -ZC * AEND * 1.55, 0));
   mus.add(tubeThrough([toW(V(0, -0.15, 0)), colTop, colBot], 0.085, muscleMat, { segs: 14 }));          // the central post of the shell with the muscle on it
-  const musR = retractFrame(); for (const [x, z] of [[-1.7, 0.0], [-0.7, 0.2], [0.3, -0.22], [1.2, 0.12], [-0.2, 0.0]]) musR.add(tubeThrough([W(colBot), W(V(colBot.x * 0.5 + x * 0.5, 0.4, z * 0.5)), W(V(x, 0.14, z))], 0.06, muscleMat, { segs: 14, radial: 8 }));
+  const musR = retractFrame(); for (const [x, z] of [[-2.1, 0.0], [-1.2, 0.05], [-0.2, -0.1], [0.8, 0.15], [-0.7, 0.0]]) musR.add(tubeThrough([W(colBot), W(V(colBot.x * 0.5 + x * 0.5, 0.4, z * 0.5)), W(V(x, 0.14, z))], 0.06, muscleMat, { segs: 14, radial: 8 }));
   root.add(part('muscle', 'muscle', holder(mus, musR), categories.muscle));
 
   const r2R = retractFrame();                                                                              // the mating parts, near the head
@@ -227,7 +235,7 @@ export function motion(root) {
       st.walk += ((st.mode === 'walk' ? 1 : 0) - st.walk) * k; st.hide += ((st.mode === 'hide' ? 1 : 0) - st.hide) * k * 0.7; if (st.walk < 0.001) st.walk = 0; if (st.hide < 0.001) st.hide = 0;
       st.t += dt; st.cycle += dt * 0.5 * (st.walk > 0.02 ? 1 : 0);
       const h = st.hide, retractT = smooth(h, 0, 0.55), pull = smooth(h, 0.3, 1), s = 1 - 0.9 * pull;
-      for (const f of frames) { f.scale.setScalar(s); f.position.set(P.x, P.y + LIFT * pull, P.z); }                                                                       // the whole soft body pulls into the shell
+      for (const f of frames) { f.scale.setScalar(s); f.position.set(P.x, P.y + LIFT * pull, P.z + SHZ * pull); }                                                                       // the whole soft body pulls into the shell
       tents.forEach((t, n) => {
         const sway = (1 - retractT) * (0.18 + 0.1 * st.walk) * Math.sin(st.t * (1.3 + n * 0.3) + n);
         t.pv.quaternion.copy(t.base); t.pv.rotateX(sway); t.pv.rotateZ(sway * 0.6 * Math.cos(st.t * 0.9 + n));
