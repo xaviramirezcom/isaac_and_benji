@@ -37,21 +37,21 @@ export const categories = {
 
 const PI2 = Math.PI * 2, smooth = THREE.MathUtils.smoothstep;
 // ---------------- the spiral shell (Raup's model): a circle that grows as it winds round the axis. θ grows from the apex to the aperture; dextral = clockwise seen from the apex
-const WR = 2.7, WHORLS = 4.2, TH0 = PI2 * 0.5, TH1 = PI2 * WHORLS, B = Math.log(WR) / PI2, AEND = 0.85, RHO = 1.1, ZC = ((WR + 1) / (WR - 1)) * 0.9;
+const WR = 3.0, WHORLS = 4.2, TH0 = PI2 * 0.5, TH1 = PI2 * WHORLS, B = Math.log(WR) / PI2, AEND = 0.9, RHO = 1.1, ZC = ((WR + 1) / (WR - 1)) * 0.9, EL = 1.15;
 const aOf = (th) => AEND * Math.exp(B * (th - TH1));
-const Sp = (th, phi, k = 1) => { const a = aOf(th), r = RHO * a + k * a * Math.cos(phi); return V(r * Math.cos(th), -ZC * a + k * a * Math.sin(phi), r * Math.sin(th)); };   // a point of the shell: turn θ, angle φ round the opening, fraction k of the radius
+const Sp = (th, phi, k = 1) => { const a = aOf(th), r = RHO * a + k * a * Math.cos(phi); return V(r * Math.cos(th), -ZC * a + EL * k * a * Math.sin(phi), r * Math.sin(th)); };   // a point of the shell: turn θ, angle φ round the opening, fraction k of the radius
 const key = (keys, t) => { for (let i = 0; i < keys.length - 1; i++) if (t <= keys[i + 1][0]) { const [t0, v0] = keys[i], [t1, v1] = keys[i + 1]; return v0 + (v1 - v0) * smooth(t, t0, t1); } return keys[keys.length - 1][1]; };
 
 // where the shell sits on the snail: aperture faces forward / right / a little down; the apex points up and backwards
 const nLoc = V(-Math.sin(TH1), 0, Math.cos(TH1)), nW = V(0.9, 0.35, 0.1).normalize();
 const qA = new THREE.Quaternion().setFromUnitVectors(nLoc, nW);
-const apW = V(0, 1, 0).applyQuaternion(qA), wantUp = V(-0.3, 0.25, -0.9).normalize();
+const apW = V(0, 1, 0).applyQuaternion(qA), wantUp = V(-0.5, 0.55, -0.5).normalize();
 const proj = (v) => v.clone().addScaledVector(nW, -v.dot(nW)), pa = proj(apW), pt = proj(wantUp);
 const qSpin = new THREE.Quaternion().setFromAxisAngle(nW, Math.atan2(nW.dot(new THREE.Vector3().crossVectors(pa, pt)), pa.dot(pt)));
 const QSH = qSpin.multiply(qA);
-const APER = V(0.3, 0.9, 0.1);                                            // where the shell's opening is, in the world
+const APER = V(0.4, 1.0, 0);                                            // where the shell's opening is, in the world
 const cEnd = V((RHO * aOf(TH1)) * Math.cos(TH1), -ZC * aOf(TH1), (RHO * aOf(TH1)) * Math.sin(TH1));
-const LIFT = 0.35, SHZ = 0.36;                                                           // the shell rides on top of the back, not inside it
+const LIFT = 0, SHZ = 0;                                                           // the shell rides on top of the back, not inside it
 const PSH = APER.clone().sub(cEnd.clone().applyQuaternion(QSH)).add(V(0, LIFT, SHZ));
 const toW = (v) => v.clone().applyQuaternion(QSH).add(PSH);
 const P = APER;                                                              // the head and foot pull in toward this point (retract frame)
@@ -103,7 +103,7 @@ export function build() {
 
   // ======================= THE SOFT BODY: a foot lofted from rings (so it can ripple), in the retract frame
   const NR = 46, MR = 26, X0 = -2.7, X1 = 2.3;
-  const wKey = [[0, 0.01], [0.05, 0.1], [0.2, 0.26], [0.34, 0.4], [0.46, 0.46], [0.58, 0.52], [0.7, 0.58], [0.88, 0.56], [0.95, 0.42], [1, 0.02]], hKey = [[0, 0.01], [0.04, 0.06], [0.2, 0.3], [0.34, 0.5], [0.46, 0.6], [0.58, 0.85], [0.68, 0.98], [0.88, 0.92], [0.95, 0.7], [0.99, 0.4], [1, 0.02]];   // a thin tail, the back rises under the shell, then a thick tall neck
+  const wKey = [[0, 0.01], [0.05, 0.1], [0.2, 0.2], [0.34, 0.28], [0.46, 0.4], [0.56, 0.74], [0.64, 0.82], [0.72, 0.72], [0.88, 0.56], [0.95, 0.42], [1, 0.02]], hKey = [[0, 0.01], [0.04, 0.06], [0.2, 0.22], [0.34, 0.3], [0.46, 0.45], [0.56, 1.3], [0.64, 1.55], [0.72, 1.3], [0.88, 0.92], [0.95, 0.7], [0.99, 0.4], [1, 0.02]];   // a thin tail, then the body swells into the opening of the shell and narrows again to the head
   const bpos = new Float32Array(NR * MR * 3), buv = new Float32Array(NR * MR * 2), bidx = [];
   for (let i = 0; i < NR; i++) for (let j = 0; j < MR; j++) { buv[(i * MR + j) * 2] = (i / (NR - 1)) * 3; buv[(i * MR + j) * 2 + 1] = j / MR; }
   for (let i = 0; i < NR - 1; i++) for (let j = 0; j < MR; j++) { const a = i * MR + j, b = i * MR + ((j + 1) % MR), c = (i + 1) * MR + j, d = (i + 1) * MR + ((j + 1) % MR); bidx.push(a, c, b, b, c, d); }
@@ -150,6 +150,9 @@ export function build() {
   const phiR = (bestJ / 96) * PI2, pn = Sp(TH1, phiR, 0.97), pnW = toW(pn);
   const pneu = sph(pn, 0.085, 0.06, 0.09, wet(0x2a1c14)); collarG.add(pneu);
   const anus = sph(Sp(TH1, phiR - 0.5, 0.97), 0.05, 0.04, 0.05, wet(0x6b5a44)); collarG.add(anus);
+  { const aE = aOf(TH1), rad = V(Math.cos(TH1), 0, Math.sin(TH1)), tan = V(-Math.sin(TH1), 0, Math.cos(TH1)), up = V(0, 1, 0);        // the soft neck fills the opening of the shell like a plug
+    const plug = new THREE.Mesh(new THREE.SphereGeometry(1, 28, 20), skin); plug.scale.set(aE * 0.97, aE * EL * 0.97, aE * 0.55);
+    plug.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(rad, up, tan)); plug.position.copy(Sp(TH1, 0, 0)).addScaledVector(tan, -aE * 0.12); collarG.add(plug); }
   root.add(part('collar', 'collar', holder(collarG), categories.collar));
 
   // ======================= INSIDE: the head end (retract frame)
