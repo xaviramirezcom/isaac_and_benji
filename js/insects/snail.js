@@ -132,13 +132,15 @@ export function build() {
   root.add(part('head', 'head', holder(headR), categories.head));
 
   // ======================= TENTACLES: two long upper ones with eyes, two short lower ones (they sway, and pull in by turning inside out)
-  const tentR = retractFrame(), tents = [];
+  const tentR = retractFrame(), nerveR = retractFrame(), tents = [];
   const mkTent = (base, dir, len, r0, r1, upper) => {
     const pv = new THREE.Group(); pv.position.copy(W(base)); pv.quaternion.setFromUnitVectors(V(0, 1, 0), dir.clone().normalize());
     const cyl = new THREE.CylinderGeometry(r1, r0, len, 12, 1).translate(0, len / 2, 0); pv.add(new THREE.Mesh(cyl, skin));
     if (upper) { pv.add(sph(V(0, len, 0), 0.08, 0.09, 0.08, skin)); pv.add(sph(V(0.03, len + 0.04, 0.05).clone(), 0.03, 0.03, 0.03, wet(0x050505, { roughness: 0.1, clearcoat: 1 }))); }
     else pv.add(sph(V(0, len, 0), r1 * 1.1, r1 * 1.3, r1 * 1.1, skin));
-    tentR.add(pv); tents.push({ pv, upper, base: pv.quaternion.clone() }); return pv;
+    let nv = null;
+    if (upper) { nv = new THREE.Group(); nv.position.copy(pv.position); nv.quaternion.copy(pv.quaternion); nv.add(new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.014, len * 0.96, 8).translate(0, len * 0.48, 0), wet(0xf1ead6))); nerveR.add(nv); }   // the eye nerve runs inside the tentacle, so it sways and pulls in with it
+    tentR.add(pv); tents.push({ pv, nv, upper, base: pv.quaternion.clone() }); return pv;
   };
   for (const s of [-1, 1]) { mkTent(V(1.85, 0.6, s * 0.2), V(0.4, 0.78, s * 0.55), 2.0, 0.06, 0.028, true); mkTent(V(2.22, 0.34, s * 0.2), V(0.9, -0.12, s * 0.5), 0.7, 0.07, 0.04, false); }
   root.add(part('tentacles', 'tentacles', holder(tentR), categories.tentacles));
@@ -163,11 +165,11 @@ export function build() {
   for (const s of [-1, 1]) mouthR.add(sph(W(V(1.5, 0.44, s * 0.2)), 0.26, 0.07, 0.13, wet(0xf3eee2)));      // the salivary glands
   root.add(part('mouth', 'mouth', holder(mouthR), categories.mouth));
 
-  const nerveR = retractFrame(); const nc = W(V(1.6, 0.36, 0));
+  const nc = W(V(1.6, 0.36, 0));
   nerveR.add(new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.035, 10, 28).rotateY(Math.PI / 2).translate(nc.x, nc.y, nc.z), wet(0xf1ead6)));          // the nerve ring round the food tube
   for (const s of [-1, 1]) { nerveR.add(sph(V(nc.x, nc.y + 0.2, s * 0.08), 0.1, 0.075, 0.085, wet(0xfaf3df))); nerveR.add(sph(V(nc.x, nc.y - 0.18, s * 0.09), 0.09, 0.07, 0.08, wet(0xf1ead6))); }    // the cerebral ganglia on top, the others below
   nerveR.add(sph(V(nc.x, nc.y - 0.2, 0), 0.08, 0.07, 0.1, wet(0xf1ead6)));
-  for (const s of [-1, 1]) nerveR.add(tubeThrough([V(nc.x + 0.05, nc.y + 0.22, s * 0.1), V(nc.x + 0.4, nc.y + 0.9, s * 0.3), W(V(2.75, 2.2, s * 0.7))], 0.02, wet(0xf1ead6), { segs: 12, radial: 6 }));   // the eye nerves
+  for (const s of [-1, 1]) nerveR.add(tubeThrough([V(nc.x + 0.05, nc.y + 0.22, s * 0.1), V(nc.x + 0.15, nc.y + 0.3, s * 0.16), W(V(1.85, 0.6, s * 0.2))], 0.02, wet(0xf1ead6), { segs: 12, radial: 6 }));   // the eye nerves leave the brain and run up inside the tentacles
   root.add(part('nerves', 'nerves', holder(nerveR), categories.nerves));
 
   const mus = new THREE.Group(), muscleMat = wet(0xf5f2ea, { roughness: 0.5 }), colTop = toW(V(0, -ZC * AEND * 0.7, 0)), colBot = toW(V(0, -ZC * AEND * 1.55, 0));
@@ -242,7 +244,8 @@ export function motion(root) {
       tents.forEach((t, n) => {
         const sway = (1 - retractT) * (0.18 + 0.1 * st.walk) * Math.sin(st.t * (1.3 + n * 0.3) + n);
         t.pv.quaternion.copy(t.base); t.pv.rotateX(sway); t.pv.rotateZ(sway * 0.6 * Math.cos(st.t * 0.9 + n));
-        t.pv.scale.set(1 + 0.4 * retractT, Math.max(0.07, 1 - 0.95 * retractT), 1 + 0.4 * retractT);                          // a tentacle is pulled in by turning it inside out: it shortens and thickens
+        t.pv.scale.set(1 + 0.4 * retractT, Math.max(0.07, 1 - 0.95 * retractT), 1 + 0.4 * retractT);
+        if (t.nv) { t.nv.quaternion.copy(t.pv.quaternion); t.nv.scale.copy(t.pv.scale); }                          // a tentacle is pulled in by turning it inside out: it shortens and thickens
       });
       if (st.walk > 0.01 || h > 0.01 || !m._init) { fillFoot(st.cycle, st.walk * (1 - h)); m._init = true; }
       const beat = Math.pow(Math.max(0, Math.sin(st.t * 5.2)), 4); heartPv.scale.setScalar(1 + 0.18 * beat);              // the heart beats
