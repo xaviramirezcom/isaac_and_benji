@@ -290,9 +290,10 @@ function frame(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
   const k = 1 - Math.exp(-dt * 9);
   const selVisible = selection ? [...selection.ids].some((i) => !cur.parts.get(i).removed) : false; // nothing to highlight once it's removed
+  const skinFade = selection && selVisible && [...selection.ids].some((i) => { const q = cur.parts.get(i); return q && !q.removed && q.info?.skin === undefined && [...cur.parts.values()].some((o) => o.info?.skin); });   // looking at an organ inside a worm: the skin turns almost clear
   for (const p of cur.parts.values()) {
     const sel = selection?.ids.has(p.id);
-    const tgtOp = p.removed || p.hidden ? 0 : selection && selVisible && !sel ? 0.2 : 1;
+    const tgtOp = p.removed || p.hidden ? 0 : skinFade && p.info?.skin && !sel ? 0.05 : selection && selVisible && !sel ? 0.2 : 1;
     p.op += (tgtOp - p.op) * k; if (Math.abs(tgtOp - p.op) < 0.003) p.op = tgtOp;
     applyOpacity(p, p.op);
     const tgtOff = p.removed ? p.dir.clone().multiplyScalar(cur.radius * 0.9) : exploded ? p.dir.clone().multiplyScalar(cur.radius * 0.45) : null;
