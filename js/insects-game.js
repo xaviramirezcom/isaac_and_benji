@@ -17,7 +17,7 @@ const T = {
   en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', walk: 'Walk', fly: 'Fly', speech: 'en-US' },
   es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', walk: 'Caminar', fly: 'Volar', speech: 'es-ES' },
 };
-const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede', 'rhino', 'pillbug'];
+const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede', 'rhino', 'pillbug', 'worm'];
 const FOV = 36;
 
 let registry = {}, built = {}, lang = 'en', loading = null;
@@ -170,7 +170,7 @@ function homeDistance() {
   return (cur.radius * 1.12) / Math.sin(Math.min(vf, hf) / 2);
 }
 
-function modeLabels() { const t = T[lang]; $('#lbl-fly').textContent = cur?.motion?.second?.label?.[lang] ?? t.fly; }
+function modeLabels() { const t = T[lang]; $('#lbl-fly').textContent = cur?.motion?.second?.label?.[lang] ?? t.fly; $('#lbl-walk').textContent = cur?.motion?.walkLabel?.[lang] ?? t.walk; }
 
 function resetState() {
   selection = null; isolated = false; exploded = false;
