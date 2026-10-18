@@ -17,7 +17,7 @@ const T = {
   en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', walk: 'Walk', fly: 'Fly', speech: 'en-US' },
   es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', walk: 'Caminar', fly: 'Volar', speech: 'es-ES' },
 };
-const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede', 'rhino', 'pillbug', 'worm'];
+const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede', 'rhino', 'pillbug', 'worm', 'snail'];
 const FOV = 36;
 
 let registry = {}, built = {}, lang = 'en', loading = null;
@@ -244,7 +244,7 @@ function toggleRemove() {
 }
 function toggleOnly() {
   if (isolated) { for (const p of cur.parts.values()) if (!p.removed) p.hidden = false; isolated = false; }
-  else { for (const p of cur.parts.values()) if (!selection.ids.has(p.id)) p.hidden = true; for (const p of selectedParts()) { p.removed = false; p.hidden = false; } isolated = true; }
+  else if (selection) { for (const p of cur.parts.values()) if (!selection.ids.has(p.id)) p.hidden = true; for (const p of selectedParts()) { p.removed = false; p.hidden = false; } isolated = true; }
   updateCard();
 }
 
