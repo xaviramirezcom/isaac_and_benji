@@ -43,7 +43,7 @@ const Sp = (th, phi, k = 1) => { const a = aOf(th), r = RHO * a + k * a * Math.c
 const key = (keys, t) => { for (let i = 0; i < keys.length - 1; i++) if (t <= keys[i + 1][0]) { const [t0, v0] = keys[i], [t1, v1] = keys[i + 1]; return v0 + (v1 - v0) * smooth(t, t0, t1); } return keys[keys.length - 1][1]; };
 
 // where the shell sits on the snail: aperture faces forward / right / a little down; the apex points up and backwards
-const nLoc = V(-Math.sin(TH1), 0, Math.cos(TH1)), nW = V(0.42, 0.06, 0.9).normalize();
+const nLoc = V(-Math.sin(TH1), 0, Math.cos(TH1)), nW = V(0.8, -0.3, 0.5).normalize();
 const qA = new THREE.Quaternion().setFromUnitVectors(nLoc, nW);
 const apW = V(0, 1, 0).applyQuaternion(qA), wantUp = V(-0.5, 0.85, -0.12).normalize();
 const proj = (v) => v.clone().addScaledVector(nW, -v.dot(nW)), pa = proj(apW), pt = proj(wantUp);
@@ -51,7 +51,8 @@ const qSpin = new THREE.Quaternion().setFromAxisAngle(nW, Math.atan2(nW.dot(new 
 const QSH = qSpin.multiply(qA);
 const APER = V(0.55, 0.62, 0.3);                                            // where the shell's opening is, in the world
 const cEnd = V((RHO * aOf(TH1)) * Math.cos(TH1), -ZC * aOf(TH1), (RHO * aOf(TH1)) * Math.sin(TH1));
-const PSH = APER.clone().sub(cEnd.clone().applyQuaternion(QSH));
+const LIFT = 0.45;                                                           // the shell rides on top of the back, not inside it
+const PSH = APER.clone().sub(cEnd.clone().applyQuaternion(QSH)).add(V(0, LIFT, 0));
 const toW = (v) => v.clone().applyQuaternion(QSH).add(PSH);
 const P = APER;                                                              // the head and foot pull in toward this point (retract frame)
 
@@ -226,7 +227,7 @@ export function motion(root) {
       st.walk += ((st.mode === 'walk' ? 1 : 0) - st.walk) * k; st.hide += ((st.mode === 'hide' ? 1 : 0) - st.hide) * k * 0.7; if (st.walk < 0.001) st.walk = 0; if (st.hide < 0.001) st.hide = 0;
       st.t += dt; st.cycle += dt * 0.5 * (st.walk > 0.02 ? 1 : 0);
       const h = st.hide, retractT = smooth(h, 0, 0.55), pull = smooth(h, 0.3, 1), s = 1 - 0.9 * pull;
-      for (const f of frames) f.scale.setScalar(s);                                                                       // the whole soft body pulls into the shell
+      for (const f of frames) { f.scale.setScalar(s); f.position.set(P.x, P.y + LIFT * pull, P.z); }                                                                       // the whole soft body pulls into the shell
       tents.forEach((t, n) => {
         const sway = (1 - retractT) * (0.18 + 0.1 * st.walk) * Math.sin(st.t * (1.3 + n * 0.3) + n);
         t.pv.quaternion.copy(t.base); t.pv.rotateX(sway); t.pv.rotateZ(sway * 0.6 * Math.cos(st.t * 0.9 + n));
