@@ -140,7 +140,7 @@ export function build() {
     else pv.add(sph(V(0, len, 0), r1 * 1.1, r1 * 1.3, r1 * 1.1, skin));
     tentR.add(pv); tents.push({ pv, upper, base: pv.quaternion.clone() }); return pv;
   };
-  for (const s of [-1, 1]) { mkTent(V(1.85, 0.6, s * 0.2), V(0.5, 0.82, s * 0.3), 2.0, 0.06, 0.028, true); mkTent(V(2.25, 0.3, s * 0.24), V(0.95, -0.05, s * 0.55), 0.38, 0.055, 0.032, false); }
+  for (const s of [-1, 1]) { mkTent(V(1.85, 0.6, s * 0.2), V(0.4, 0.78, s * 0.55), 2.0, 0.06, 0.028, true); mkTent(V(2.22, 0.34, s * 0.2), V(0.9, -0.12, s * 0.5), 0.7, 0.07, 0.04, false); }
   root.add(part('tentacles', 'tentacles', holder(tentR), categories.tentacles));
 
   // ======================= COLLAR, breathing hole (right side), anus
