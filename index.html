@@ -37,6 +37,7 @@
         <a class="game-tile stars-tile" href="#/isaac/stars"><span class="emoji" aria-hidden="true">⭐</span><span>Stars</span></a>
         <a class="game-tile storm-tile" href="#/isaac/storms"><span class="emoji" aria-hidden="true">🌪️</span><span>Storms</span></a>
         <a class="game-tile tsunami-tile" href="#/isaac/tsunami"><span class="emoji" aria-hidden="true">🌊</span><span>Tsunamis</span></a>
+        <a class="game-tile iqon-tile" href="#/isaac/iqon"><span class="emoji" aria-hidden="true">🏙️</span><span>IQON</span></a>
         <a class="game-tile body-tile" href="#/isaac/body"><span class="emoji" aria-hidden="true">🫀</span><span>Body</span></a>
       </div>
     </section>
@@ -184,6 +185,18 @@
         </div>
       </div>
       <div class="loading" id="body-loading" hidden><div class="spinner" aria-hidden="true">🫀</div><p>Getting the body ready…</p></div>
+    </section>
+
+    <!-- IQON: the tower in Quito and a disaster lab -->
+    <section id="view-iqon" class="view iqon-view" hidden aria-label="IQON tower">
+      <canvas id="iqon-canvas" aria-label="3D IQON tower"></canvas>
+      <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
+      <div class="insect-title"><b>IQON · Quito</b></div>
+      <div class="insect-tools iqon-tools"><button type="button" id="iqon-spin" class="pill on">Spin</button><button type="button" id="iqon-night" class="pill">Night</button></div>
+      <div class="iqon-bar">
+        <button type="button" data-fx="quake"><span>🌍</span>Earthquake</button><button type="button" data-fx="storm"><span>⛈️</span>Storm</button><button type="button" data-fx="tornado"><span>🌪️</span>Tornado</button>
+        <button type="button" data-fx="tsunami"><span>🌊</span>Tsunami</button><button type="button" data-fx="bomb"><span>💣</span>Bomb</button><button type="button" data-fx="missile"><span>🚀</span>Missile</button><button type="button" data-fx="implode"><span>💥</span>Implosion</button><button type="button" data-fx="rebuild" class="fix"><span>🔧</span>Rebuild</button>
+      </div>
     </section>
 
     <!-- Tsunamis -->

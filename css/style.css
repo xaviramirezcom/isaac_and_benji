@@ -679,3 +679,18 @@ button, a { touch-action: manipulation; font: inherit; }
 .star-nav svg { width: 30px; height: 30px; } .star-nav.left { left: 10px; } .star-nav.right { right: 10px; } .star-nav:active { background: rgba(255, 255, 255, .35); } .star-nav.off { opacity: .25; pointer-events: none; } .star-nav[hidden] { display: none; }
 
 .star-nav { height: 64px; width: 50px; top: 40%; }
+
+/* ---------------- IQON tower + disaster lab */
+.game-tile.iqon-tile { background: linear-gradient(160deg, #8fa3b8, #3e4f63); }
+.iqon-view { overflow: hidden; background: #9fc6e9; }
+.iqon-view .round-btn.back, .iqon-view .insect-tools { z-index: 6; }
+.iqon-view .insect-tools { flex-direction: row; gap: 10px; }
+.iqon-view .iqon-bar { z-index: 6; }
+.iqon-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.iqon-tools .pill { border: 0; border-radius: 999px; padding: 10px 16px; font: inherit; font-weight: 700; background: #fff; color: var(--ink); box-shadow: var(--shadow); }
+.iqon-tools .pill.on { background: #2f6df6; color: #fff; }
+.iqon-bar { position: absolute; left: 0; right: 0; bottom: max(14px, env(safe-area-inset-bottom)); display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 0 10px; }
+.iqon-bar button { border: 0; border-radius: 999px; padding: 12px 14px; font: inherit; font-size: 15px; font-weight: 700; background: #fff; color: var(--ink); box-shadow: var(--shadow); }
+.iqon-bar button span { font-size: 20px; margin-right: 6px; }
+.iqon-bar button.on { background: #2f6df6; color: #fff; }
+.iqon-bar button.fix { background: #ffe27a; }
