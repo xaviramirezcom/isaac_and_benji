@@ -122,7 +122,7 @@ function stepDebris(dt) {
   for (const d of debris) {
     if (d.rest) continue;
     d.vel.y -= 14 * dt; d.vel.multiplyScalar(1 - 0.12 * dt);
-    if (fx.tsunami && water.visible) { const wl = waterLevelAt(d.pos.x, d.pos.z); if (d.pos.y < wl + d.ground) { d.vel.x += (0 - d.vel.x) * 2 * dt; d.vel.z += (-28 - d.vel.z) * 2 * dt; d.vel.y += (wl + d.ground - d.pos.y) * 20 * dt; d.vel.y *= 0.9; } }
+    if (fx.tsunami && water.visible) { const wl = waterLevelAt(d.pos.x, d.pos.z); if (d.pos.y < wl + d.ground) { d.vel.x += (-waveDir.x * 28 - d.vel.x) * 2 * dt; d.vel.z += (-waveDir.y * 28 - d.vel.z) * 2 * dt; d.vel.y += (wl + d.ground - d.pos.y) * 20 * dt; d.vel.y *= 0.9; } }
     if (fx.tornado) { tornadoPull(d, dt); }
     d.pos.addScaledVector(d.vel, dt);
     d.rot.x += d.ang.x * dt; d.rot.y += d.ang.y * dt; d.rot.z += d.ang.z * dt;
@@ -134,7 +134,7 @@ function stepDebris(dt) {
 }
 function rebuild() {
   for (const d of debris) { d.it.d = null; writeItem(d.it, d.it.pos, d.it.quat); }
-  debris.length = 0; fx.imploded = false; fx.implode = 0; implodeT = 0; pile = 0; puffs.length = 0; for (const it of bigs) writeItem(it, it.pos, it.quat); building.position.set(0, 0, 0); building.rotation.set(0, 0, 0); city.position.set(0, 0, 0);
+  debris.length = 0; fx.imploded = false; fx.implode = 0; implodeT = 0; pile = 0; puffs.length = 0; topple = null; for (const it of bigs) writeItem(it, it.pos, it.quat); building.position.set(0, 0, 0); building.quaternion.identity(); city.position.set(0, 0, 0);
   for (const t of trees) writeItem(t, t.pos, t.quat);
 }
 
@@ -154,16 +154,28 @@ const CAPS = {
 const btns = [...view.querySelectorAll('.iqon-bar button')];
 function setFx(name) { btns.forEach((b) => b.classList.toggle('on', b.dataset.fx === name && name !== 'rebuild')); }
 btns.forEach((b) => b.addEventListener('click', () => start(b.dataset.fx)));
+// the controls strip: one or two knobs per event
+const set = { magnitude: 7, wind: 1, lightning: 1, size: 3, height: 16, from: 'park', power: 2, mpower: 2, count: 1, fall: 'down' };
+const ctl = view.querySelector('.iqon-ctl'), WINDS = ['Breeze', 'Strong', 'Gale', 'Hurricane'], SIZES = ['', 'Small', 'Big', 'Huge'];
+const fmt = { magnitude: (v) => v.toFixed(1), wind: (v) => WINDS[v], size: (v) => 'F' + v, height: (v) => v + ' m', power: (v) => SIZES[v], mpower: (v) => SIZES[v] };
+ctl.querySelectorAll('input[type=range]').forEach((inp) => { const out = inp.parentElement.querySelector('output'), k = inp.dataset.set; const show = () => { set[k] = +inp.value; out.textContent = fmt[k] ? fmt[k](set[k]) : inp.value; }; inp.addEventListener('input', show); show(); });
+ctl.querySelectorAll('.opts').forEach((g) => { const k = g.dataset.set; g.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { g.querySelectorAll('button').forEach((o) => o.classList.toggle('on', o === b)); const v = b.dataset.val; set[k] = isNaN(+v) ? v : +v; })); });
+ctl.querySelectorAll('button.toggle').forEach((b) => { const k = b.dataset.set; b.addEventListener('click', () => { set[k] = set[k] ? 0 : 1; b.classList.toggle('on', !!set[k]); }); });
+function showCtl(name) { let any = false; ctl.querySelectorAll('[data-for]').forEach((d) => { const on = d.dataset.for === name; d.hidden = !on; any ||= on; }); ctl.hidden = !any; }
+const POW = { 1: [8, 18], 2: [11, 24], 3: [16, 34] };
+let armed = 'bomb', topple = null;
+const FALL = { left: [-1, 0], right: [1, 0], front: [0, 1], back: [0, -1] };
 function start(name) {
-  fx.quake = fx.storm = fx.tornado = fx.tsunami = fx.implode = 0; missile.visible = false; funnel.visible = false; swirl.visible = false; rain.visible = false; water.visible = false; setFx(name);
+  fx.quake = fx.storm = fx.tornado = fx.tsunami = fx.implode = 0; missiles.forEach((m) => { m.visible = false; }); flights.length = 0; funnel.visible = false; swirl.visible = false; rain.visible = false; water.visible = false; setFx(name);
+  showCtl(name); salvo = null; fx.tornadoTarget = null;
   if (name === 'rebuild') rebuild();
   else if (name === 'quake') { fx.quake = 14; }
   else if (name === 'storm') { fx.storm = 30; rain.visible = true; nextBolt = 1.5; }
   else if (name === 'tornado') { fx.tornado = 38; funnel.visible = swirl.visible = true; funnel.position.set(-330, 0, 320); }
-  else if (name === 'tsunami') { fx.tsunami = 34; water.visible = true; waveFront = 820; }
-  else if (name === 'bomb') { const side = Math.random() < 0.5 ? 1 : -1, horizontal = Math.random() < 0.6; explode(horizontal ? new THREE.Vector3((Math.random() - 0.5) * W * 0.8, 20 + Math.random() * 95, side * (D / 2 + 1)) : new THREE.Vector3(side * (W / 2 + 1), 20 + Math.random() * 95, (Math.random() - 0.5) * D * 0.8), 11, 24); }
-  else if (name === 'missile') { launchMissile(); }
-  else if (name === 'implode') { fx.implode = 16; fx.imploded = true; implodeT = 0; }
+  else if (name === 'tsunami') { fx.tsunami = 34; water.visible = true; waveFront = 820; const [dx, dz] = { park: [0, 1], city: [0, -1], left: [-1, 0], right: [1, 0] }[set.from]; waveDir.set(dx, dz); waterG.rotation.y = Math.atan2(dx, dz); }
+  else if (name === 'bomb') { armed = 'bomb'; const side = Math.random() < 0.5 ? 1 : -1, horizontal = Math.random() < 0.6; explode(horizontal ? new THREE.Vector3((Math.random() - 0.5) * W * 0.8, 20 + Math.random() * 95, side * (D / 2 + 1)) : new THREE.Vector3(side * (W / 2 + 1), 20 + Math.random() * 95, (Math.random() - 0.5) * D * 0.8), ...POW[set.power]); }
+  else if (name === 'missile') { armed = 'missile'; fireSalvo(null); }
+  else if (name === 'implode') { fx.implode = 16; fx.imploded = true; implodeT = 0; topple = null; if (set.fall !== 'down') { const [dx, dz] = FALL[set.fall], d = new THREE.Vector3(dx, 0, dz); topple = { d, pivot: new THREE.Vector3(dx * W / 2, 0, dz * D / 2), axis: new THREE.Vector3().crossVectors(UP, d).normalize(), th: 0, w: 0, broke: false }; } }
 }
 
 // --- explosions: a fireball, a shock ring, smoke and flying cells
@@ -195,20 +207,26 @@ const missile = new THREE.Group(); { const bodyM = new THREE.MeshStandardMateria
 missile.visible = false; scene.add(missile);
 const TRAIL = 400, trailPos = new Float32Array(TRAIL * 3), trailAge = new Float32Array(TRAIL).fill(99); let trailHead = 0;
 const trail = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(trailPos, 3)), new THREE.PointsMaterial({ color: 0xe8e8e8, size: 5, transparent: true, opacity: 0.55, depthWrite: false, sizeAttenuation: true })); trail.frustumCulled = false; scene.add(trail);
-let flight = null;
-function launchMissile() {
-  const side = Math.random() < 0.5 ? 1 : -1, target = new THREE.Vector3((Math.random() - 0.5) * W * 0.6, 35 + Math.random() * 80, side * (D / 2 + 1));
+const missiles = [missile]; for (let k = 1; k < 5; k++) { const m = missile.clone(); m.visible = false; scene.add(m); missiles.push(m); }
+const flights = []; let salvo = null;
+function fireSalvo(aim) { salvo = { n: set.count, aim: aim ? aim.clone() : null, next: 0, power: set.mpower }; }
+function launchMissile(aim, power) {
+  const m = missiles.find((x) => !x.visible); if (!m) return;
+  const side = aim ? Math.sign(aim.z || 1) : Math.random() < 0.5 ? 1 : -1;
+  const target = aim ? aim.clone().add(new THREE.Vector3((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, 0)) : new THREE.Vector3((Math.random() - 0.5) * W * 0.6, 35 + Math.random() * 80, side * (D / 2 + 1));
   const from = new THREE.Vector3(-650 + Math.random() * 300, 380 + Math.random() * 120, side * 650);
-  flight = { from, target, t: 0, dur: from.distanceTo(target) / 230 }; missile.visible = true; trailAge.fill(99);
+  flights.push({ m, from, target, t: 0, dur: from.distanceTo(target) / 230, power }); m.visible = true;
 }
 function stepMissile(dt) {
   for (let i = 0; i < TRAIL; i++) trailAge[i] += dt;
-  if (flight) {
-    flight.t += dt; const k = Math.min(1, flight.t / flight.dur);
-    missile.position.lerpVectors(flight.from, flight.target, k); missile.position.y += Math.sin(k * Math.PI) * 60; missile.lookAt(tmp.lerpVectors(flight.from, flight.target, Math.min(1, k + 0.01)).setY(tmp.y + Math.sin(Math.min(1, k + 0.01) * Math.PI) * 60));
-    for (let n = 0; n < 3; n++) { const i = trailHead = (trailHead + 1) % TRAIL; trailPos[i * 3] = missile.position.x + (Math.random() - 0.5) * 2; trailPos[i * 3 + 1] = missile.position.y + (Math.random() - 0.5) * 2; trailPos[i * 3 + 2] = missile.position.z + (Math.random() - 0.5) * 2; trailAge[i] = 0; }
-    if (k >= 1) { explode(flight.target, 15, 32); flight = null; missile.visible = false; }
+  if (salvo) { salvo.next -= dt; if (salvo.next <= 0) { launchMissile(salvo.aim, salvo.power); salvo.next = 0.5; if (--salvo.n <= 0) salvo = null; } }
+  for (const f of flights) {
+    f.t += dt; const k = Math.min(1, f.t / f.dur), m = f.m;
+    m.position.lerpVectors(f.from, f.target, k); m.position.y += Math.sin(k * Math.PI) * 60; m.lookAt(tmp.lerpVectors(f.from, f.target, Math.min(1, k + 0.01)).setY(tmp.y + Math.sin(Math.min(1, k + 0.01) * Math.PI) * 60));
+    for (let n = 0; n < 3; n++) { const i = trailHead = (trailHead + 1) % TRAIL; trailPos[i * 3] = m.position.x + (Math.random() - 0.5) * 2; trailPos[i * 3 + 1] = m.position.y + (Math.random() - 0.5) * 2; trailPos[i * 3 + 2] = m.position.z + (Math.random() - 0.5) * 2; trailAge[i] = 0; }
+    if (k >= 1) { const [r, pw] = POW[f.power]; explode(f.target, r * 1.3, pw * 1.3); m.visible = false; f.done = true; }
   }
+  for (let i = flights.length - 1; i >= 0; i--) if (flights[i].done) flights.splice(i, 1);
   for (let i = 0; i < TRAIL; i++) if (trailAge[i] < 8) trailPos[i * 3 + 1] += 1.5 * dt;
   trail.geometry.attributes.position.needsUpdate = true; trail.material.opacity = 0.55;
   trail.visible = trailAge.some((a) => a < 8);
@@ -219,9 +237,11 @@ const RAIN = 6000, rainPos = new Float32Array(RAIN * 3); for (let i = 0; i < RAI
 const rain = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(rainPos, 3)), new THREE.PointsMaterial({ color: 0xcfe3ff, size: 0.9, transparent: true, opacity: 0.6, depthWrite: false })); rain.visible = false; rain.frustumCulled = false; scene.add(rain);
 function stepStorm(dt) {
   if (!fx.storm) return;
-  for (let i = 0; i < RAIN; i++) { rainPos[i * 3 + 1] -= 70 * dt; rainPos[i * 3] -= 12 * dt; if (rainPos[i * 3 + 1] < 0) { rainPos[i * 3 + 1] = 220; rainPos[i * 3] = (Math.random() - 0.5) * 420; } }
+  const wind = set.wind;
+  for (let i = 0; i < RAIN; i++) { rainPos[i * 3 + 1] -= 70 * dt; rainPos[i * 3] -= (8 + 18 * wind) * dt; if (rainPos[i * 3 + 1] < 0 || rainPos[i * 3] < -230) { rainPos[i * 3 + 1] = Math.random() * 220; rainPos[i * 3] = (Math.random() - 0.5) * 420 + 60; } }
   rain.geometry.attributes.position.needsUpdate = true;
-  nextBolt -= dt; if (nextBolt < 0) { lightningT = 0.25; nextBolt = 2.5 + Math.random() * 4; }
+  nextBolt -= dt; if (nextBolt < 0 && set.lightning) { lightningT = 0.25; nextBolt = 2.5 + Math.random() * 4; }
+  if (wind >= 2 && Math.random() < (wind - 1) * 1.6 * dt) { const it = cells[Math.floor(Math.random() * cells.length)]; if (it.pos.y > 20) loosen(it, new THREE.Vector3(-14 * (wind - 1) - 6, 3, (Math.random() - 0.5) * 6), 1.5); }     // a gale tears loose cells off and blows them downwind
 }
 function sway(t, wind) {                                                                       // the park trees lean in the wind
   for (const it of trees) { if (it.d) continue; const a = wind * (0.08 + 0.1 * Math.sin(t * 2.2 + it.pos.x * 0.05 + it.pos.z * 0.03)); E.set(0, 0, 0); E.z = a; E.x = a * 0.4; const q = Qd.setFromEuler(E); writeItem(it, tmp.copy(it.pos).setY(it.pos.y - Math.abs(a) * it.pos.y * 0.3).addScaledVector(new THREE.Vector3(-1, 0, 0), a * it.pos.y * 0.8), q); }
@@ -233,27 +253,30 @@ const funnel = new THREE.Mesh(new THREE.CylinderGeometry(70, 6, 260, 32, 12, tru
 { const p = funnel.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const y = p.getY(i), k = (y + 130) / 260, r = 6 + 64 * Math.pow(k, 1.8); const a = Math.atan2(p.getZ(i), p.getX(i)); p.setX(i, Math.cos(a) * r); p.setZ(i, Math.sin(a) * r); } funnel.geometry.computeVertexNormals(); }
 const SW = 1500, swPos = new Float32Array(SW * 3), swA = new Float32Array(SW), swH = new Float32Array(SW); for (let i = 0; i < SW; i++) { swA[i] = Math.random() * Math.PI * 2; swH[i] = Math.random(); }
 const swirl = new THREE.Points(new THREE.BufferGeometry().setAttribute('position', new THREE.BufferAttribute(swPos, 3)), new THREE.PointsMaterial({ color: 0x6e6862, size: 4.5, transparent: true, opacity: 0.65, depthWrite: false })); swirl.visible = false; swirl.frustumCulled = false; scene.add(swirl);
+const tornadoSize = () => 0.5 + (set.size - 1) * 0.225;
 function tornadoPull(d, dt) {
-  const dx = d.pos.x - funnel.position.x, dz = d.pos.z - funnel.position.z, r = Math.hypot(dx, dz), k = Math.min(1, d.pos.y / 260), rad = 8 + 64 * Math.pow(k, 1.8) + 10;
-  if (r < rad) { const tx = -dz / (r + 1), tz = dx / (r + 1); d.vel.x += (tx * 38 - dx / (r + 1) * 12 - d.vel.x) * 2.5 * dt; d.vel.z += (tz * 38 - dz / (r + 1) * 12 - d.vel.z) * 2.5 * dt; d.vel.y += (16 - d.vel.y) * 1.5 * dt + 14 * dt; d.rest = false; }
+  const sz = tornadoSize(), dx = d.pos.x - funnel.position.x, dz = d.pos.z - funnel.position.z, r = Math.hypot(dx, dz), k = Math.min(1, d.pos.y / 260), rad = (8 + 64 * Math.pow(k, 1.8) + 10) * sz, sp = 0.6 + 0.4 * sz;
+  if (r < rad) { const tx = -dz / (r + 1), tz = dx / (r + 1); d.vel.x += (tx * 38 * sp - dx / (r + 1) * 12 - d.vel.x) * 2.5 * dt; d.vel.z += (tz * 38 * sp - dz / (r + 1) * 12 - d.vel.z) * 2.5 * dt; d.vel.y += (16 * sp - d.vel.y) * 1.5 * dt + 14 * sp * dt; d.rest = false; }
 }
 function stepTornado(dt, t) {
   if (!fx.tornado) return;
-  const e = 38 - fx.tornado, path = e < 22 ? e / 22 : 1, tx = -330 + (10 - -330) * path + (e > 28 ? (e - 28) * 30 : 0), tz = 320 + (-30 - 320) * path - (e > 28 ? (e - 28) * 25 : 0);
-  funnel.position.x += (tx - funnel.position.x) * dt * 1.2; funnel.position.z += (tz - funnel.position.z) * dt * 1.2; funnel.rotation.y += dt * 3; funnel.position.y = 130;
-  for (let i = 0; i < SW; i++) { swA[i] += dt * (2.5 + 2 * (1 - swH[i])); swH[i] = (swH[i] + dt * 0.08) % 1; const r = 6 + 64 * Math.pow(swH[i], 1.8) + 3; swPos[i * 3] = funnel.position.x + Math.cos(swA[i]) * r; swPos[i * 3 + 1] = swH[i] * 260; swPos[i * 3 + 2] = funnel.position.z + Math.sin(swA[i]) * r; }
+  const sz = tornadoSize(), e = 38 - fx.tornado, path = e < 22 ? e / 22 : 1;
+  let tx = -330 + (10 - -330) * path + (e > 28 ? (e - 28) * 30 : 0), tz = 320 + (-30 - 320) * path - (e > 28 ? (e - 28) * 25 : 0);
+  if (fx.tornadoTarget) { tx = fx.tornadoTarget.x; tz = fx.tornadoTarget.z; if (e > 30) fx.tornado = 8; }                 // steered by a tap on the ground: it keeps going while you steer
+  funnel.position.x += (tx - funnel.position.x) * dt * 1.2; funnel.position.z += (tz - funnel.position.z) * dt * 1.2; funnel.rotation.y += dt * 3; funnel.position.y = 130; funnel.scale.set(sz, 1, sz);
+  for (let i = 0; i < SW; i++) { swA[i] += dt * (2.5 + 2 * (1 - swH[i])); swH[i] = (swH[i] + dt * 0.08) % 1; const r = (6 + 64 * Math.pow(swH[i], 1.8) + 3) * sz; swPos[i * 3] = funnel.position.x + Math.cos(swA[i]) * r; swPos[i * 3 + 1] = swH[i] * 260; swPos[i * 3 + 2] = funnel.position.z + Math.sin(swA[i]) * r; }
   swirl.geometry.attributes.position.needsUpdate = true;
-  for (const it of trees) if (!it.d && Math.hypot(it.pos.x - funnel.position.x, it.pos.z - funnel.position.z) < 30 && Math.random() < 1.5 * dt) loosen(it, new THREE.Vector3(0, 12, 0), 1);
-  for (const it of cells) if (!it.d && Math.hypot(it.pos.x - funnel.position.x, it.pos.z - funnel.position.z) < 10 + 64 * Math.pow(Math.min(1, it.pos.y / 260), 1.8) + 4 && Math.random() < 0.35 * dt) loosen(it, new THREE.Vector3(0, 8, 0), 2);
+  for (const it of trees) if (!it.d && Math.hypot(it.pos.x - funnel.position.x, it.pos.z - funnel.position.z) < 30 * sz && Math.random() < 1.5 * sz * dt) loosen(it, new THREE.Vector3(0, 12, 0), 1);
+  for (const it of cells) if (!it.d && Math.hypot(it.pos.x - funnel.position.x, it.pos.z - funnel.position.z) < (10 + 64 * Math.pow(Math.min(1, it.pos.y / 260), 1.8) + 4) * sz && Math.random() < 0.35 * sz * dt) loosen(it, new THREE.Vector3(0, 8, 0), 2);
   shake = Math.max(shake, 0.4 * Math.max(0, 1 - Math.hypot(funnel.position.x, funnel.position.z) / 120));
 }
 
 // --- the tsunami: a wave that runs in from the park, floods the ground and carries the trees along
 const WG = 140, water = new THREE.Mesh(new THREE.PlaneGeometry(1800, 1800, WG, WG), new THREE.MeshPhysicalMaterial({ color: 0x2a6f8f, roughness: 0.15, metalness: 0.05, transparent: true, opacity: 0.86, clearcoat: 1 }));
-water.rotation.x = -Math.PI / 2; water.position.y = -3; water.visible = false; water.receiveShadow = true; scene.add(water);
-let waveFront = 820, flood = 0;
-const waveH = (z, t) => { const d = z - waveFront, crest = 16 * Math.exp(-d * d / 2200) * (d > 0 ? 1 : 0.5) + 10 * Math.exp(-d * d / 400); const behind = d < 0 ? 1 : 0; return crest + behind * (6 + 1.2 * Math.sin(z * 0.05 + t * 2)) * flood; };
-const waterLevelAt = (x, z) => water.position.y + waveH(z, fx.t);
+water.rotation.x = -Math.PI / 2; water.position.y = -3; water.visible = false; water.receiveShadow = true; const waterG = new THREE.Group(); waterG.add(water); scene.add(waterG);
+let waveFront = 820, flood = 0; const waveDir = new THREE.Vector2(0, 1), sOf = (p) => p.x * waveDir.x + p.z * waveDir.y;   // the wave runs along waveDir (from +s towards -s)
+const waveH = (z, t) => { const hs = set.height / 16, d = z - waveFront, crest = hs * (16 * Math.exp(-d * d / 2200) * (d > 0 ? 1 : 0.5) + 10 * Math.exp(-d * d / 400)); const behind = d < 0 ? 1 : 0; return crest + behind * (6 * Math.min(1.6, Math.max(0.5, hs)) + 1.2 * Math.sin(z * 0.05 + t * 2)) * flood; };
+const waterLevelAt = (x, z) => water.position.y + waveH(x * waveDir.x + z * waveDir.y, fx.t);
 function stepTsunami(dt, t) {
   if (!fx.tsunami) return;
   const e = 34 - fx.tsunami; waveFront -= (e < 20 ? 48 : 20) * dt; flood = e < 24 ? Math.min(1, e / 3) : Math.max(0, 1 - (e - 24) / 8);
@@ -261,7 +284,7 @@ function stepTsunami(dt, t) {
   const p = water.geometry.attributes.position;
   for (let i = 0; i < p.count; i++) { const z = -p.getY(i); p.setZ(i, waveH(z, t)); }
   p.needsUpdate = true; water.geometry.computeVertexNormals();
-  for (const it of trees) if (!it.d && Math.abs(it.pos.z - waveFront) < 18) loosen(it, new THREE.Vector3((Math.random() - 0.5) * 6, 6, -30), 0.8);
+  for (const it of trees) if (!it.d && Math.abs(sOf(it.pos) - waveFront) < 18) loosen(it, new THREE.Vector3(-waveDir.x * 30 + (Math.random() - 0.5) * 6, 6, -waveDir.y * 30 + (Math.random() - 0.5) * 6), 0.8);
   shake = Math.max(shake, 0.25 * Math.max(0, 1 - Math.abs(waveFront) / 80));
 }
 
@@ -271,6 +294,20 @@ function stepImplode(dt) {
   implodeT += dt;
   if (implodeT < 1.1 && Math.random() < 16 * dt) { const a = Math.random() * Math.PI * 2; booms.push({ c: new THREE.Vector3(Math.cos(a) * W / 2, Math.random() * TOP, Math.sin(a) * D / 2), t: 0, r: 4 }); shake = Math.max(shake, 0.5); }
   const tc = implodeT - 1.0; if (tc < 0) return;
+  if (topple) {                                                                                 // toppling: the whole tower tips about the edge of its base, then breaks up and falls along the ground
+    if (!topple.broke) {
+      topple.w += 0.26 * dt; topple.th += topple.w * dt;
+      const q = Qd.setFromAxisAngle(topple.axis, topple.th); building.quaternion.copy(q); building.position.copy(topple.pivot).sub(tmp.copy(topple.pivot).applyQuaternion(q));
+      shake = Math.max(shake, 0.3);
+      if (topple.th > 0.62) {
+        const om = topple.axis.clone().multiplyScalar(topple.w);
+        for (const it of tower) { const pw = tmp.copy(it.pos).sub(topple.pivot).applyQuaternion(q).add(topple.pivot); const v = new THREE.Vector3().crossVectors(om, tmp.clone().sub(topple.pivot)); v.x += (Math.random() - 0.5) * 3; v.z += (Math.random() - 0.5) * 3; const d = loosen(it, v, 1.5); d.pos.copy(pw); d.rot.setFromQuaternion(q); }
+        for (const it of bigs) { inst[it.list].setMatrixAt(it.idx, M.compose(tmp.set(0, -80, 0), it.quat, it.scale)); inst[it.list].instanceMatrix.needsUpdate = true; }
+        building.quaternion.identity(); building.position.set(0, 0, 0); topple.broke = true; shake = Math.max(shake, 1.4);
+      }
+    } else if (Math.random() < 50 * dt) { const a = Math.random() * TOP * 0.9; puffs.push({ p: topple.d.clone().multiplyScalar(a).add(new THREE.Vector3((Math.random() - 0.5) * 20, 4 + Math.random() * 8, (Math.random() - 0.5) * 20)), v: new THREE.Vector3((Math.random() - 0.5) * 10, 2, (Math.random() - 0.5) * 10), s: 7 + Math.random() * 9, t: 0, life: 5 + Math.random() * 4 }); }
+    return;
+  }
   for (const it of tower) { if (it.d) continue; const delay = (it.pos.y / TOP) * 3.4 + hash(it.idx, it.pos.y | 0, 2) * 0.4; if (tc > delay) { tmp.set(-it.pos.x, 0, -it.pos.z).normalize().multiplyScalar(2 + 5 * Math.random()); tmp.y = -6 - 6 * Math.random(); loosen(it, tmp, 1.5); } }
   const c = Math.min(1, tc / 4.4);                                                             // the glass body and the core sink as the floors pancake
   for (const it of bigs) { const sy = it.scale.y * (1 - c), bottom = it.pos.y - it.scale.y / 2; inst[it.list].setMatrixAt(it.idx, sy > 0.5 ? M.compose(tmp.set(it.pos.x, bottom + sy / 2, it.pos.z), it.quat, new THREE.Vector3(it.scale.x, sy, it.scale.z)) : M.compose(tmp.set(0, -80, 0), it.quat, it.scale)); inst[it.list].instanceMatrix.needsUpdate = true; }
@@ -281,13 +318,13 @@ function stepImplode(dt) {
 
 // --- the earthquake: the ground shakes, the tower sways from its base and sheds loose pieces
 function stepQuake(dt, t) {
-  if (!fx.quake) { building.position.x *= 0.9; building.rotation.z *= 0.9; building.rotation.x *= 0.9; city.position.x *= 0.9; return; }
-  const e = 14 - fx.quake, env = e < 2 ? e / 2 : e > 10 ? Math.max(0, (14 - e) / 4) : 1;
+  if (!fx.quake) { if (!topple || topple.broke) { building.position.x *= 0.9; building.position.z *= 0.9; building.rotation.z *= 0.9; building.rotation.x *= 0.9; } city.position.x *= 0.9; city.position.z *= 0.9; return; }
+  const mag = (set.magnitude - 4) / 5, e = 14 - fx.quake, env = (e < 2 ? e / 2 : e > 10 ? Math.max(0, (14 - e) / 4) : 1) * mag;
   const gx = env * (0.9 * Math.sin(t * 17) + 0.5 * Math.sin(t * 29)), gz = env * 0.5 * Math.sin(t * 23);
   building.position.x = gx; building.position.z = gz; city.position.x = gx; city.position.z = gz;
-  building.rotation.z = env * 0.012 * Math.sin(t * 2.6); building.rotation.x = env * 0.008 * Math.sin(t * 2.1 + 1);         // the sway: slow, like a tree, biggest at the top
+  building.rotation.z = env * 0.016 * Math.sin(t * 2.6); building.rotation.x = env * 0.011 * Math.sin(t * 2.1 + 1);         // the sway: slow, like a tree, biggest at the top
   shake = Math.max(shake, env * 0.6);
-  if (env > 0.6 && Math.random() < 2.5 * dt) { const it = cells[Math.floor(Math.random() * cells.length)]; if (it.pos.y > 30) loosen(it, new THREE.Vector3((Math.random() - 0.5) * 4, 2, (Math.random() - 0.5) * 4).add(tmp.set(it.pos.x, 0, it.pos.z).normalize().multiplyScalar(6)), 1.5); }
+  if (env > 0.35 && Math.random() < 2.5 * (env * 1.6) * dt) { const it = cells[Math.floor(Math.random() * cells.length)]; if (it.pos.y > 30) loosen(it, new THREE.Vector3((Math.random() - 0.5) * 4, 2, (Math.random() - 0.5) * 4).add(tmp.set(it.pos.x, 0, it.pos.z).normalize().multiplyScalar(6)), 1.5); }
 }
 
 // ---------------------------------------------------------------- camera, controls, loop
@@ -298,14 +335,15 @@ controls.addEventListener('start', () => { controls.autoRotate = false; spinBtn.
 const spinBtn = document.getElementById('iqon-spin'); spinBtn.addEventListener('click', () => { controls.autoRotate = !controls.autoRotate; spinBtn.classList.toggle('on', controls.autoRotate); });
 let night = false; const nightBtn = document.getElementById('iqon-night');
 nightBtn.addEventListener('click', () => { night = !night; nightBtn.classList.toggle('on', night); glassLit.emissiveIntensity = night ? 0.55 : 0; glassLit.color.set(night ? 0x1a2a33 : 0x55707c); nbGlass.emissive.set(night ? 0xffc88a : 0x000000); nbGlass.emissiveIntensity = night ? 0.25 : 0; });
-// tap the tower to plant a bomb there
+// tap the tower to plant a bomb (or aim the missiles) there; tap the ground to steer the tornado
 const ray = new THREE.Raycaster(); let down = null;
 canvas.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
 canvas.addEventListener('pointerup', (e) => {
   if (!down || performance.now() - down.t > 500 || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) return;
   const r = canvas.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
   const hit = ray.intersectObjects([inst.concrete, inst.glass, inst.concreteDark], false)[0];
-  if (hit) { setFx('bomb'); explode(hit.point, 10, 22); }
+  if (hit) { if (armed === 'missile') fireSalvo(hit.point); else { const [r, pw] = POW[set.power]; explode(hit.point, r, pw); } return; }
+  if (fx.tornado) { const g = ray.intersectObject(ground, false)[0]; if (g) fx.tornadoTarget = g.point.clone(); }
 });
 function resize() { const w = view.clientWidth, h = view.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
 new ResizeObserver(resize).observe(view);
@@ -316,7 +354,7 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; fx.t += dt; const t = fx.t;
   for (const k of ['quake', 'storm', 'tornado', 'tsunami', 'implode']) if (fx[k]) { fx[k] = Math.max(0, fx[k] - dt); if (!fx[k]) { if (k === 'storm') rain.visible = false; if (k === 'tornado') funnel.visible = swirl.visible = false; if (k === 'tsunami') water.visible = false; btns.forEach((b) => b.classList.remove('on')); } }
   stepQuake(dt, t); stepStorm(dt); stepTornado(dt, t); stepTsunami(dt, t); stepImplode(dt); stepMissile(dt); stepBooms(dt); stepDebris(dt);
-  const wind = fx.storm ? 1 : fx.tornado ? Math.max(0.3, 1 - Math.hypot(funnel.position.x + 40, funnel.position.z - 330) / 300) : 0; if (wind || fx.t < 0.1) sway(t, wind);
+  const wind = fx.storm ? 0.4 + 0.45 * set.wind : fx.tornado ? Math.max(0.3, 1 - Math.hypot(funnel.position.x + 40, funnel.position.z - 330) / 300) : 0; if (wind || fx.t < 0.1) sway(t, wind);
   // sky and light: day, night, storm, lightning
   lightningT = Math.max(0, lightningT - dt); const bolt = lightningT > 0 ? 1 : 0;
   bgNow.copy(night ? SKY_NIGHT : SKY); if (fx.storm) bgNow.lerp(SKY_STORM, Math.min(1, (30 - fx.storm) / 2) * (night ? 0.5 : 1)); if (fx.tornado) bgNow.lerp(SKY_STORM, 0.5); if (bolt) bgNow.lerp(new THREE.Color(0xffffff), 0.35);

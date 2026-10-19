@@ -193,9 +193,17 @@
       <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
       <div class="insect-title"><b>IQON · Quito</b></div>
       <div class="insect-tools iqon-tools"><button type="button" id="iqon-spin" class="pill on">Spin</button><button type="button" id="iqon-night" class="pill">Night</button></div>
+      <div class="iqon-ctl" id="iqon-ctl" hidden>
+        <div data-for="quake" hidden><label>Magnitude <output></output><input type="range" min="5" max="9" step="0.5" value="7" data-set="magnitude"></label></div>
+        <div data-for="storm" hidden><label>Wind <output></output><input type="range" min="0" max="3" step="1" value="1" data-set="wind"></label><button type="button" class="opt toggle on" data-set="lightning">⚡ Lightning</button></div>
+        <div data-for="tornado" hidden><label>Size <output></output><input type="range" min="1" max="5" step="1" value="3" data-set="size"></label><i>Tap the ground to steer it</i></div>
+        <div data-for="tsunami" hidden><label>Height <output></output><input type="range" min="5" max="40" step="1" value="16" data-set="height"></label><span class="opts" data-set="from"><button type="button" class="opt on" data-val="park">From the park</button><button type="button" class="opt" data-val="city">From the city</button><button type="button" class="opt" data-val="left">From the left</button><button type="button" class="opt" data-val="right">From the right</button></span></div>
+        <div data-for="bomb" hidden><label>Power <output></output><input type="range" min="1" max="3" step="1" value="2" data-set="power"></label><i>Tap the tower to place it</i></div>
+        <div data-for="missile" hidden><label>Power <output></output><input type="range" min="1" max="3" step="1" value="2" data-set="mpower"></label><span class="opts" data-set="count"><button type="button" class="opt on" data-val="1">1</button><button type="button" class="opt" data-val="3">3</button><button type="button" class="opt" data-val="5">5</button></span><i>Tap the tower to aim</i></div>
+        <div data-for="implode" hidden><span class="opts" data-set="fall"><button type="button" class="opt on" data-val="down">Straight down</button><button type="button" class="opt" data-val="left">Topple left</button><button type="button" class="opt" data-val="right">Topple right</button><button type="button" class="opt" data-val="front">Topple forward</button><button type="button" class="opt" data-val="back">Topple back</button></span></div>
+      </div>
       <div class="iqon-bar">
-        <button type="button" data-fx="quake"><span>🌍</span>Earthquake</button><button type="button" data-fx="storm"><span>⛈️</span>Storm</button><button type="button" data-fx="tornado"><span>🌪️</span>Tornado</button>
-        <button type="button" data-fx="tsunami"><span>🌊</span>Tsunami</button><button type="button" data-fx="bomb"><span>💣</span>Bomb</button><button type="button" data-fx="missile"><span>🚀</span>Missile</button><button type="button" data-fx="implode"><span>💥</span>Implosion</button><button type="button" data-fx="rebuild" class="fix"><span>🔧</span>Rebuild</button>
+        <button type="button" data-fx="quake"><span>🌍</span>Earthquake</button><button type="button" data-fx="storm"><span>⛈️</span>Storm</button><button type="button" data-fx="tornado"><span>🌪️</span>Tornado</button><button type="button" data-fx="tsunami"><span>🌊</span>Tsunami</button><button type="button" data-fx="bomb"><span>💣</span>Bomb</button><button type="button" data-fx="missile"><span>🚀</span>Missile</button><button type="button" data-fx="implode"><span>💥</span>Implosion</button><button type="button" data-fx="rebuild" class="fix"><span>🔧</span>Rebuild</button>
       </div>
     </section>
 
