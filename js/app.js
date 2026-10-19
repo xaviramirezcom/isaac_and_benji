@@ -1,7 +1,7 @@
 // Tiny hash router: #/ (home) · #/isaac · #/benji · #/isaac/map · #/benji/animals · #/isaac/insects[/<id>]
 const $ = (s) => document.querySelector(s);
-const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map'), grid: $('#view-grid'), animals: $('#view-animals'), insects: $('#view-insects'), insect: $('#view-insect'), space: $('#view-space'), storm: $('#view-storm'), numbers: $('#view-numbers'), place: $('#view-place'), fruits: $('#view-fruits'), body: $('#view-body'), tsunami: $('#view-tsunami'), shapes: $('#view-shapes') };
-const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map', 'benji/animals': 'grid', 'isaac/insects': 'insects', 'isaac/space': 'space', 'isaac/storms': 'storm', 'benji/numbers': 'numbers', 'benji/numbers/place': 'place', 'benji/fruits': 'fruits', 'isaac/body': 'body', 'isaac/tsunami': 'tsunami', 'benji/shapes': 'shapes' };
+const views = { home: $('#view-home'), isaac: $('#view-isaac'), benji: $('#view-benji'), map: $('#view-map'), grid: $('#view-grid'), animals: $('#view-animals'), insects: $('#view-insects'), insect: $('#view-insect'), space: $('#view-space'), storm: $('#view-storm'), numbers: $('#view-numbers'), place: $('#view-place'), fruits: $('#view-fruits'), body: $('#view-body'), tsunami: $('#view-tsunami'), shapes: $('#view-shapes'), stars: $('#view-stars') };
+const ROUTES = { '': 'home', isaac: 'isaac', benji: 'benji', 'isaac/map': 'map', 'benji/animals': 'grid', 'isaac/insects': 'insects', 'isaac/space': 'space', 'isaac/storms': 'storm', 'benji/numbers': 'numbers', 'benji/numbers/place': 'place', 'benji/fruits': 'fruits', 'isaac/body': 'body', 'isaac/tsunami': 'tsunami', 'benji/shapes': 'shapes', 'isaac/stars': 'stars' };
 const INSECT_PAGE = /^isaac\/insects\/([a-z]+)$/;
 const ANIMAL_PAGE = /^benji\/animals\/([a-z]+)$/;
 
@@ -17,6 +17,7 @@ let fruitsModule = null;
 let bodyModule = null;
 let tsunamiModule = null;
 let shapesModule = null;
+let starsModule = null;
 
 async function route() {
   const path = location.hash.replace(/^#\/?/, '');
@@ -37,6 +38,7 @@ async function route() {
   if (current === 'body' && name !== 'body') bodyModule?.leave();
   if (current === 'tsunami' && name !== 'tsunami') tsunamiModule?.leave();
   if (current === 'shapes' && name !== 'shapes') shapesModule?.leave();
+  if (current === 'stars' && name !== 'stars') starsModule?.leave();
   if (current === 'insect' && name === 'insects') insectsModule?.leave();
   current = name;
   for (const [key, el] of Object.entries(views)) el.hidden = key !== name;
@@ -56,6 +58,10 @@ async function route() {
   if (name === 'fruits') {
     fruitsModule ??= await import('./fruits-game.js');
     if (current === 'fruits') fruitsModule.enter();
+  }
+  if (name === 'stars') {
+    starsModule ??= await import('./stars-game.js?v=1');
+    if (current === 'stars') starsModule.enter();
   }
   if (name === 'shapes') {
     shapesModule ??= await import('./shapes-game.js?v=1');
