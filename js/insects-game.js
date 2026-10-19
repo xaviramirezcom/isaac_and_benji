@@ -17,7 +17,7 @@ const T = {
   en: { say: 'Say it', only: 'Only this', all: 'Show all', remove: 'Remove', back: 'Put back', walk: 'Walk', fly: 'Fly', speech: 'en-US' },
   es: { say: 'Escucha', only: 'Solo esto', all: 'Mostrar todo', remove: 'Quitar', back: 'Poner', walk: 'Caminar', fly: 'Volar', speech: 'es-ES' },
 };
-const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede', 'rhino', 'pillbug', 'worm', 'snail'];
+const ORDER = ['beetle', 'bee', 'ant', 'ladybug', 'fly', 'spider', 'centipede', 'rhino', 'pillbug', 'worm', 'snail', 'slug'];
 const FOV = 36;
 
 let registry = {}, built = {}, lang = 'en', loading = null;
@@ -111,6 +111,7 @@ async function makeThumbs() {
   for (const id of ORDER.filter((i) => registry[i])) {
     await new Promise((res) => setTimeout(res, 40)); // one insect at a time so the page stays responsive
     const m = makeInsect(id);
+    m.motion?.snap(); m.root.position.set(0, 0, 0); for (const p of m.parts.values()) { p.obj.position.copy(p.base); p.obj.visible = true; applyOpacity(p, 1); setGlow(p, false); }   // a creature opened before the list (deep link) may be mid-pose or see-through: draw it whole
     sc.add(m.root);
     const d = m.radius / Math.sin(THREE.MathUtils.degToRad(FOV / 2)) * 0.8;
     cam.position.copy(m.center).addScaledVector(m.mod.info.cameraDir, d); cam.lookAt(m.center);
