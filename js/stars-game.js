@@ -261,12 +261,16 @@ function focusOn(st, dur = 2.8) {
   st.pop = 1; tourT = 0;
 }
 function stepStar(k) { const i = focus ? Math.min(NS - 1, Math.max(0, focus.i + k)) : k > 0 ? 0 : NS - 1; if (focus && i === focus.i) return; focusOn(stars[i]); }
-function navArrows() { $('#st-left').hidden = $('#st-right').hidden = !focus; if (focus) { $('#st-left').classList.toggle('off', focus.i === 0); $('#st-right').classList.toggle('off', focus.i === NS - 1); } }
+function navArrows() {
+  $('#st-left').hidden = $('#st-right').hidden = !focus;
+  const below = $('#view-stars .insect-tools').getBoundingClientRect().bottom - root.getBoundingClientRect().top + 10;     // under the buttons, never on top of them
+  $('#st-left').style.top = $('#st-right').style.top = `${below}px`;
+  if (focus) { $('#st-left').classList.toggle('off', focus.i === 0); $('#st-right').classList.toggle('off', focus.i === NS - 1); } }
 
 // ------------------------------------------------------------ the loop
 function resize() {
   if (!renderer) return; const w = root.clientWidth, h = root.clientHeight; if (!w || !h) return;
-  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); fxCanvas.width = w; fxCanvas.height = h;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); fxCanvas.width = w; fxCanvas.height = h; navArrows();
 }
 const warp = Array.from({ length: 110 }, () => ({ a: Math.random() * 6.283, r: Math.random(), s: 0.4 + Math.random() }));
 function drawWarp(k) {

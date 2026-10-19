@@ -677,3 +677,5 @@ button, a { touch-action: manipulation; font: inherit; }
 
 .star-nav { position: absolute; z-index: 6; top: 30%; width: 58px; height: 84px; border: 0; border-radius: 99px; background: rgba(255, 255, 255, .18); color: #fff; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: 0 0 0 2px rgba(255, 255, 255, .25); }
 .star-nav svg { width: 30px; height: 30px; } .star-nav.left { left: 10px; } .star-nav.right { right: 10px; } .star-nav:active { background: rgba(255, 255, 255, .35); } .star-nav.off { opacity: .25; pointer-events: none; } .star-nav[hidden] { display: none; }
+
+.star-nav { height: 64px; width: 50px; top: 40%; }
