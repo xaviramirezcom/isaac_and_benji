@@ -415,8 +415,10 @@ function bind() {
   if (bound) return; bound = true;
   let down = null, pointers = 0, multi = false;
   canvas.addEventListener('pointerdown', (e) => { pointers++; if (pointers > 1) { multi = true; down = null; } else { multi = false; down = { x: e.clientX, y: e.clientY, t: performance.now() }; } });
-  const up = (e, cancelled) => { pointers = Math.max(0, pointers - 1); if (!cancelled && down && !multi && performance.now() - down.t < 700 && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10) { const st = pick(e.clientX, e.clientY); if (st) { if (tour) stopTour(); focusOn(st); } else if (focus && cardMini) setMini(false); } if (!pointers) { down = null; multi = false; } };
+  const up = (e, cancelled) => { pointers = Math.max(0, pointers - 1); if (!cancelled && down && !multi && performance.now() - down.t < 700 && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 10) { const st = pick(e.clientX, e.clientY); if (st) { if (tour) stopTour(); focusOn(st); } else if (focus && !cardMini) setMini(true); } if (!pointers) { down = null; multi = false; } };
   canvas.addEventListener('pointerup', (e) => up(e, false)); canvas.addEventListener('pointercancel', (e) => up(e, true));
+  const tuck = () => { if (focus && !cardMini && !flight) setMini(true); };                // zooming or turning the view also tucks the card away
+  canvas.addEventListener('wheel', tuck, { passive: true }); canvas.addEventListener('touchmove', tuck, { passive: true }); canvas.addEventListener('gesturestart', tuck);
   ui.card.addEventListener('click', (e) => { if (!e.target.closest('button') && cardMini) setMini(false); });
   $('#stc-prev').addEventListener('click', () => { if (tour) stopTour(); stepStar(-1); }); $('#stc-next').addEventListener('click', () => { if (tour) stopTour(); stepStar(1); });
   $('#stc-say').addEventListener('click', () => { if (focus) speak(`${focus.d[lang]}. ${focus.d.kid[lang]}`); });
