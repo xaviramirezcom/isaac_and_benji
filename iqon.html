@@ -23,7 +23,7 @@
 <div class="btns"><button id="spin" class="on">Spin</button><button id="night">Night</button></div>
 <div class="bar">
   <button data-fx="quake"><span>🌍</span>Earthquake</button><button data-fx="storm"><span>⛈️</span>Storm</button><button data-fx="tornado"><span>🌪️</span>Tornado</button>
-  <button data-fx="tsunami"><span>🌊</span>Tsunami</button><button data-fx="bomb"><span>💣</span>Bomb</button><button data-fx="missile"><span>🚀</span>Missile</button><button data-fx="rebuild" class="fix"><span>🔧</span>Rebuild</button>
+  <button data-fx="tsunami"><span>🌊</span>Tsunami</button><button data-fx="bomb"><span>💣</span>Bomb</button><button data-fx="missile"><span>🚀</span>Missile</button><button data-fx="implode"><span>💥</span>Implosion</button><button data-fx="rebuild" class="fix"><span>🔧</span>Rebuild</button>
 </div>
 <canvas id="c"></canvas>
 <script type="module">
@@ -82,8 +82,8 @@ const add = (list, x, y, z, sx, sy, sz, ry = 0) => {
 };
 
 tagNow = 'fixed';
-add('glass', 0, BODY_TOP / 2, 0, W - 0.4, BODY_TOP, D - 0.4);                                            // the flush glass body
-add('concreteDark', 0, TOP / 2 + 0.6, 0, 11, TOP + 1.2, 8);                                               // the core
+add('glass', 0, BODY_TOP / 2, 0, W - 0.4, BODY_TOP, D - 0.4); items[items.length - 1].big = true;         // the flush glass body
+add('concreteDark', 0, TOP / 2 + 0.6, 0, 11, TOP + 1.2, 8); items[items.length - 1].big = true;            // the core
 for (let f = 2; f <= FLOORS - CROWN; f++) add('concrete', 0, yOf(f) + SLAB / 2, 0, W + 0.3, SLAB, D + 0.3);
 for (let i = 0; i <= NX; i++) for (const s of [-1, 1]) add('concrete', -W / 2 + i * BAY, (BASE[0] + BASE[1]) / 2, s * (D / 2 - 0.05), 0.7, BASE[0] + BASE[1], 0.8);
 for (let i = 1; i < NZ; i++) for (const s of [-1, 1]) add('concrete', s * (W / 2 - 0.05), (BASE[0] + BASE[1]) / 2, -D / 2 + i * BAY, 0.8, BASE[0] + BASE[1], 0.7);
@@ -134,7 +134,7 @@ const hills = new THREE.Mesh(new THREE.CylinderGeometry(1500, 1500, 260, 48, 1, 
 const mats = { concrete, concreteDark, glass: glassLit, rail, leaf, trunk, siteConcrete: concrete, siteLeaf: leaf, siteTrunk: trunk };
 const inst = {}, building = new THREE.Group(); scene.add(building);
 for (const k in lists) { const m = new THREE.InstancedMesh(box, mats[k], lists[k].length); lists[k].forEach((mat, i) => m.setMatrixAt(i, mat)); m.castShadow = m.receiveShadow = true; m.instanceMatrix.needsUpdate = true; m.frustumCulled = false; (k.startsWith('site') ? scene : building).add(m); inst[k] = m; }
-const cells = items.filter((it) => it.tag === 'cell'), trees = items.filter((it) => it.tag === 'tree');
+const cells = items.filter((it) => it.tag === 'cell'), trees = items.filter((it) => it.tag === 'tree'), bigs = items.filter((it) => it.big), tower = items.filter((it) => (it.tag === 'cell' || it.tag === 'fixed') && !it.big);
 
 // ---------------------------------------------------------------- debris physics: a piece that has come loose keeps its own position, spin and speed
 const debris = [], E = new THREE.Euler(), Qd = new THREE.Quaternion(), tmp = new THREE.Vector3();
@@ -152,7 +152,7 @@ function stepDebris(dt) {
     if (fx.tornado) { tornadoPull(d, dt); }
     d.pos.addScaledVector(d.vel, dt);
     d.rot.x += d.ang.x * dt; d.rot.y += d.ang.y * dt; d.rot.z += d.ang.z * dt;
-    const floor = d.ground + (Math.abs(d.pos.x) < W / 2 + 4 && Math.abs(d.pos.z) < D / 2 + 4 ? BASE[0] + 0.5 : 0);     // pieces land on the canopy over the base, or on the ground
+    const floor = d.ground + (!fx.imploded && Math.abs(d.pos.x) < W / 2 + 4 && Math.abs(d.pos.z) < D / 2 + 4 ? BASE[0] + 0.5 : 0) + (fx.imploded ? 15 * pile * Math.exp(-(d.pos.x * d.pos.x / (W * W * 0.45) + d.pos.z * d.pos.z / (D * D * 0.9))) : 0);     // pieces land on the canopy over the base, on the ground, or on the growing rubble heap
     if (d.pos.y < floor && d.vel.y < 0) { d.pos.y = floor; d.vel.y = -d.vel.y * 0.25; d.vel.x *= 0.5; d.vel.z *= 0.5; d.ang.multiplyScalar(0.5); if (d.vel.length() < 1.5 && !fx.tsunami) { d.rest = true; d.rot.x = Math.round(d.rot.x / (Math.PI / 2)) * (Math.PI / 2); d.rot.z = Math.round(d.rot.z / (Math.PI / 2)) * (Math.PI / 2); } }
     if (Math.abs(d.pos.x) > 1200 || Math.abs(d.pos.z) > 1200) d.rest = true;
     writeItem(d.it, d.pos, Qd.setFromEuler(d.rot));
@@ -160,12 +160,13 @@ function stepDebris(dt) {
 }
 function rebuild() {
   for (const d of debris) { d.it.d = null; writeItem(d.it, d.it.pos, d.it.quat); }
-  debris.length = 0; building.position.set(0, 0, 0); building.rotation.set(0, 0, 0); city.position.set(0, 0, 0);
+  debris.length = 0; fx.imploded = false; fx.implode = 0; implodeT = 0; pile = 0; puffs.length = 0; for (const it of bigs) writeItem(it, it.pos, it.quat); building.position.set(0, 0, 0); building.rotation.set(0, 0, 0); city.position.set(0, 0, 0);
   for (const t of trees) writeItem(t, t.pos, t.quat);
 }
 
 // ---------------------------------------------------------------- effects
-const fx = { quake: 0, storm: 0, tornado: 0, tsunami: 0, t: 0 };
+const fx = { quake: 0, storm: 0, tornado: 0, tsunami: 0, implode: 0, imploded: false, t: 0 };
+let implodeT = 0, pile = 0;
 let shake = 0, lightningT = 0, nextBolt = 2;
 const CAPS = {
   quake: 'Earthquake! Quito sits in the Andes, where quakes are common. A tall tower is built to sway like a tree instead of snapping: watch it lean and shed a few loose pieces.',
@@ -180,7 +181,7 @@ const btns = [...document.querySelectorAll('.bar button')];
 function setFx(name) { btns.forEach((b) => b.classList.toggle('on', b.dataset.fx === name && name !== 'rebuild')); }
 btns.forEach((b) => b.addEventListener('click', () => start(b.dataset.fx)));
 function start(name) {
-  fx.quake = fx.storm = fx.tornado = fx.tsunami = 0; missile.visible = false; funnel.visible = false; swirl.visible = false; rain.visible = false; water.visible = false; setFx(name);
+  fx.quake = fx.storm = fx.tornado = fx.tsunami = fx.implode = 0; missile.visible = false; funnel.visible = false; swirl.visible = false; rain.visible = false; water.visible = false; setFx(name);
   if (name === 'rebuild') rebuild();
   else if (name === 'quake') { fx.quake = 14; }
   else if (name === 'storm') { fx.storm = 30; rain.visible = true; nextBolt = 1.5; }
@@ -188,6 +189,7 @@ function start(name) {
   else if (name === 'tsunami') { fx.tsunami = 34; water.visible = true; waveFront = 820; }
   else if (name === 'bomb') { const side = Math.random() < 0.5 ? 1 : -1, horizontal = Math.random() < 0.6; explode(horizontal ? new THREE.Vector3((Math.random() - 0.5) * W * 0.8, 20 + Math.random() * 95, side * (D / 2 + 1)) : new THREE.Vector3(side * (W / 2 + 1), 20 + Math.random() * 95, (Math.random() - 0.5) * D * 0.8), 11, 24); }
   else if (name === 'missile') { launchMissile(); }
+  else if (name === 'implode') { fx.implode = 16; fx.imploded = true; implodeT = 0; }
 }
 
 // --- explosions: a fireball, a shock ring, smoke and flying cells
@@ -195,7 +197,7 @@ const fire = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshB
 const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.12, 8, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.7 })); ring.visible = false; scene.add(ring);
 const flash = new THREE.PointLight(0xffc070, 0, 220, 1.5); scene.add(flash);
 const smokeMat = new THREE.MeshStandardMaterial({ color: 0x5a5550, transparent: true, opacity: 0.85, roughness: 1 });
-const smoke = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), smokeMat, 48); smoke.count = 0; scene.add(smoke);
+const smoke = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 10, 8), smokeMat, 120); smoke.count = 0; scene.add(smoke);
 const puffs = [], booms = [];
 function explode(center, radius, power) {
   booms.push({ c: center.clone(), t: 0, r: radius });
@@ -209,7 +211,7 @@ function stepBooms(dt) {
   fire.visible = ring.visible = !!b && b.t < 1.0;
   if (b) { const k = Math.min(1, b.t / 0.5); fire.position.copy(b.c); fire.scale.setScalar(2 + b.r * 0.75 * Math.sqrt(k)); fire.material.opacity = 0.95 * (1 - b.t); fire.material.color.setHSL(0.08 - 0.06 * b.t, 1, 0.6 - 0.3 * b.t); ring.position.copy(b.c); ring.scale.setScalar(1 + b.t * b.r * 1.8); ring.material.opacity = 0.6 * (1 - b.t); ring.lookAt(camera.position); flash.position.copy(b.c); flash.intensity = Math.max(0, 1 - b.t * 2) * 6000; } else flash.intensity = 0;
   for (const p of puffs) { p.t += dt; p.v.y += 2 * dt; p.v.multiplyScalar(1 - 0.6 * dt); p.p.addScaledVector(p.v, dt); p.s += dt * 1.1; }
-  while (puffs.length && puffs[0].t > puffs[0].life) puffs.shift(); while (puffs.length > 48) puffs.shift();
+  while (puffs.length && puffs[0].t > puffs[0].life) puffs.shift(); while (puffs.length > 120) puffs.shift();
   smoke.count = puffs.length; puffs.forEach((p, i) => smoke.setMatrixAt(i, M.compose(p.p, Qd.identity(), tmp.setScalar(p.s))));
   smoke.instanceMatrix.needsUpdate = true; smokeMat.opacity = puffs.length ? Math.max(0.1, 0.75 - (puffs[0].t / puffs[0].life) * 0.65) : 0;
 }
@@ -289,6 +291,20 @@ function stepTsunami(dt, t) {
   shake = Math.max(shake, 0.25 * Math.max(0, 1 - Math.abs(waveFront) / 80));
 }
 
+// --- the implosion: charges flash up the tower, then it drops from the bottom, floor on floor, into a heap under a dust cloud
+function stepImplode(dt) {
+  if (!fx.implode) return;
+  implodeT += dt;
+  if (implodeT < 1.1 && Math.random() < 16 * dt) { const a = Math.random() * Math.PI * 2; booms.push({ c: new THREE.Vector3(Math.cos(a) * W / 2, Math.random() * TOP, Math.sin(a) * D / 2), t: 0, r: 4 }); shake = Math.max(shake, 0.5); }
+  const tc = implodeT - 1.0; if (tc < 0) return;
+  for (const it of tower) { if (it.d) continue; const delay = (it.pos.y / TOP) * 3.4 + hash(it.idx, it.pos.y | 0, 2) * 0.4; if (tc > delay) { tmp.set(-it.pos.x, 0, -it.pos.z).normalize().multiplyScalar(2 + 5 * Math.random()); tmp.y = -6 - 6 * Math.random(); loosen(it, tmp, 1.5); } }
+  const c = Math.min(1, tc / 4.4);                                                             // the glass body and the core sink as the floors pancake
+  for (const it of bigs) { const sy = it.scale.y * (1 - c), bottom = it.pos.y - it.scale.y / 2; inst[it.list].setMatrixAt(it.idx, sy > 0.5 ? M.compose(tmp.set(it.pos.x, bottom + sy / 2, it.pos.z), it.quat, new THREE.Vector3(it.scale.x, sy, it.scale.z)) : M.compose(tmp.set(0, -80, 0), it.quat, it.scale)); inst[it.list].instanceMatrix.needsUpdate = true; }
+  pile = Math.min(1, tc / 5);
+  if (Math.random() < 40 * dt) { const a = Math.random() * Math.PI * 2, r = 8 + Math.random() * 34; puffs.push({ p: new THREE.Vector3(Math.cos(a) * r, 3 + Math.random() * 8 + 25 * (1 - c), Math.sin(a) * r * 0.8), v: new THREE.Vector3(Math.cos(a) * 7, 1.5, Math.sin(a) * 7), s: 7 + Math.random() * 9, t: 0, life: 5 + Math.random() * 4 }); }
+  shake = Math.max(shake, 1.0 * (1 - c) + 0.15);
+}
+
 // --- the earthquake: the ground shakes, the tower sways from its base and sheds loose pieces
 function stepQuake(dt, t) {
   if (!fx.quake) { building.position.x *= 0.9; building.rotation.z *= 0.9; building.rotation.x *= 0.9; city.position.x *= 0.9; return; }
@@ -323,8 +339,8 @@ const shakeOff = new THREE.Vector3(), bgNow = new THREE.Color();
 let last = performance.now();
 renderer.setAnimationLoop((now) => {
   const dt = Math.min(0.05, (now - last) / 1000); last = now; fx.t += dt; const t = fx.t;
-  for (const k of ['quake', 'storm', 'tornado', 'tsunami']) if (fx[k]) { fx[k] = Math.max(0, fx[k] - dt); if (!fx[k]) { if (k === 'storm') rain.visible = false; if (k === 'tornado') funnel.visible = swirl.visible = false; if (k === 'tsunami') water.visible = false; btns.forEach((b) => b.classList.remove('on')); } }
-  stepQuake(dt, t); stepStorm(dt); stepTornado(dt, t); stepTsunami(dt, t); stepMissile(dt); stepBooms(dt); stepDebris(dt);
+  for (const k of ['quake', 'storm', 'tornado', 'tsunami', 'implode']) if (fx[k]) { fx[k] = Math.max(0, fx[k] - dt); if (!fx[k]) { if (k === 'storm') rain.visible = false; if (k === 'tornado') funnel.visible = swirl.visible = false; if (k === 'tsunami') water.visible = false; btns.forEach((b) => b.classList.remove('on')); } }
+  stepQuake(dt, t); stepStorm(dt); stepTornado(dt, t); stepTsunami(dt, t); stepImplode(dt); stepMissile(dt); stepBooms(dt); stepDebris(dt);
   const wind = fx.storm ? 1 : fx.tornado ? Math.max(0.3, 1 - Math.hypot(funnel.position.x + 40, funnel.position.z - 330) / 300) : 0; if (wind || fx.t < 0.1) sway(t, wind);
   // sky and light: day, night, storm, lightning
   lightningT = Math.max(0, lightningT - dt); const bolt = lightningT > 0 ? 1 : 0;
