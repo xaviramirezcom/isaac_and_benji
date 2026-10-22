@@ -38,6 +38,7 @@
         <a class="game-tile storm-tile" href="#/isaac/storms"><span class="emoji" aria-hidden="true">🌪️</span><span>Storms</span></a>
         <a class="game-tile tsunami-tile" href="#/isaac/tsunami"><span class="emoji" aria-hidden="true">🌊</span><span>Tsunamis</span></a>
         <a class="game-tile iqon-tile" href="#/isaac/iqon"><span class="emoji" aria-hidden="true">🏙️</span><span>IQON</span></a>
+        <a class="game-tile jet-tile" href="#/isaac/jet"><span class="emoji" aria-hidden="true">✈️</span><span>Jet</span></a>
         <a class="game-tile body-tile" href="#/isaac/body"><span class="emoji" aria-hidden="true">🫀</span><span>Body</span></a>
       </div>
     </section>
@@ -187,6 +188,7 @@
       <div class="loading" id="body-loading" hidden><div class="spinner" aria-hidden="true">🫀</div><p>Getting the body ready…</p></div>
     </section>
 
+
     <!-- IQON: the tower in Quito and a disaster lab -->
     <section id="view-iqon" class="view iqon-view" hidden aria-label="IQON tower">
       <canvas id="iqon-canvas" aria-label="3D IQON tower"></canvas>
@@ -205,6 +207,29 @@
       <div class="iqon-bar">
         <button type="button" data-fx="quake"><span>🌍</span>Earthquake</button><button type="button" data-fx="storm"><span>⛈️</span>Storm</button><button type="button" data-fx="tornado"><span>🌪️</span>Tornado</button><button type="button" data-fx="tsunami"><span>🌊</span>Tsunami</button><button type="button" data-fx="bomb"><span>💣</span>Bomb</button><button type="button" data-fx="missile"><span>🚀</span>Missile</button><button type="button" data-fx="implode"><span>💥</span>Implosion</button><button type="button" data-fx="rebuild" class="fix"><span>🔧</span>Rebuild</button>
       </div>
+    </section>
+
+    <!-- Balsa Jet: a profile jet to cut from balsa sheets -->
+    <section id="view-jet" class="view jet-view" hidden aria-label="Balsa jet">
+      <canvas id="jet-canvas" aria-label="3D balsa jet"></canvas>
+      <a class="round-btn back" href="#/isaac" aria-label="Back">←</a>
+      <div class="insect-title"><b id="jet-title">Balsa F-16</b></div>
+      <div class="insect-tools jet-tools">
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="on">EN</button>
+          <button type="button" data-lang="es">ES</button>
+        </div>
+        <div class="seg" role="group" aria-label="View"><button type="button" data-mode="jet" class="on">Jet</button><button type="button" data-mode="frame">Frame</button><button type="button" data-mode="sheets">Sheets</button></div>
+        <button class="round-btn small" id="btn-jfly" type="button" aria-label="Fly"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 18l10-2 6-10h3l-3 10h8l2 2-2 2h-8l3 10h-3l-6-10-10-2z" fill="currentColor"/></svg><i id="lbl-jfly">Fly</i></button>
+      </div>
+      <div class="insect-card" id="jet-card" aria-live="polite">
+        <div class="ic-text"><h3 id="jet-name"></h3><p class="kidtext" id="jet-kid"></p><div class="adult-box"><p id="jet-adult"></p></div></div>
+        <div class="ic-actions">
+          <button type="button" class="ic-btn info" id="jet-info" aria-label="Facts for grown-ups"><svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12.5" fill="none" stroke="currentColor" stroke-width="2.8"/><path d="M16 14v8" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"/><circle cx="16" cy="9.6" r="1.9" fill="currentColor"/></svg></button>
+          <button type="button" class="ic-btn remove" id="jet-close" aria-label="Close"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M8 20l8-8 8 8" stroke="currentColor" stroke-width="3.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+      <div class="chips" id="jet-chips" role="group" aria-label="Pieces"></div>
     </section>
 
     <!-- Tsunamis -->
