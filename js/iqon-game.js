@@ -3,7 +3,6 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import { RoomEnvironment } from '../vendor/RoomEnvironment.js';
-import { buildSkin as buildF16, NOZ1 as F16_LEN } from './f16.js';
 const view = document.querySelector('#view-iqon');
 
 // ---------------------------------------------------------------- the building, in metres
@@ -156,20 +155,18 @@ const btns = [...view.querySelectorAll('.iqon-bar button')];
 function setFx(name) { btns.forEach((b) => b.classList.toggle('on', b.dataset.fx === name && name !== 'rebuild')); }
 btns.forEach((b) => b.addEventListener('click', () => start(b.dataset.fx)));
 // the controls strip: one or two knobs per event
-const set = { magnitude: 7, wind: 1, lightning: 1, size: 3, height: 16, from: 'park', power: 2, mpower: 2, count: 1, fall: 'down', chase: 1, jpower: 2 };
+const set = { magnitude: 7, wind: 1, lightning: 1, size: 3, height: 16, from: 'park', power: 2, mpower: 2, count: 1, fall: 'down' };
 const ctl = view.querySelector('.iqon-ctl'), WINDS = ['Breeze', 'Strong', 'Gale', 'Hurricane'], SIZES = ['', 'Small', 'Big', 'Huge'];
-const fmt = { magnitude: (v) => v.toFixed(1), wind: (v) => WINDS[v], size: (v) => 'F' + v, height: (v) => v + ' m', power: (v) => SIZES[v], mpower: (v) => SIZES[v], jpower: (v) => SIZES[v] };
+const fmt = { magnitude: (v) => v.toFixed(1), wind: (v) => WINDS[v], size: (v) => 'F' + v, height: (v) => v + ' m', power: (v) => SIZES[v], mpower: (v) => SIZES[v] };
 ctl.querySelectorAll('input[type=range]').forEach((inp) => { const out = inp.parentElement.querySelector('output'), k = inp.dataset.set; const show = () => { set[k] = +inp.value; out.textContent = fmt[k] ? fmt[k](set[k]) : inp.value; }; inp.addEventListener('input', show); show(); });
 ctl.querySelectorAll('.opts').forEach((g) => { const k = g.dataset.set; g.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { g.querySelectorAll('button').forEach((o) => o.classList.toggle('on', o === b)); const v = b.dataset.val; set[k] = isNaN(+v) ? v : +v; })); });
-ctl.querySelectorAll('button.act').forEach((b) => b.addEventListener('click', () => jetAction(b.dataset.act)));
 ctl.querySelectorAll('button.toggle').forEach((b) => { const k = b.dataset.set; b.addEventListener('click', () => { set[k] = set[k] ? 0 : 1; b.classList.toggle('on', !!set[k]); }); });
 function showCtl(name) { let any = false; ctl.querySelectorAll('[data-for]').forEach((d) => { const on = d.dataset.for === name; d.hidden = !on; any ||= on; }); ctl.hidden = !any; }
 const POW = { 1: [8, 18], 2: [11, 24], 3: [16, 34] };
-const fxJet = { on: false };
 let armed = 'bomb', topple = null;
 const FALL = { left: [-1, 0], right: [1, 0], front: [0, 1], back: [0, -1] };
 function start(name) {
-  fx.quake = fx.storm = fx.tornado = fx.tsunami = fx.implode = 0; if (name !== 'rebuild') stopJet(); missiles.forEach((m) => { m.visible = false; }); flights.length = 0; funnel.visible = false; swirl.visible = false; rain.visible = false; water.visible = false; setFx(name);
+  fx.quake = fx.storm = fx.tornado = fx.tsunami = fx.implode = 0; missiles.forEach((m) => { m.visible = false; }); flights.length = 0; funnel.visible = false; swirl.visible = false; rain.visible = false; water.visible = false; setFx(name);
   showCtl(name); salvo = null; fx.tornadoTarget = null;
   if (name === 'rebuild') rebuild();
   else if (name === 'quake') { fx.quake = 14; }
@@ -178,7 +175,6 @@ function start(name) {
   else if (name === 'tsunami') { fx.tsunami = 34; water.visible = true; waveFront = 820; const [dx, dz] = { park: [0, 1], city: [0, -1], left: [-1, 0], right: [1, 0] }[set.from]; waveDir.set(dx, dz); waterG.rotation.y = Math.atan2(dx, dz); }
   else if (name === 'bomb') { armed = 'bomb'; const side = Math.random() < 0.5 ? 1 : -1, horizontal = Math.random() < 0.6; explode(horizontal ? new THREE.Vector3((Math.random() - 0.5) * W * 0.8, 20 + Math.random() * 95, side * (D / 2 + 1)) : new THREE.Vector3(side * (W / 2 + 1), 20 + Math.random() * 95, (Math.random() - 0.5) * D * 0.8), ...POW[set.power]); }
   else if (name === 'missile') { armed = 'missile'; fireSalvo(null); }
-  else if (name === 'jet') { startJet(); }
   else if (name === 'implode') { fx.implode = 16; fx.imploded = true; implodeT = 0; topple = null; if (set.fall !== 'down') { const [dx, dz] = FALL[set.fall], d = new THREE.Vector3(dx, 0, dz); topple = { d, pivot: new THREE.Vector3(dx * W / 2, 0, dz * D / 2), axis: new THREE.Vector3().crossVectors(UP, d).normalize(), th: 0, w: 0, broke: false }; } }
 }
 
@@ -214,19 +210,19 @@ const trail = new THREE.Points(new THREE.BufferGeometry().setAttribute('position
 const missiles = [missile]; for (let k = 1; k < 5; k++) { const m = missile.clone(); m.visible = false; scene.add(m); missiles.push(m); }
 const flights = []; let salvo = null;
 function fireSalvo(aim) { salvo = { n: set.count, aim: aim ? aim.clone() : null, next: 0, power: set.mpower }; }
-function launchMissile(aim, power, from = null, arc = 60) {
+function launchMissile(aim, power) {
   const m = missiles.find((x) => !x.visible); if (!m) return;
   const side = aim ? Math.sign(aim.z || 1) : Math.random() < 0.5 ? 1 : -1;
   const target = aim ? aim.clone().add(new THREE.Vector3((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8, 0)) : new THREE.Vector3((Math.random() - 0.5) * W * 0.6, 35 + Math.random() * 80, side * (D / 2 + 1));
-  from = from ? from.clone() : new THREE.Vector3(-650 + Math.random() * 300, 380 + Math.random() * 120, side * 650);
-  flights.push({ m, from, target, t: 0, dur: Math.max(0.6, from.distanceTo(target) / 230), power, arc }); m.visible = true;
+  const from = new THREE.Vector3(-650 + Math.random() * 300, 380 + Math.random() * 120, side * 650);
+  flights.push({ m, from, target, t: 0, dur: from.distanceTo(target) / 230, power }); m.visible = true;
 }
 function stepMissile(dt) {
   for (let i = 0; i < TRAIL; i++) trailAge[i] += dt;
   if (salvo) { salvo.next -= dt; if (salvo.next <= 0) { launchMissile(salvo.aim, salvo.power); salvo.next = 0.5; if (--salvo.n <= 0) salvo = null; } }
   for (const f of flights) {
     f.t += dt; const k = Math.min(1, f.t / f.dur), m = f.m;
-    m.position.lerpVectors(f.from, f.target, k); m.position.y += Math.sin(k * Math.PI) * f.arc; m.lookAt(tmp.lerpVectors(f.from, f.target, Math.min(1, k + 0.01)).setY(tmp.y + Math.sin(Math.min(1, k + 0.01) * Math.PI) * f.arc));
+    m.position.lerpVectors(f.from, f.target, k); m.position.y += Math.sin(k * Math.PI) * 60; m.lookAt(tmp.lerpVectors(f.from, f.target, Math.min(1, k + 0.01)).setY(tmp.y + Math.sin(Math.min(1, k + 0.01) * Math.PI) * 60));
     for (let n = 0; n < 3; n++) { const i = trailHead = (trailHead + 1) % TRAIL; trailPos[i * 3] = m.position.x + (Math.random() - 0.5) * 2; trailPos[i * 3 + 1] = m.position.y + (Math.random() - 0.5) * 2; trailPos[i * 3 + 2] = m.position.z + (Math.random() - 0.5) * 2; trailAge[i] = 0; }
     if (k >= 1) { const [r, pw] = POW[f.power]; explode(f.target, r * 1.3, pw * 1.3); m.visible = false; f.done = true; }
   }
@@ -320,39 +316,6 @@ function stepImplode(dt) {
   shake = Math.max(shake, 1.0 * (1 - c) + 0.15);
 }
 
-// --- the jet: an F-16 flying circuits round the tower; fire its Sidewinders or drop bombs on it, with a chase camera
-const jet = new THREE.Group(); { const inner = new THREE.Group(); inner.scale.setScalar(0.04); inner.rotation.y = Math.PI; inner.position.x = F16_LEN * 0.04 / 2; for (const m of buildF16()) inner.add(m); jet.add(inner);
-  const ab = new THREE.Mesh(new THREE.ConeGeometry(0.42, 3.4, 12), new THREE.MeshBasicMaterial({ color: 0xff9a2e, transparent: true, opacity: 0.85, depthWrite: false })); ab.rotation.z = Math.PI / 2; ab.position.set(-F16_LEN * 0.04 / 2 - 1.5, 0.2, 0); jet.add(ab); jet.userData.ab = ab; }
-jet.visible = false; scene.add(jet);
-const bombs = [], bombGeo = new THREE.CylinderGeometry(0.45, 0.3, 3, 10).rotateZ(Math.PI / 2), bombMat = new THREE.MeshStandardMaterial({ color: 0x3a3f44, roughness: 0.6, metalness: 0.4 });
-let jetA = 0, chaseOn = true;
-const jetFwd = () => new THREE.Vector3(1, 0, 0).applyQuaternion(jet.quaternion);
-if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__iqon = { jet, get cam() { return camera; }, get ctl() { return controls; }, fxJet, bombs, flights };
-function startJet() { fxJet.on = true; jet.visible = true; fx.jet = 9999; chaseOn = !!set.chase; }
-function stopJet() { fxJet.on = false; jet.visible = false; fx.jet = 0; controls.enabled = true; for (const b of bombs) scene.remove(b.m); bombs.length = 0; }
-function jetAction(act) {
-  if (act === 'fire') jetFire(null);
-  else if (act === 'bomb') { if (!fxJet.on) startJet(); const m = new THREE.Mesh(bombGeo, bombMat); m.position.copy(jet.position).addScaledVector(new THREE.Vector3(0, -1.2, 0), 1); m.quaternion.copy(jet.quaternion); scene.add(m); bombs.push({ m, vel: jetFwd().multiplyScalar(62) }); }
-  else if (act === 'chase') { chaseOn = !chaseOn; set.chase = chaseOn ? 1 : 0; ctl.querySelector('[data-act=chase]').classList.toggle('on', chaseOn); if (!chaseOn) controls.enabled = true; }
-}
-function jetFire(aim) {
-  if (!fxJet.on) startJet();
-  const p = jet.position, target = aim ? aim.clone() : new THREE.Vector3(Math.max(-W / 2, Math.min(W / 2, p.x)), Math.max(15, Math.min(TOP - 6, p.y - 20)), Math.max(-D / 2, Math.min(D / 2, p.z)));   // the nearest point of the tower
-  for (const sgn of [-1, 1]) { const from = jet.localToWorld(new THREE.Vector3(1.2, -0.3, sgn * 4.7)); launchMissile(target, set.jpower, from, 0); }
-}
-function stepJet(dt, t) {
-  if (!fxJet.on) return;
-  jetA += dt * 0.26; const R = 230, h = (a) => 95 + 35 * Math.sin(a * 1.7);
-  const p = new THREE.Vector3(Math.cos(jetA) * R, h(jetA), -Math.sin(jetA) * R), n = new THREE.Vector3(Math.cos(jetA + 0.02) * R, h(jetA + 0.02), -Math.sin(jetA + 0.02) * R);
-  jet.position.copy(p); const d = n.sub(p).normalize(), yaw = Math.atan2(-d.z, d.x), pitch = Math.asin(Math.max(-1, Math.min(1, d.y)));
-  jet.quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), yaw).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), pitch)).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -0.55));   // banked into the left-hand circuit
-  jet.userData.ab.scale.set(1, 0.8 + 0.5 * Math.random(), 1);
-  for (let i = bombs.length - 1; i >= 0; i--) { const b = bombs[i]; b.vel.y -= 12 * dt; b.vel.multiplyScalar(1 - 0.08 * dt); b.m.position.addScaledVector(b.vel, dt); b.m.lookAt(tmp.copy(b.m.position).add(b.vel)); b.m.rotateY(-Math.PI / 2);
-    const q = b.m.position, inTower = Math.abs(q.x) < W / 2 + 2 && Math.abs(q.z) < D / 2 + 2 && q.y < TOP + 6;
-    if (q.y < 1 || inTower) { const [r, pw] = POW[set.jpower]; explode(q.clone().setY(Math.max(1, q.y)), r * 1.2, pw * 1.2); scene.remove(b.m); bombs.splice(i, 1); } }
-  if (chaseOn) { controls.enabled = false; const f = jetFwd(), goal = jet.position.clone().addScaledVector(f, -52).add(new THREE.Vector3(0, 16, 0)), look = jet.position.clone().addScaledVector(f, 50).lerp(new THREE.Vector3(0, 70, 0), 0.3); const k = 1 - Math.exp(-dt * 3.5); camera.position.lerp(goal, k); controls.target.lerp(look, k); camera.up.set(0, 1, 0); camera.lookAt(controls.target); }
-}
-
 // --- the earthquake: the ground shakes, the tower sways from its base and sheds loose pieces
 function stepQuake(dt, t) {
   if (!fx.quake) { if (!topple || topple.broke) { building.position.x *= 0.9; building.position.z *= 0.9; building.rotation.z *= 0.9; building.rotation.x *= 0.9; } city.position.x *= 0.9; city.position.z *= 0.9; return; }
@@ -379,7 +342,7 @@ canvas.addEventListener('pointerup', (e) => {
   if (!down || performance.now() - down.t > 500 || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) return;
   const r = canvas.getBoundingClientRect(); ray.setFromCamera(new THREE.Vector2(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1), camera);
   const hit = ray.intersectObjects([inst.concrete, inst.glass, inst.concreteDark], false)[0];
-  if (hit) { if (fxJet.on) jetFire(hit.point); else if (armed === 'missile') fireSalvo(hit.point); else { const [r, pw] = POW[set.power]; explode(hit.point, r, pw); } return; }
+  if (hit) { if (armed === 'missile') fireSalvo(hit.point); else { const [r, pw] = POW[set.power]; explode(hit.point, r, pw); } return; }
   if (fx.tornado) { const g = ray.intersectObject(ground, false)[0]; if (g) fx.tornadoTarget = g.point.clone(); }
 });
 function resize() { const w = view.clientWidth, h = view.clientHeight; if (!w || !h) return; renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); }
@@ -389,15 +352,15 @@ let last = performance.now(), raf = 0, running = false;
 function frame(now) {
   if (!running) return; raf = requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000); last = now; fx.t += dt; const t = fx.t;
-  for (const k of ['quake', 'storm', 'tornado', 'tsunami', 'implode', 'jet']) if (fx[k]) { fx[k] = Math.max(0, fx[k] - dt); if (!fx[k]) { if (k === 'storm') rain.visible = false; if (k === 'tornado') funnel.visible = swirl.visible = false; if (k === 'tsunami') water.visible = false; btns.forEach((b) => b.classList.remove('on')); } }
-  stepQuake(dt, t); stepStorm(dt); stepTornado(dt, t); stepTsunami(dt, t); stepImplode(dt); stepJet(dt, t); stepMissile(dt); stepBooms(dt); stepDebris(dt);
+  for (const k of ['quake', 'storm', 'tornado', 'tsunami', 'implode']) if (fx[k]) { fx[k] = Math.max(0, fx[k] - dt); if (!fx[k]) { if (k === 'storm') rain.visible = false; if (k === 'tornado') funnel.visible = swirl.visible = false; if (k === 'tsunami') water.visible = false; btns.forEach((b) => b.classList.remove('on')); } }
+  stepQuake(dt, t); stepStorm(dt); stepTornado(dt, t); stepTsunami(dt, t); stepImplode(dt); stepMissile(dt); stepBooms(dt); stepDebris(dt);
   const wind = fx.storm ? 0.4 + 0.45 * set.wind : fx.tornado ? Math.max(0.3, 1 - Math.hypot(funnel.position.x + 40, funnel.position.z - 330) / 300) : 0; if (wind || fx.t < 0.1) sway(t, wind);
   // sky and light: day, night, storm, lightning
   lightningT = Math.max(0, lightningT - dt); const bolt = lightningT > 0 ? 1 : 0;
   bgNow.copy(night ? SKY_NIGHT : SKY); if (fx.storm) bgNow.lerp(SKY_STORM, Math.min(1, (30 - fx.storm) / 2) * (night ? 0.5 : 1)); if (fx.tornado) bgNow.lerp(SKY_STORM, 0.5); if (bolt) bgNow.lerp(new THREE.Color(0xffffff), 0.35);
   scene.background.lerp(bgNow, 0.08); scene.fog.color.copy(scene.background);
   const dim = fx.storm || fx.tornado ? 0.45 : 1; sun.intensity = (night ? 0.25 : 2.6) * dim + bolt * 3; sun.color.set(night ? 0x8fa8ff : 0xfff2dc); hemi.intensity = (night ? 0.25 : 0.7) * dim; scene.environmentIntensity = (night ? 0.12 : 0.55) * dim;
-  camera.position.sub(shakeOff); if (!fxJet.on || !chaseOn) controls.update();
+  camera.position.sub(shakeOff); controls.update();
   shake = Math.max(0, shake - dt * 1.2); shakeOff.set((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake).multiplyScalar(2); camera.position.add(shakeOff);
   renderer.render(scene, camera);
 }
