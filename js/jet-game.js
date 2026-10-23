@@ -78,7 +78,7 @@ function kitPieces() {
 
 let renderer, scene, camera, controls, pmrem, raf = 0, running = false, lastT = 0, built = false;
 let jet, skin = [], kit = [], sheets, labels = [], mode = 'jet', flying = false, flyT = 0, sel = null;
-const camGoal = { pos: new THREE.Vector3(), target: new THREE.Vector3(), active: false };
+const camGoal = { pos: new THREE.Vector3(), target: new THREE.Vector3(), active: false }, tmpV = new THREE.Vector3();
 
 function balsaTex(seed, along) {
   const c = document.createElement('canvas'); c.width = c.height = 512; const x = c.getContext('2d');
@@ -147,7 +147,7 @@ function setup() {
   const table = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.3 })); table.rotation.x = -Math.PI / 2; table.receiveShadow = true; scene.add(table);
   balsaX = balsaTex(11, 'x'); balsaY = balsaTex(29, 'y');
   jet = new THREE.Group(); jet.scale.setScalar(SC); scene.add(jet);
-  const centre = new THREE.Group(); centre.position.x = -(NOZ1 / 2); jet.add(centre);                           // the model is centred on its length
+  const centre = new THREE.Group(); centre.position.x = -(NOZ1 / 2); jet.add(centre); jet.userData.centre = centre;                           // the model is centred on its length
   skin = buildSkin(); skin.forEach((m) => centre.add(m));
   kit = buildKit(); kit.forEach((r) => centre.add(r.obj));
   const lay = layoutSheets();
@@ -159,7 +159,7 @@ function setup() {
   controls = new OrbitControls(camera, canvas); controls.enablePan = false; controls.enableDamping = true; controls.dampingFactor = 0.09; controls.minDistance = 1.0; controls.maxDistance = 22;
   controls.addEventListener('start', () => { camGoal.active = false; });
   bind();
-  if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__jet = { get camera() { return camera; }, get controls() { return controls; }, setMode };
+  if (['localhost', '127.0.0.1'].includes(location.hostname)) window.__jet = { get camera() { return camera; }, get controls() { return controls; }, setMode, camGoal, kit, select, box: (id) => { const r = kit.find((x) => x.p.id === id); const b = new THREE.Box3().setFromObject(r.mesh); return { min: b.min.toArray(), max: b.max.toArray(), size: b.getSize(new THREE.Vector3()).length() }; } };
 }
 const shortName = (r) => (r.p.id[0] === 'f' && r.p.id !== 'fin' ? r.p.id.toUpperCase().replace('T', ' top').replace('B', ' bottom') : `${L(r.p.name)} ${r.size}`);
 function relabel() { for (const l of labels) paintLabel(l, shortName(l.userData.rec)); }
@@ -178,13 +178,30 @@ function applyMode() {
   kit.forEach((r) => { r.obj.visible = mode !== 'jet'; });
   sheets.visible = mode === 'sheets'; labels.forEach((l) => { l.visible = mode === 'sheets'; });
 }
-function setMode(m) { mode = m; if (m !== 'jet') setFly(false); applyMode(); goCamera(m); }
+function setMode(m) { mode = m; if (m !== 'jet') setFly(false); applyMode(); if (sel) select(sel); else goCamera(m); }
 function setFly(on) { flying = on; ui.fly.classList.toggle('on', on); if (on) { flyT = 0; mode = 'jet'; applyMode(); } else { jet.position.set(0, 0, 0); jet.quaternion.identity(); } }
 
+const ZERO = new THREE.Vector3();
+function liftOf(r) {                                                           // a selected piece slides out of the model so it can be seen on its own
+  if (!sel || r !== sel || mode === 'sheets') return ZERO;
+  if (r.p.id.startsWith('vfin')) return new THREE.Vector3(0, -45, 0);
+  return new THREE.Vector3(0, r.p.plane === 'xz' ? 60 : 70, 0);
+}
+function focusOn(rec) {                                                      // frame the piece where it will be once it has lifted (the model floats 0.55 above the table except in Sheets)
+  const g = rec.mesh.geometry; g.computeBoundingBox(); const lc = g.boundingBox.getCenter(new THREE.Vector3()), size = g.boundingBox.getSize(new THREE.Vector3()).length() * SC;
+  const place = mode === 'sheets' ? rec.sheet : rec.home, wp = lc.applyQuaternion(place.q).add(place.pos).add(liftOf(rec)).add(jet.userData.centre.position).multiplyScalar(SC);
+  const c = wp.add(new THREE.Vector3(0, mode === 'sheets' ? 0 : 0.55, 0));
+  const camDir = camera.position.clone().sub(controls.target).normalize();
+  const n = mode === 'sheets' || rec.p.plane === 'xz' ? new THREE.Vector3(0, 1, 0) : rec.p.plane === 'yz' ? new THREE.Vector3(1, 0, 0) : rec.p.plane === 'xy' ? new THREE.Vector3(0, 0, 1) : new THREE.Vector3(0.5, 0.5, 0.7);   // look at the piece's face, from whichever side the camera already is
+  if (n.dot(camDir) < 0) n.negate(); const dir = n.add(new THREE.Vector3(0, 0.45, 0)).normalize();
+  camGoal.target.copy(c); camGoal.pos.copy(c).addScaledVector(dir, Math.max(1.3, size * 2.2)); camGoal.active = true;
+}
 function select(rec) {
-  sel = rec; kit.forEach((r) => { r.mesh.material.emissiveIntensity = r === rec ? 0.25 : 0; });
+  sel = rec;
+  kit.forEach((r) => { const m = r.mesh.material; m.emissiveIntensity = r === rec ? 0.45 : 0; const dim = !!rec && r !== rec && mode !== 'sheets'; m.transparent = dim; m.opacity = dim ? 0.28 : 1; m.depthWrite = !dim; });
   ui.chips.querySelectorAll('.chip').forEach((c) => c.classList.toggle('on', !!rec && c.dataset.id === rec.p.id));
   showCard(rec);
+  if (rec) focusOn(rec); else goCamera(mode);
 }
 function showCard(rec) {
   const c = rec ? { n: `${L(rec.p.name)} · ${rec.size} mm`, k: L(rec.p.kid), a: L(rec.p.adult) } : T[lang].intro;
@@ -192,7 +209,7 @@ function showCard(rec) {
 }
 function buildChips() {
   ui.chips.innerHTML = kit.map((r) => `<button type="button" class="chip" data-id="${r.p.id}">${L(r.p.name)}</button>`).join('');
-  ui.chips.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => { const r = kit.find((x) => x.p.id === b.dataset.id); if (mode === 'jet') { mode = 'frame'; applyMode(); } select(sel === r ? null : r); }));
+  ui.chips.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => { const r = kit.find((x) => x.p.id === b.dataset.id); if (mode === 'jet') setMode('frame'); select(sel === r ? null : r); }));
 }
 function setLang(l) {
   lang = l; view.querySelectorAll('.lang button').forEach((b) => b.classList.toggle('on', b.dataset.lang === l));
@@ -210,7 +227,7 @@ function bind() {
   canvas.addEventListener('pointerup', (e) => {
     if (!down || performance.now() - down.t > 600 || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 10) return;
     const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1); ray.setFromCamera(ndc, camera);
-    if (mode === 'jet') { const hit = ray.intersectObjects(skin, false)[0]; if (hit) showCard(null); else ui.card.classList.remove('open'); return; }
+    if (mode === 'jet') { const hit = ray.intersectObjects(skin, false)[0]; if (hit) showCard(null); else { ui.card.classList.remove('open'); } return; }
     const hit = ray.intersectObjects(kit.map((p) => p.mesh), false)[0];
     const rec = hit ? kit.find((p) => p.mesh === hit.object) : null; select(rec && sel === rec ? null : rec);
   });
@@ -226,7 +243,7 @@ function resize() { if (!renderer) return; const w = view.clientWidth, h = view.
 function frame(now) {
   if (!running) return; raf = requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - lastT) / 1000); lastT = now; const k = 1 - Math.exp(-dt * 6);
-  for (const r of kit) { const g = mode === 'sheets' ? r.sheet : r.home; r.obj.position.lerp(g.pos, k); r.obj.quaternion.slerp(g.q, k); }
+  for (const r of kit) { const g = mode === 'sheets' ? r.sheet : r.home; r.obj.position.lerp(tmpV.copy(g.pos).add(liftOf(r)), k); r.obj.quaternion.slerp(g.q, k); }
   const lift = mode === 'sheets' ? 0 : 0.55;
   if (flying) {
     flyT += dt; const a = flyT * 0.8, R = 2.3, p = new THREE.Vector3(Math.cos(a) * R, 1.3 + 0.35 * Math.sin(a * 2.1), -Math.sin(a) * R), n = new THREE.Vector3(Math.cos(a + 0.05) * R, 1.3 + 0.35 * Math.sin((a + 0.05) * 2.1), -Math.sin(a + 0.05) * R);
